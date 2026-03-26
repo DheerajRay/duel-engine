@@ -1,0 +1,694 @@
+{
+  "meta": {
+    "title": "Yu-Gi-Oh Duel Monsters - Original Series Era Game System",
+    "scope": "Original Yu-Gi-Oh only; excludes later-series mechanics",
+    "included_mechanics": [
+      "Normal Summon",
+      "Set",
+      "Tribute Summon",
+      "Special Summon",
+      "Flip Summon",
+      "Fusion Summon",
+      "Ritual Summon",
+      "Battle Position system",
+      "Spell/Trap activation",
+      "Chains",
+      "Spell Speeds",
+      "Field Spells",
+      "Equip Spells",
+      "Continuous cards",
+      "Counter Traps"
+    ],
+    "excluded_mechanics": [
+      "Synchro Summon",
+      "Tuner Monsters",
+      "Xyz Summon",
+      "Ranks",
+      "Pendulum Summon",
+      "Pendulum Zones",
+      "Link Summon",
+      "Link Arrows",
+      "Cyberse-specific later framework"
+    ],
+    "design_intent": "This JSON is a comprehensive structural model of the Duel Monsters game in its original-era form."
+  },
+
+  "game_identity": {
+    "game_name": "Duel Monsters",
+    "player_count": 2,
+    "core_goal": "Win the duel by reducing the opponent's Life Points to 0, making them unable to draw a required card, or winning through a card effect.",
+    "game_feel": {
+      "style": [
+        "head-to-head tactical card combat",
+        "resource management",
+        "timing and counterplay",
+        "board control",
+        "signature monsters and spell/trap reversals"
+      ],
+      "primary_axes_of_play": [
+        "summoning monsters",
+        "controlling battle position",
+        "setting and triggering traps",
+        "using spells for tempo or removal",
+        "trading resources efficiently",
+        "protecting key monsters",
+        "breaking opponent board state"
+      ]
+    }
+  },
+
+  "match_structure": {
+    "duel": {
+      "definition": "A single game between two players."
+    },
+    "match": {
+      "definition": "A set of duels, traditionally best-of-three in formal play.",
+      "side_deck_usage": true
+    }
+  },
+
+  "victory_conditions": {
+    "standard": [
+      "Opponent Life Points become 0",
+      "Opponent must draw but cannot",
+      "A card effect declares victory"
+    ],
+    "loss_conditions": [
+      "Your Life Points become 0",
+      "You must draw but cannot",
+      "A card effect declares your defeat"
+    ],
+    "draw_conditions": [
+      "Mutual terminal result caused simultaneously, if no effect specifically determines a winner"
+    ]
+  },
+
+  "starting_setup": {
+    "life_points": 8000,
+    "coin_flip_or_equivalent": "Used to determine who goes first",
+    "main_deck_minimum": 40,
+    "main_deck_maximum": 60,
+    "extra_deck_maximum": 15,
+    "side_deck_maximum": 15,
+    "opening_hand_size": 5,
+    "hand_visibility": "Private to the controller",
+    "graveyard_visibility": "Public knowledge",
+    "field_visibility": {
+      "face_up_cards": "Public",
+      "face_down_cards": "Hidden until revealed by rules or card effects"
+    }
+  },
+
+  "deck_system": {
+    "main_deck": {
+      "purpose": "Primary deck used to draw and play cards during the duel.",
+      "contains": [
+        "Monsters",
+        "Spells",
+        "Traps"
+      ]
+    },
+    "extra_deck": {
+      "purpose": "Holds special monsters not kept in the Main Deck.",
+      "original_era_scope": [
+        "Fusion Monsters"
+      ]
+    },
+    "side_deck": {
+      "purpose": "Optional card pool used to adjust deck composition between duels in a match."
+    }
+  },
+
+  "field_layout": {
+    "per_player_zones": {
+      "monster_zones": 5,
+      "spell_trap_zones": 5,
+      "field_zone": 1,
+      "deck_zone": 1,
+      "graveyard_zone": 1,
+      "extra_deck_zone": 1
+    },
+    "conceptual_or_effect_driven_locations": {
+      "banished_zone": "Tracked when effects remove cards from standard play flow",
+      "hand": "Private card-holding area"
+    },
+    "orientation": {
+      "self_side": "Your side of the field",
+      "opponent_side": "Opponent's side of the field"
+    }
+  },
+
+  "card_system": {
+    "card_families": [
+      "Monster",
+      "Spell",
+      "Trap"
+    ],
+    "monster_cards": {
+      "core_fields": [
+        "name",
+        "attribute",
+        "type",
+        "level",
+        "ATK",
+        "DEF",
+        "effect_text_or_lore"
+      ],
+      "subtypes": [
+        "Normal Monster",
+        "Effect Monster",
+        "Fusion Monster",
+        "Ritual Monster",
+        "Toon Monster",
+        "Flip Monster",
+        "Gemini not included in original-era scope"
+      ],
+      "notes": {
+        "normal_monsters": "Usually have no gameplay effect text; instead they carry lore/flavor text.",
+        "effect_monsters": "Have card text that changes gameplay.",
+        "fusion_monsters": "Summoned from the Extra Deck using specified methods.",
+        "ritual_monsters": "Summoned using a Ritual Spell and Tribute requirements.",
+        "toon_monsters": "Special thematic monsters with unique card-text restrictions and interactions.",
+        "flip_monsters": "Trigger effects when flipped face-up, if their text says so."
+      }
+    },
+    "spell_cards": {
+      "core_fields": [
+        "name",
+        "spell_type",
+        "effect_text"
+      ],
+      "subtypes": [
+        "Normal Spell",
+        "Continuous Spell",
+        "Equip Spell",
+        "Field Spell",
+        "Quick-Play Spell",
+        "Ritual Spell"
+      ]
+    },
+    "trap_cards": {
+      "core_fields": [
+        "name",
+        "trap_type",
+        "effect_text"
+      ],
+      "subtypes": [
+        "Normal Trap",
+        "Continuous Trap",
+        "Counter Trap"
+      ]
+    }
+  },
+
+  "monster_identity_fields": {
+    "attribute": {
+      "definition": "Elemental or symbolic affinity of the monster.",
+      "common_original_era_values": [
+        "DARK",
+        "LIGHT",
+        "EARTH",
+        "WATER",
+        "FIRE",
+        "WIND",
+        "DIVINE"
+      ]
+    },
+    "type": {
+      "definition": "Monster race/classification.",
+      "examples": [
+        "Spellcaster",
+        "Dragon",
+        "Warrior",
+        "Fiend",
+        "Beast",
+        "Beast-Warrior",
+        "Winged Beast",
+        "Zombie",
+        "Rock",
+        "Machine",
+        "Aqua",
+        "Pyro",
+        "Thunder",
+        "Sea Serpent",
+        "Dinosaur",
+        "Reptile",
+        "Fish",
+        "Insect",
+        "Plant",
+        "Fairy"
+      ]
+    },
+    "level": {
+      "definition": "Star count used for tribute requirements and other card interactions.",
+      "range": "Typically 1-12 in original-era usage"
+    },
+    "atk": {
+      "definition": "Used for attacking and for Attack Position battle calculations."
+    },
+    "def": {
+      "definition": "Used for Defense Position battle calculations."
+    }
+  },
+
+  "positions_and_visibility": {
+    "monster_positions": {
+      "attack_position": {
+        "orientation": "Vertical",
+        "uses_stat": "ATK",
+        "purpose": "Primary offensive state"
+      },
+      "defense_position": {
+        "orientation": "Horizontal",
+        "uses_stat": "DEF when attacked",
+        "purpose": "Protective state"
+      }
+    },
+    "face_states": {
+      "face_up": "Card identity and visible information are public",
+      "face_down": "Card identity is hidden until revealed"
+    },
+    "monster_state_combinations": [
+      "Face-up Attack Position",
+      "Face-up Defense Position",
+      "Face-down Defense Position"
+    ],
+    "spell_trap_state_combinations": [
+      "Face-up",
+      "Face-down Set"
+    ]
+  },
+
+  "summoning_system": {
+    "normal_summon": {
+      "definition": "Standard summon of a monster from the hand.",
+      "limit": "Once per turn",
+      "applies_to": "Usually Level 4 or lower monsters unless card text says otherwise"
+    },
+    "normal_set": {
+      "definition": "Place a monster from the hand face-down in Defense Position.",
+      "shares_limit_with_normal_summon": true
+    },
+    "tribute_summon": {
+      "definition": "A Normal Summon that requires releasing monsters you control.",
+      "requirements": {
+        "level_5_or_6": 1,
+        "level_7_or_higher": 2
+      }
+    },
+    "special_summon": {
+      "definition": "Any summon performed by a card effect or special summoning condition.",
+      "per_turn_limit": "No universal once-per-turn limit unless imposed by a card or rule"
+    },
+    "flip_summon": {
+      "definition": "Manually changing a face-down Defense Position monster to face-up Attack Position during your Main Phase.",
+      "not_same_as_flip_effect_trigger": "A monster can also be flipped face-up by attack or card effect."
+    },
+    "fusion_summon": {
+      "definition": "Summon a Fusion Monster from the Extra Deck using listed materials and an enabling effect such as Polymerization.",
+      "destination": "Monster Zone"
+    },
+    "ritual_summon": {
+      "definition": "Summon a Ritual Monster using its corresponding Ritual Spell and Tribute requirement."
+    }
+  },
+
+  "tribute_and_cost_concepts": {
+    "tribute": {
+      "definition": "Sending monsters you control to the Graveyard as part of a summon or effect requirement."
+    },
+    "cost": {
+      "definition": "A payment or requirement that must be fulfilled to activate an effect."
+    },
+    "difference_between_cost_and_effect": {
+      "summary": "Costs are paid upfront; effects happen on resolution if still legal."
+    }
+  },
+
+  "turn_structure": {
+    "turn_owner": "The player whose turn is currently being played",
+    "phases": [
+      {
+        "name": "Draw Phase",
+        "purpose": "Turn player draws 1 card"
+      },
+      {
+        "name": "Standby Phase",
+        "purpose": "Resolve effects that specifically occur or are maintained here"
+      },
+      {
+        "name": "Main Phase 1",
+        "purpose": "Summon, Set, activate cards and effects, and adjust field state before battle"
+      },
+      {
+        "name": "Battle Phase",
+        "purpose": "Conduct attacks and battle interactions"
+      },
+      {
+        "name": "Main Phase 2",
+        "purpose": "Further Summon/Set/activate after battle, where legal"
+      },
+      {
+        "name": "End Phase",
+        "purpose": "Resolve end-of-turn effects and pass turn"
+      }
+    ]
+  },
+
+  "battle_phase_structure": {
+    "substeps": [
+      "Start Step",
+      "Battle Step",
+      "Damage Step",
+      "End Step"
+    ],
+    "flow": [
+      "Choose an eligible attacking monster",
+      "Declare an attack target or direct attack if legal",
+      "Open legal response windows",
+      "Perform battle calculation",
+      "Destroy monsters if applicable",
+      "Apply battle damage if applicable",
+      "Continue with another attack or end Battle Phase"
+    ]
+  },
+
+  "battle_rules": {
+    "attack_vs_attack": {
+      "rule": "Compare ATK values",
+      "result": [
+        "Lower ATK monster is destroyed",
+        "Its controller takes battle damage equal to the difference"
+      ],
+      "tie": "If both ATK values are equal, both monsters are destroyed and no battle damage is dealt unless another effect modifies this"
+    },
+    "attack_vs_defense": {
+      "rule": "Compare attacking monster's ATK to defending monster's DEF",
+      "result_if_attacker_higher": [
+        "Defending monster is destroyed",
+        "No battle damage by default unless a piercing effect says otherwise"
+      ],
+      "result_if_defender_higher": [
+        "Defending monster survives",
+        "Attacking player takes battle damage equal to the difference"
+      ],
+      "tie": "Neither monster is destroyed and no battle damage is dealt"
+    },
+    "direct_attack": {
+      "condition": "Generally allowed if the opponent controls no monsters, unless a card effect changes this"
+    },
+    "piercing_damage": {
+      "definition": "Some effects allow damage through a Defense Position monster when attacker ATK exceeds defender DEF"
+    }
+  },
+
+  "spell_and_trap_timing": {
+    "activation_concept": "A card is activated when it is played or flipped face-up for use, unless already face-up and applying an effect from an ongoing card state.",
+    "set_then_activate_rule": {
+      "trap_cards": "Normally must be Set before activation and cannot be activated the same turn they were Set unless an effect says otherwise",
+      "quick_play_spells": "If Set, they generally cannot be activated the same turn they were Set"
+    },
+    "continuous_presence": {
+      "continuous_spell": "Remains on the field after resolving and continues applying its effect while valid",
+      "continuous_trap": "Remains on the field after activation and continues applying its effect while valid",
+      "equip_spell": "Remains equipped to a legal monster target",
+      "field_spell": "Remains active in the Field Zone and changes the battlefield condition"
+    }
+  },
+
+  "spell_speeds": {
+    "spell_speed_1": {
+      "examples": [
+        "Normal Spells",
+        "Continuous Spells",
+        "Equip Spells",
+        "Field Spells",
+        "Ritual Spells",
+        "most ignition-like monster effects"
+      ],
+      "response_capability": "Cannot be chained directly to a faster effect as a response unless allowed by game rules and effect type"
+    },
+    "spell_speed_2": {
+      "examples": [
+        "Trap Cards (except Counter Traps are faster)",
+        "Quick-Play Spells",
+        "many Quick Effects"
+      ],
+      "response_capability": "Can respond to Spell Speed 1 and other legal activations"
+    },
+    "spell_speed_3": {
+      "examples": [
+        "Counter Traps"
+      ],
+      "response_capability": "Fastest standard response class; only another Spell Speed 3 can respond to it"
+    }
+  },
+
+  "chains": {
+    "definition": "A stack of activated cards/effects responding to one another",
+    "construction": [
+      "Initial activation becomes Chain Link 1",
+      "Each legal response adds a higher Chain Link",
+      "When no player adds further responses, the Chain resolves backwards"
+    ],
+    "resolution_order": "Last in, first out",
+    "practical_meaning": "Later responses resolve before earlier ones"
+  },
+
+  "monster_effect_categories": {
+    "continuous_effect": "Applies while the monster remains in the proper state on the field",
+    "ignition_effect": "Activated manually during an appropriate Main Phase",
+    "trigger_effect": "Activates when a specific event occurs",
+    "flip_effect": "Activates when the monster is flipped face-up",
+    "quick_effect": "Activated in faster timing windows where legal"
+  },
+
+  "spell_subtype_details": {
+    "normal_spell": {
+      "behavior": "Resolves once, then goes to the Graveyard unless prevented"
+    },
+    "continuous_spell": {
+      "behavior": "Stays on the field and applies over time"
+    },
+    "equip_spell": {
+      "behavior": "Attached to a legal monster and modifies it or creates ongoing conditions"
+    },
+    "field_spell": {
+      "behavior": "Occupies the Field Zone and changes the global field environment"
+    },
+    "quick_play_spell": {
+      "behavior": "A faster Spell subtype usable in reactive timing windows when legal"
+    },
+    "ritual_spell": {
+      "behavior": "Used to Ritual Summon a specified Ritual Monster or category"
+    }
+  },
+
+  "trap_subtype_details": {
+    "normal_trap": {
+      "behavior": "Single-use reactive effect"
+    },
+    "continuous_trap": {
+      "behavior": "Remains active on the field after resolution"
+    },
+    "counter_trap": {
+      "behavior": "Highest standard trap speed; used to negate or answer activations"
+    }
+  },
+
+  "card_movement": {
+    "draw": "Move top card of Deck to hand",
+    "discard": "Send card from hand to Graveyard unless effect says otherwise",
+    "destroy": "Send card from field to Graveyard by battle or effect unless replacement or protection applies",
+    "send_to_graveyard": "Move a card to Graveyard without necessarily counting as destruction",
+    "return_to_hand": "Move a card back to hand",
+    "return_to_deck": "Move a card back to Main Deck or Extra Deck as appropriate",
+    "banish": "Remove a card from standard play space; treated separately from Graveyard",
+    "tribute": "Send a monster you control to the Graveyard as requirement/cost"
+  },
+
+  "state_changes_and_restrictions": {
+    "battle_position_change": {
+      "manual_change": "Usually once per monster per turn during Main Phase when legal",
+      "cannot_change_if": [
+        "monster was Summoned or Set that turn, unless effect allows",
+        "monster already declared an attack that turn",
+        "card effect prevents it"
+      ]
+    },
+    "summoning_sickness_equivalent": {
+      "note": "Yu-Gi-Oh does not formally use that term, but a monster generally cannot attack the turn it is Summoned unless an effect allows it"
+    }
+  },
+
+  "field_control_concepts": {
+    "tempo": "Using cards to gain immediate turn advantage",
+    "advantage": "Generating more usable resources than the opponent",
+    "removal": "Eliminating or neutralizing opposing cards",
+    "protection": "Keeping key monsters or backrow safe from destruction, targeting, or battle",
+    "floodgate_like_control": "Limiting what actions the opponent can perform through ongoing effects"
+  },
+
+  "summon_legality_logic": {
+    "general_rule": "A summon must satisfy both base game rules and the card's own text requirements.",
+    "examples": [
+      "High-Level monsters require Tributes for Normal Summon",
+      "Fusion Monsters need proper Fusion procedure unless an effect bypasses it",
+      "Ritual Monsters need proper Ritual procedure unless an effect bypasses it",
+      "Some monsters cannot be Normal Summoned/Set and must be Special Summoned"
+    ]
+  },
+
+  "archetype_and_synergy_concepts": {
+    "archetype_definition": "A family of cards sharing naming, support, or mechanical identity",
+    "original_era_examples": [
+      "Toon",
+      "Harpie",
+      "Blue-Eyes support cluster",
+      "Dark Magician support cluster",
+      "Exodia assembly strategy"
+    ],
+    "synergy_definition": "Cards that function better together than in isolation"
+  },
+
+  "classic_original_era_strategy_buckets": {
+    "beatdown": {
+      "definition": "Win through strong monsters and battle pressure"
+    },
+    "control": {
+      "definition": "Slow the opponent and win through superior removal/timing"
+    },
+    "combo": {
+      "definition": "Assemble specific cards for a powerful interaction or win condition"
+    },
+    "stall_burn": {
+      "definition": "Delay battle while inflicting effect damage or attrition"
+    },
+    "exodia_alt_win": {
+      "definition": "Assemble all required pieces for automatic victory"
+    },
+    "ritual_fusion_showcase": {
+      "definition": "Win through special summoning a signature boss monster"
+    }
+  },
+
+  "original_era_boss_monster_concept": {
+    "definition": "A high-impact monster around which deck pressure, protection, and identity revolve",
+    "typical_traits": [
+      "high ATK/DEF",
+      "special summoning requirements",
+      "support package around it",
+      "strong emotional or symbolic role in deck identity"
+    ]
+  },
+
+  "battlefield_objects": {
+    "monster_zone": {
+      "purpose": "Where monsters are Summoned, Set, and battle"
+    },
+    "spell_trap_zone": {
+      "purpose": "Where Spells and Traps are placed, Set, and maintained"
+    },
+    "field_zone": {
+      "purpose": "Reserved for Field Spells"
+    },
+    "graveyard": {
+      "purpose": "Primary discard/destruction destination"
+    },
+    "deck": {
+      "purpose": "Card draw source"
+    },
+    "extra_deck": {
+      "purpose": "Holds Fusion Monsters in this original-era model"
+    }
+  },
+
+  "effect_interaction_rules": {
+    "targeting": {
+      "definition": "Some effects explicitly choose one or more cards when activated"
+    },
+    "non_targeting": {
+      "definition": "Some effects affect cards on resolution without targeting at activation"
+    },
+    "negation": {
+      "definition": "An effect or activation can be prevented from resolving normally"
+    },
+    "destruction_protection": {
+      "definition": "An effect can prevent destruction by battle or effect"
+    },
+    "position_manipulation": {
+      "definition": "Effects can change a monster's battle position"
+    },
+    "attack_modification": {
+      "definition": "Effects can increase, decrease, or swap ATK/DEF"
+    }
+  },
+
+  "rulings_mindset": {
+    "golden_rule": "Card text overrides general procedure when it legally applies.",
+    "secondary_rule": "When card text is not overriding, use base game structure.",
+    "timing_importance": "When a card is activated matters almost as much as what the card does."
+  },
+
+  "data_schema_for_card_records": {
+    "monster_record": {
+      "name": "string",
+      "attribute": "string",
+      "type": "string",
+      "level": "integer",
+      "atk": "integer",
+      "def": "integer",
+      "classification": "normal|effect|fusion|ritual|toon|flip",
+      "effect_or_lore_text": "string",
+      "summoning_method": "string",
+      "support_tags": ["string"],
+      "strategy_tags": ["string"]
+    },
+    "spell_record": {
+      "name": "string",
+      "spell_type": "normal|continuous|equip|field|quick_play|ritual",
+      "effect_text": "string",
+      "timing_notes": "string",
+      "support_tags": ["string"],
+      "strategy_tags": ["string"]
+    },
+    "trap_record": {
+      "name": "string",
+      "trap_type": "normal|continuous|counter",
+      "effect_text": "string",
+      "trigger_notes": "string",
+      "support_tags": ["string"],
+      "strategy_tags": ["string"]
+    }
+  },
+
+  "play_sequence_example": {
+    "sample_turn_flow": [
+      "Draw 1 card in Draw Phase",
+      "Resolve any Standby Phase effects",
+      "In Main Phase 1, Summon or Set a monster",
+      "Set or activate Spells/Traps as needed",
+      "Enter Battle Phase if desired",
+      "Declare attacks and resolve battle",
+      "In Main Phase 2, further Set or activate as legal",
+      "Resolve End Phase obligations and pass turn"
+    ]
+  },
+
+  "practical_design_notes": {
+    "if_building_an_app": [
+      "Treat the field as fixed-zone based",
+      "Treat monsters as stateful entities with position and visibility flags",
+      "Separate activation legality from effect resolution",
+      "Model Chains as stack objects resolving in reverse order",
+      "Treat card text as overriding layer above generic rules",
+      "Keep Fusion and Ritual as the only special summoning branches beyond generic Special Summon"
+    ],
+    "if_building_a_database": [
+      "Store card family, subtype, timing class, and summon method separately",
+      "Distinguish lore text from mechanical effect text",
+      "Preserve ATK/DEF/Level as numeric fields",
+      "Track targeting, destruction, negation, and position-change behavior as searchable tags"
+    ]
+  }
+}
