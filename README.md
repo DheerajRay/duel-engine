@@ -128,6 +128,49 @@ npm run test:coverage
 
 No environment variables or API keys are required to run the current app locally.
 
+## Versioning And Releases
+
+The current baseline release is:
+
+- `v1.0.0`
+
+Version history should be tracked in:
+
+- `package.json` for the current app version
+- `CHANGELOG.md` for human-readable release notes
+- Git tags such as `v1.0.0`, `v1.1.0`, `v1.1.1`
+
+Recommended release flow:
+
+1. Create a feature branch for the change.
+2. Make and test the change locally.
+3. Merge the branch into `main` after validation.
+4. Bump the version in `package.json`.
+5. Add release notes to `CHANGELOG.md`.
+6. Create and push a Git tag for that release.
+7. Let Vercel deploy `main`.
+
+Suggested versioning model:
+
+- `v1.0.0` for the current stable production baseline
+- `v1.1.0` for new features
+- `v1.1.1` for bug-fix-only releases
+- `v2.0.0` for major breaking or structural changes
+
+Recommended Git commands for a release:
+
+```bash
+git checkout main
+git pull
+git tag v1.0.0
+git push origin main --tags
+```
+
+Using Git tags plus Vercel deployment history gives you two rollback paths:
+
+- quick redeploy rollback in Vercel
+- exact source rollback by checking out a previous Git tag
+
 ## Tech Stack
 
 - React 19
