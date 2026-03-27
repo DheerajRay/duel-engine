@@ -107,6 +107,40 @@ export default function App() {
     }
   };
 
+  const getPhaseInstruction = (phase: Phase, turn: 'player' | 'opponent') => {
+    if (turn !== 'player') {
+      switch (phase) {
+        case 'DP':
+          return 'Opponent draws to begin their turn.';
+        case 'M1':
+          return 'Opponent can summon, set, or activate cards.';
+        case 'BP':
+          return 'Opponent can declare attacks from here.';
+        case 'M2':
+          return 'Opponent can make one more round of plays.';
+        case 'EP':
+          return 'Opponent finishes the turn and control returns to you.';
+        default:
+          return '';
+      }
+    }
+
+    switch (phase) {
+      case 'DP':
+        return 'Draw by tapping your deck during DP.';
+      case 'M1':
+        return 'Summon, set, change position, or activate cards.';
+      case 'BP':
+        return 'Attack with your monsters or press Next to continue.';
+      case 'M2':
+        return 'Make any final plays before ending your turn.';
+      case 'EP':
+        return 'Press Next to end your turn and pass to the opponent.';
+      default:
+        return '';
+    }
+  };
+
   const renderLazyScreenFallback = (label: string) => (
     <div className="h-dvh md:h-screen box-border bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
       <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400">
@@ -1936,7 +1970,7 @@ export default function App() {
               <div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Current Phase</div>
                 <div className="text-sm font-mono text-white mt-1">{state.phase}</div>
-                <div className="text-[10px] font-mono text-zinc-600 mt-1">Draw by tapping your deck during DP.</div>
+                <div className="text-[10px] font-mono text-zinc-600 mt-1">{getPhaseInstruction(state.phase, state.turn)}</div>
               </div>
               <button
                 onClick={handleNextPhase}

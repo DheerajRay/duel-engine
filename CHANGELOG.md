@@ -11,6 +11,14 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.0.2 - 2026-03-26
+
+Patch release focused on clearer in-duel phase guidance.
+
+Included in this release:
+
+- updated the current-phase helper text so each duel phase shows its own specific instruction instead of always showing the draw-phase hint
+
 ## v1.0.1 - 2026-03-26
 
 Patch release focused on announcement behavior and local preview consistency.
