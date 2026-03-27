@@ -62,7 +62,7 @@ describe('App', () => {
     expect(window.localStorage.getItem('ygo_primary_deck_id')).toBeTruthy();
   });
 
-  it('starts competition mode for a new user by using the starter deck as the initial saved custom deck', async () => {
+  it('opens the competition lobby and starts stage one for a new user with the starter deck', async () => {
     vi.useFakeTimers();
 
     render(<App />);
@@ -71,9 +71,23 @@ describe('App', () => {
 
     await act(async () => {});
 
+    expect(screen.getByText(/Ladder Progress/i)).toBeInTheDocument();
+    expect(screen.getByText(/Current Stage: 1 \/ 5/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /begin ladder/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /begin ladder/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByRole('heading', { name: /joey wheeler/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /begin duel/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /begin duel/i }));
+
+    await act(async () => {});
+
     expect(screen.getByText('P1 Turn')).toBeInTheDocument();
     expect(screen.getByText(/Stage 1 of 5: Joey Wheeler/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Joey grins\./i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Joey Wheeler LP/i).length).toBeGreaterThan(0);
     expect(JSON.parse(window.localStorage.getItem('ygo_custom_deck') || '[]').length).toBeGreaterThanOrEqual(40);
   });
@@ -85,6 +99,15 @@ describe('App', () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByRole('button', { name: /resume ladder/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /resume ladder/i }));
+
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: /begin duel/i }));
 
     await act(async () => {});
 
@@ -107,6 +130,14 @@ describe('App', () => {
     expect(window.localStorage.getItem('ygo_competition_stage_index')).toBe('2');
 
     fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
+
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: /resume ladder/i }));
+
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole('button', { name: /begin duel/i }));
 
     await act(async () => {});
 

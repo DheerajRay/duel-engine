@@ -7,6 +7,7 @@ import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, Ch
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
 import { ensureStarterCustomDeck } from '../utils/deckStorage';
 import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
+import { getCardSupportMeta } from '../effects/registry';
 
 export interface SavedDeck {
   id: string;
@@ -49,6 +50,7 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
   const [isDeckView, setIsDeckView] = useState(false);
   const [mobilePanelTab, setMobilePanelTab] = useState<'details' | 'decks'>('details');
   const [mobilePanelExpanded, setMobilePanelExpanded] = useState(false);
+  const hoveredSupportMeta = hoveredCard ? getCardSupportMeta(hoveredCard) : null;
 
   const allCards = useMemo(() => Object.values(CARD_DB), []);
 
@@ -537,6 +539,16 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                       <div className="text-xs text-zinc-400 font-sans leading-relaxed">
                         {hoveredCard.description}
                       </div>
+                      {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') && (
+                        <div className="mt-4 pt-3 border-t border-zinc-800 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+                          <div className="text-zinc-400">{hoveredSupportMeta.label}</div>
+                          {hoveredSupportMeta.note && (
+                            <div className="mt-1 normal-case tracking-normal text-zinc-500">
+                              {hoveredSupportMeta.note}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
                         <div className="mt-4 pt-3 border-t border-zinc-800 text-xs text-purple-400 font-mono">
                           Materials: {hoveredCard.fusionMaterials.join(' + ')}
@@ -740,6 +752,19 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                               <div className="text-xs leading-6 text-zinc-300">
                                 {hoveredCard.description}
                               </div>
+
+                              {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') && (
+                                <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
+                                  <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
+                                    {hoveredSupportMeta.label}
+                                  </div>
+                                  {hoveredSupportMeta.note && (
+                                    <div className="text-[11px] text-zinc-300 leading-5">
+                                      {hoveredSupportMeta.note}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
 
                               {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
                                 <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">

@@ -8,9 +8,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { ensureStarterCustomDeck } from './utils/deckStorage';
-import { COMPETITION_LADDER, formatCompetitionLogMessage } from './utils/competitionMode';
+import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
 import { clearCompetitionResumeStage, getCompetitionResumeStage, setCompetitionResumeStage } from './utils/competitionProgress';
-import { canActivateSpell, canManuallyActivateTrap, getHandCardActionAvailability, getPossibleFusionMonsters, isMaterialMatch } from './utils/cardActionRules';
+import {
+  buildCompetitionPreviewCard,
+  canActivateCard,
+  canActivateSetCard,
+  getCardSupportMeta,
+  getCompetitionAiScore,
+  getHandCardActionAvailability,
+  getPossibleFusionMonsters,
+  getResponseWindowOptions,
+  isMaterialMatch,
+} from './effects/registry';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
 
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder'));
@@ -60,6 +70,8 @@ export default function App() {
   const [competitionStageIndex, setCompetitionStageIndex] = useState<number | null>(null);
   const [pendingCpuModeSelection, setPendingCpuModeSelection] = useState(false);
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
+  const [showCompetitionLobby, setShowCompetitionLobby] = useState(false);
+  const [showCompetitionIntro, setShowCompetitionIntro] = useState(false);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -70,6 +82,9 @@ export default function App() {
   const prevPlayerPhaseKeyRef = useRef<string | null>(null);
   const mobileBattlefieldRef = useRef<HTMLDivElement | null>(null);
   const currentCompetitionOpponent = competitionStageIndex !== null ? COMPETITION_LADDER[competitionStageIndex] : null;
+  const competitionResumeStageIndex = getCompetitionResumeStage(COMPETITION_LADDER.length);
+  const competitionResumeOpponent = COMPETITION_LADDER[competitionResumeStageIndex];
+  const competitionSignatureCards = currentCompetitionOpponent?.signatureCardIds.map(buildCompetitionPreviewCard) ?? [];
   const opponentLabel = currentCompetitionOpponent?.name ?? 'COM';
   const opponentShortLabel = currentCompetitionOpponent?.name.split(' ')[0] ?? 'Opponent';
   const cpuModeHeading =
@@ -88,6 +103,7 @@ export default function App() {
     player: state.player,
     opponent: state.opponent,
     normalSummonUsed: state.normalSummonUsed,
+    phase: state.phase,
   };
 
   const showAnnouncement = (input: AnnouncementInput) => announce(input);
@@ -142,6 +158,30 @@ export default function App() {
       default:
         return '';
     }
+  };
+
+  const getCompetitionSummaryStats = () => {
+    if (!currentCompetitionOpponent) return null;
+
+    const turnsSurvived = Math.max(1, Math.ceil(state.turnCount / 2));
+    const lpRemaining = state.winner === 'player' ? state.player.lp : state.opponent.lp;
+    const finishingLog = [...state.log].reverse().find(entry =>
+      entry.type === 'DIRECT_ATTACK' || entry.type === 'BATTLE_DAMAGE' || entry.type === 'MONSTER_DESTROYED',
+    );
+    const finishingCard =
+      finishingLog?.data?.cardName ||
+      [...state.log].reverse().find(entry => entry.type === 'SUMMON_MONSTER')?.data?.cardName ||
+      null;
+
+    return {
+      turnsSurvived,
+      lpRemaining,
+      finishingCard,
+      notablePlay: getCompetitionNotablePlay(state.log),
+      summaryLine: state.winner === 'player'
+        ? currentCompetitionOpponent.summaryLines.stageClear
+        : currentCompetitionOpponent.summaryLines.defeat,
+    };
   };
 
   const renderLazyScreenFallback = (label: string) => (
@@ -271,6 +311,9 @@ export default function App() {
     setGameMode(mode);
     setCompetitionStageIndex(stageIndex);
     setPendingCpuModeSelection(false);
+    if (mode !== 'competition') {
+      setShowCompetitionIntro(false);
+    }
     dispatch({ 
       type: 'START_GAME', 
       playerDeck,
@@ -286,6 +329,8 @@ export default function App() {
     setGameMode(null);
     setCompetitionStageIndex(null);
     setPendingCpuModeSelection(false);
+    setShowCompetitionLobby(false);
+    setShowCompetitionIntro(false);
     setShowMenuConfirm(false);
     setUiState({ type: 'IDLE' });
     prevPlayerPhaseKeyRef.current = null;
@@ -338,6 +383,8 @@ export default function App() {
     const opponent = COMPETITION_LADDER[stageIndex];
     if (!opponent) return;
 
+    setShowCompetitionLobby(false);
+    setShowCompetitionIntro(true);
     launchGame({
       playerDeck: deckData.playerDeck,
       playerExtraDeck: deckData.playerExtraDeck,
@@ -349,7 +396,8 @@ export default function App() {
   };
 
   const startCompetitionMode = () => {
-    startCompetitionDuel(getCompetitionResumeStage(COMPETITION_LADDER.length));
+    setShowCompetitionLobby(true);
+    setView('start');
   };
 
   const openCpuModeSelection = () => {
@@ -457,6 +505,8 @@ export default function App() {
       );
     }
 
+    const supportMeta = getCardSupportMeta(showCardDetail);
+
     return (
       <motion.div
         key={showCardDetail.instanceId}
@@ -475,6 +525,12 @@ export default function App() {
         <div className="text-xs text-zinc-400 font-sans leading-relaxed">
           {showCardDetail.description}
         </div>
+        {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
+          <div className="mt-4 border-t border-zinc-800 pt-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <div className="text-zinc-400">{supportMeta.label}</div>
+            {supportMeta.note && <div className="mt-1 normal-case tracking-normal text-zinc-500">{supportMeta.note}</div>}
+          </div>
+        )}
         {showCardDetail.type === 'Monster' && (
           <div className="mt-4 pt-3 border-t border-zinc-800 flex justify-between font-mono text-sm text-zinc-300">
             <span>ATK {showCardDetail.atk}</span>
@@ -498,6 +554,8 @@ export default function App() {
         </motion.div>
       );
     }
+
+    const supportMeta = getCardSupportMeta(showCardDetail);
 
     return (
       <motion.div
@@ -542,6 +600,19 @@ export default function App() {
           <div className="text-xs leading-6 text-zinc-300">
             {showCardDetail.description}
           </div>
+
+          {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
+            <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
+              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
+                {supportMeta.label}
+              </div>
+              {supportMeta.note && (
+                <div className="text-[11px] text-zinc-300 leading-5">
+                  {supportMeta.note}
+                </div>
+              )}
+            </div>
+          )}
 
           {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
@@ -627,7 +698,7 @@ export default function App() {
     });
   };
 
-  const getPlayerResponseOptions = (
+  const getLegacyPlayerResponseOptions = (
     pendingAction:
       | { type: 'SUMMON_MONSTER', player: 'opponent', cardInstanceId: string, position: 'attack' | 'set-monster', tributes: number[] }
       | { type: 'FUSION_SUMMON', player: 'opponent', fusionMonsterId: string, materialInstanceIds: string[], spellInstanceId: string, fromZone?: number }
@@ -697,6 +768,60 @@ export default function App() {
     });
   };
 
+  const getPlayerResponseOptions = (
+    pendingAction:
+      | { type: 'SUMMON_MONSTER', player: 'opponent', cardInstanceId: string, position: 'attack' | 'set-monster', tributes: number[] }
+      | { type: 'FUSION_SUMMON', player: 'opponent', fusionMonsterId: string, materialInstanceIds: string[], spellInstanceId: string, fromZone?: number }
+      | { type: 'DECLARE_ATTACK', attackerIndex: number, targetIndex: number | null },
+  ) => {
+    const trigger =
+      pendingAction.type === 'DECLARE_ATTACK'
+        ? (() => {
+            const attacker = state.opponent.monsterZone[pendingAction.attackerIndex];
+            return attacker
+              ? {
+                  type: 'attack_declared' as const,
+                  actingPlayer: 'opponent' as const,
+                  attacker,
+                  attackerIndex: pendingAction.attackerIndex,
+                  targetIndex: pendingAction.targetIndex,
+                }
+              : null;
+          })()
+        : pendingAction.type === 'SUMMON_MONSTER'
+          ? (() => {
+              const summonedCard = state.opponent.hand.find(card => card.instanceId === pendingAction.cardInstanceId);
+              return summonedCard
+                ? {
+                    type: 'monster_summoned' as const,
+                    actingPlayer: 'opponent' as const,
+                    summonedCard,
+                    zoneIndex: 0,
+                    summonKind: 'normal' as const,
+                    position: pendingAction.position,
+                  }
+                : null;
+            })()
+          : (() => {
+              const fusionMonster = state.opponent.extraDeck.find(card => card.id === pendingAction.fusionMonsterId);
+              return fusionMonster
+                ? {
+                    type: 'monster_summoned' as const,
+                    actingPlayer: 'opponent' as const,
+                    summonedCard: fusionMonster,
+                    zoneIndex: 0,
+                    summonKind: 'fusion' as const,
+                    position: 'attack' as const,
+                  }
+                : null;
+            })();
+
+    if (!trigger) return [];
+    return getResponseWindowOptions(state.player, playerActivationContext, trigger);
+  };
+
+  void getLegacyPlayerResponseOptions;
+
   const maybePromptPlayerResponse = (
     pendingAction:
       | { type: 'SUMMON_MONSTER', player: 'opponent', cardInstanceId: string, position: 'attack' | 'set-monster', tributes: number[] }
@@ -735,7 +860,7 @@ export default function App() {
 
   // AI Logic
   useEffect(() => {
-    if (state.turn === 'opponent' && !state.winner && uiState.type !== 'CONFIRM_RESPONSE') {
+    if (state.turn === 'opponent' && !state.winner && uiState.type !== 'CONFIRM_RESPONSE' && !showCompetitionIntro) {
       const runAI = async () => {
         const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
         
@@ -746,8 +871,19 @@ export default function App() {
           dispatch({ type: 'NEXT_PHASE' }); // to M1
         } else if (state.phase === 'M1') {
           await delay(1000);
+          const aiSituation = {
+            isBehind: state.opponent.lp < state.player.lp,
+            opponentHasBackrow: state.player.spellTrapZone.some(Boolean),
+            opponentHasMonsters: state.player.monsterZone.some(Boolean),
+          };
+          const competitionAiProfile = gameMode === 'competition' ? currentCompetitionOpponent?.aiProfile : null;
+          const competitionSignatures = gameMode === 'competition' ? currentCompetitionOpponent?.signatureCardIds ?? [] : [];
           // AI Spells
-          const spells = state.opponent.hand.filter(c => c.type === 'Spell');
+          const spells = [...state.opponent.hand.filter(c => c.type === 'Spell')].sort(
+            (a, b) =>
+              getCompetitionAiScore(b, competitionAiProfile, competitionSignatures, aiSituation) -
+              getCompetitionAiScore(a, competitionAiProfile, competitionSignatures, aiSituation),
+          );
           for (const spell of spells) {
             if (spell.id === 'polymerization') {
               const fusionMonsters = state.opponent.extraDeck.filter(c => c.isFusion);
@@ -897,7 +1033,11 @@ export default function App() {
 
           // AI Summon
           if (!state.normalSummonUsed) {
-            const monsters = state.opponent.hand.filter(c => c.type === 'Monster').sort((a, b) => (b.atk || 0) - (a.atk || 0));
+            const monsters = [...state.opponent.hand.filter(c => c.type === 'Monster')].sort(
+              (a, b) =>
+                getCompetitionAiScore(b, competitionAiProfile, competitionSignatures, aiSituation) -
+                getCompetitionAiScore(a, competitionAiProfile, competitionSignatures, aiSituation),
+            );
             for (const m of monsters) {
               const level = m.level || 4;
               const tributesNeeded = level >= 7 ? 2 : level >= 5 ? 1 : 0;
@@ -975,7 +1115,7 @@ export default function App() {
       };
       runAI();
     }
-  }, [state.turn, state.phase, state.winner, uiState.type, aiResumeTick]);
+  }, [state.turn, state.phase, state.winner, uiState.type, aiResumeTick, showCompetitionIntro, gameMode, currentCompetitionOpponent]);
 
   // Player Actions
   const handleDraw = () => {
@@ -1084,7 +1224,7 @@ export default function App() {
   };
 
   const beginSpellActivation = (card: GameCard, fromZone?: number) => {
-    if (!canActivateSpell(card, playerActivationContext, fromZone)) {
+    if (!canActivateCard(card, playerActivationContext, fromZone)) {
       showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
       setUiState({ type: 'IDLE' });
       return;
@@ -1187,7 +1327,7 @@ export default function App() {
   };
 
   const beginTrapActivation = (card: GameCard, fromZone: number) => {
-    if (!canManuallyActivateTrap(card, playerActivationContext)) {
+    if (!canActivateSetCard(card, playerActivationContext)) {
       showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
       setUiState({ type: 'IDLE' });
       return;
@@ -1608,6 +1748,86 @@ export default function App() {
               </motion.button>
             </motion.div>
           </motion.div>
+
+          <AnimatePresence>
+            {showCompetitionLobby && competitionResumeOpponent && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-20 bg-black/85 flex items-center justify-center px-4"
+                onClick={() => setShowCompetitionLobby(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
+                  transition={getSharedTransition(reduced, 'normal')}
+                  className="w-full max-w-xl border border-zinc-700 bg-black p-6 flex flex-col gap-5"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="text-center">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
+                      Competition Mode
+                    </div>
+                    <h2 className="mt-3 text-2xl font-mono uppercase tracking-[0.18em] text-white">
+                      Ladder Progress
+                    </h2>
+                    <p className="mt-2 text-xs font-mono uppercase tracking-[0.18em] text-zinc-500">
+                      Current Stage: {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
+                    </p>
+                  </div>
+                  <div className="border border-zinc-800 bg-zinc-950/70 px-4 py-4">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">
+                      Next Opponent
+                    </div>
+                    <div className="mt-2 text-lg font-mono uppercase tracking-[0.15em] text-white">
+                      {competitionResumeOpponent.name}
+                    </div>
+                    <div className="mt-3 text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+                      Cleared: {Math.max(0, competitionResumeOpponent.stage - 1)} / {competitionResumeOpponent.totalStages}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {competitionResumeOpponent.signatureCardIds.map((cardId) => (
+                      <div key={cardId} className="border border-zinc-800 bg-zinc-950 px-3 py-3 text-center">
+                        <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Signature</div>
+                        <div className="mt-2 text-[11px] font-mono uppercase tracking-[0.12em] text-white">
+                          {buildCompetitionPreviewCard(cardId).name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid gap-3">
+                    <button
+                      onClick={() => startCompetitionDuel(competitionResumeStageIndex)}
+                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                    >
+                      {competitionResumeStageIndex > 0 ? 'Resume Ladder' : 'Begin Ladder'}
+                    </button>
+                    {competitionResumeStageIndex > 0 && (
+                      <button
+                        onClick={() => {
+                          clearCompetitionResumeStage();
+                          startCompetitionDuel(0);
+                        }}
+                        className="border border-zinc-800 hover:border-zinc-600 hover:text-white text-zinc-500 px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                      >
+                        Restart From Stage 1
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowCompetitionLobby(false)}
+                      className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
       {view === 'deck-builder' && (
@@ -1848,8 +2068,8 @@ export default function App() {
                         state.turn === 'player' &&
                         (state.phase === 'M1' || state.phase === 'M2') &&
                         card !== null &&
-                        ((card.type === 'Spell' && canActivateSpell(card, playerActivationContext, i)) ||
-                          (card.type === 'Trap' && canManuallyActivateTrap(card, playerActivationContext)))
+                        ((card.type === 'Spell' && canActivateCard(card, playerActivationContext, i)) ||
+                          (card.type === 'Trap' && canActivateSetCard(card, playerActivationContext)))
                           ? 'activate'
                           : null
                       }
@@ -2059,8 +2279,8 @@ export default function App() {
                         state.turn === 'player' &&
                         (state.phase === 'M1' || state.phase === 'M2') &&
                         card !== null &&
-                        ((card.type === 'Spell' && canActivateSpell(card, playerActivationContext, i)) ||
-                          (card.type === 'Trap' && canManuallyActivateTrap(card, playerActivationContext)))
+                        ((card.type === 'Spell' && canActivateCard(card, playerActivationContext, i)) ||
+                          (card.type === 'Trap' && canActivateSetCard(card, playerActivationContext)))
                           ? 'activate'
                           : null
                       }
@@ -2491,6 +2711,44 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          <AnimatePresence>
+            {showCompetitionIntro && currentCompetitionOpponent && !state.winner && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
+                  transition={getSharedTransition(reduced, 'normal')}
+                  className="w-full max-w-lg border border-zinc-700 bg-black p-6 flex flex-col items-center text-center gap-5"
+                >
+                  <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
+                    Stage {currentCompetitionOpponent.stage} of {currentCompetitionOpponent.totalStages}
+                  </div>
+                  <h2 className="text-3xl font-mono uppercase tracking-[0.16em] text-white">
+                    {currentCompetitionOpponent.name}
+                  </h2>
+                  <p className="max-w-md text-base text-zinc-200 leading-7">
+                    {currentCompetitionOpponent.voice.intro}
+                  </p>
+                  <div className="pt-1">
+                    <button
+                      onClick={() => setShowCompetitionIntro(false)}
+                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-6 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                    >
+                      Begin Duel
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Winner Overlay */}
           <AnimatePresence>
             {state.winner && !pendingCpuModeSelection && (
@@ -2501,33 +2759,78 @@ export default function App() {
                 transition={getSharedTransition(reduced, 'normal')}
                 className="absolute inset-0 bg-black/90 flex items-center justify-center z-50"
               >
-                <div className="text-center flex flex-col items-center gap-8">
-                  <h1 className="text-6xl font-sans tracking-widest text-white uppercase">
-                    {state.winner === 'player' ? 'VICTORY' : 'DEFEAT'}
-                  </h1>
-                  {gameMode === 'competition' && currentCompetitionOpponent && (
-                    <div className="text-sm font-mono uppercase tracking-widest text-zinc-500">
-                      {state.winner === 'player'
-                        ? `Stage ${currentCompetitionOpponent.stage} cleared: ${currentCompetitionOpponent.name}`
-                        : `Eliminated by ${currentCompetitionOpponent.name}`}
+                {gameMode === 'competition' && currentCompetitionOpponent ? (
+                  <div className="w-full max-w-2xl border border-zinc-700 bg-black p-6 flex flex-col gap-6 text-center">
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
+                        Stage {currentCompetitionOpponent.stage} of {currentCompetitionOpponent.totalStages}
+                      </div>
+                      <h1 className="mt-3 text-5xl font-mono tracking-[0.18em] text-white uppercase">
+                        {state.winner === 'player' ? 'Victory' : 'Defeat'}
+                      </h1>
+                      <div className="mt-3 text-sm font-mono uppercase tracking-[0.16em] text-zinc-500">
+                        {state.winner === 'player'
+                          ? `Stage cleared: ${currentCompetitionOpponent.name}`
+                          : `Eliminated by ${currentCompetitionOpponent.name}`}
+                      </div>
                     </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (gameMode === 'competition' && state.winner === 'player') {
-                        advanceCompetition();
-                        return;
-                      }
-
-                      returnToMenu();
-                    }}
-                    className="border border-zinc-600 hover:bg-white hover:text-black text-white px-8 py-3 font-mono text-sm transition-colors"
-                  >
-                    {gameMode === 'competition' && state.winner === 'player'
-                      ? (competitionStageIndex !== null && competitionStageIndex < COMPETITION_LADDER.length - 1 ? 'NEXT DUEL' : 'CLAIM TITLE')
-                      : 'PLAY AGAIN'}
-                  </button>
-                </div>
+                    {(() => {
+                      const summary = getCompetitionSummaryStats();
+                      if (!summary) return null;
+                      return (
+                        <>
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Turns</div>
+                              <div className="mt-2 text-lg font-mono text-white">{summary.turnsSurvived}</div>
+                            </div>
+                            <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">LP Remaining</div>
+                              <div className="mt-2 text-lg font-mono text-white">{summary.lpRemaining}</div>
+                            </div>
+                            <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Finish</div>
+                              <div className="mt-2 text-sm font-mono uppercase tracking-[0.12em] text-white">
+                                {summary.finishingCard ?? 'Duel End'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="border border-zinc-800 bg-zinc-950 px-4 py-4 text-left">
+                            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Summary</div>
+                            <div className="mt-3 text-sm text-zinc-300 leading-6">{summary.summaryLine}</div>
+                            <div className="mt-3 text-xs font-mono text-zinc-500 leading-5">{summary.notablePlay}</div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                    <button
+                      onClick={() => {
+                        if (state.winner === 'player') {
+                          advanceCompetition();
+                          return;
+                        }
+                        returnToMenu();
+                      }}
+                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-8 py-3 font-mono text-sm transition-colors"
+                    >
+                      {state.winner === 'player'
+                        ? (competitionStageIndex !== null && competitionStageIndex < COMPETITION_LADDER.length - 1 ? 'Next Duel' : 'Claim Title')
+                        : 'Return To Menu'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-center flex flex-col items-center gap-8">
+                    <h1 className="text-6xl font-sans tracking-widest text-white uppercase">
+                      {state.winner === 'player' ? 'VICTORY' : 'DEFEAT'}
+                    </h1>
+                    <button
+                      onClick={returnToMenu}
+                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-8 py-3 font-mono text-sm transition-colors"
+                    >
+                      Play Again
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

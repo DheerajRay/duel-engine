@@ -2,6 +2,7 @@ import { GameState, GameCard, PlayerState, Phase } from '../types';
 import { CARD_DB } from '../constants';
 import { generateLog } from '../utils/logGenerator';
 import { generateCuratedDeck } from '../utils/deckGenerator';
+import { getResponseWindowOptions, resolveActivatedCardEffect, resolveTriggeredResponse } from '../effects/registry';
 
 // Helper to create a deck
 const createDeck = (): GameCard[] => {
@@ -209,33 +210,39 @@ export function gameReducer(state: GameState, action: Action): GameState {
         log: [...state.log, generateLog(action.position === 'attack' ? 'SUMMON_MONSTER' : 'SET_MONSTER', { player: action.player, cardName: action.position === 'attack' || action.player === 'player' ? card.name : undefined })],
       };
 
-      // Check for Trap Hole
-      if (action.position === 'attack' && (card.atk || 0) >= 1000) {
-        const opponentKey = action.player === 'player' ? 'opponent' : 'player';
-        const oppState = newState[opponentKey];
-        const trapIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'trap-hole' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-        
-        if (trapIndex !== -1) {
-          const trapCard = oppState.spellTrapZone[trapIndex]!;
-          const newOppSTZone = [...oppState.spellTrapZone];
-          newOppSTZone[trapIndex] = null;
-          const newOppGy = [...oppState.graveyard, trapCard];
-          
-          const newPlayerZone = [...newState[action.player].monsterZone];
-          newPlayerZone[finalZoneIndex] = null;
-          const newPlayerGy = [...newState[action.player].graveyard, card];
-          
-          newState = {
-            ...newState,
-            [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-            [action.player]: { ...newState[action.player], monsterZone: newPlayerZone, graveyard: newPlayerGy },
-            log: [
-              ...newState.log,
-              generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-              generateLog('MONSTER_DESTROYED', { player: action.player, cardName: card.name })
-            ]
-          };
-        }
+      const opponentKey = action.player === 'player' ? 'opponent' : 'player';
+      const responseOptions = getResponseWindowOptions(
+        newState[opponentKey],
+        {
+          player: newState[opponentKey],
+          opponent: newState[action.player],
+          normalSummonUsed: newState.normalSummonUsed,
+          phase: newState.phase,
+        },
+        {
+          type: 'monster_summoned',
+          actingPlayer: action.player,
+          summonedCard: card,
+          zoneIndex: finalZoneIndex,
+          summonKind: 'normal',
+          position: action.position,
+        },
+      ).filter(option => canResolveResponse(option.card, action.responseOverrides));
+
+      if (responseOptions.length > 0) {
+        newState = resolveTriggeredResponse(
+          newState,
+          opponentKey,
+          responseOptions[0].fromZone,
+          {
+            type: 'monster_summoned',
+            actingPlayer: action.player,
+            summonedCard: card,
+            zoneIndex: finalZoneIndex,
+            summonKind: 'normal',
+            position: action.position,
+          },
+        );
       }
 
       return newState;
@@ -313,33 +320,39 @@ export function gameReducer(state: GameState, action: Action): GameState {
         ],
       };
 
-      // Check for Trap Hole
-      if ((fusionMonster.atk || 0) >= 1000) {
-        const opponentKey = action.player === 'player' ? 'opponent' : 'player';
-        const oppState = newState[opponentKey];
-        const trapIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'trap-hole' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-        
-        if (trapIndex !== -1) {
-          const trapCard = oppState.spellTrapZone[trapIndex]!;
-          const newOppSTZone = [...oppState.spellTrapZone];
-          newOppSTZone[trapIndex] = null;
-          const newOppGy = [...oppState.graveyard, trapCard];
-          
-          const newPlayerZone = [...newState[action.player].monsterZone];
-          newPlayerZone[emptyZoneIndex] = null;
-          const newPlayerGy = [...newState[action.player].graveyard, fusionMonster];
-          
-          newState = {
-            ...newState,
-            [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-            [action.player]: { ...newState[action.player], monsterZone: newPlayerZone, graveyard: newPlayerGy },
-            log: [
-              ...newState.log,
-              generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-              generateLog('MONSTER_DESTROYED', { player: action.player, cardName: fusionMonster.name })
-            ]
-          };
-        }
+      const opponentKey = action.player === 'player' ? 'opponent' : 'player';
+      const responseOptions = getResponseWindowOptions(
+        newState[opponentKey],
+        {
+          player: newState[opponentKey],
+          opponent: newState[action.player],
+          normalSummonUsed: newState.normalSummonUsed,
+          phase: newState.phase,
+        },
+        {
+          type: 'monster_summoned',
+          actingPlayer: action.player,
+          summonedCard: fusionMonster,
+          zoneIndex: emptyZoneIndex,
+          summonKind: 'fusion',
+          position: 'attack',
+        },
+      ).filter(option => canResolveResponse(option.card, action.responseOverrides));
+
+      if (responseOptions.length > 0) {
+        newState = resolveTriggeredResponse(
+          newState,
+          opponentKey,
+          responseOptions[0].fromZone,
+          {
+            type: 'monster_summoned',
+            actingPlayer: action.player,
+            summonedCard: fusionMonster,
+            zoneIndex: emptyZoneIndex,
+            summonKind: 'fusion',
+            position: 'attack',
+          },
+        );
       }
 
       return newState;
@@ -363,32 +376,40 @@ export function gameReducer(state: GameState, action: Action): GameState {
         log: [...state.log, generateLog('CHANGE_POSITION', { player: action.player, cardName: card.name })],
       };
 
-      // Check for Trap Hole on Flip Summon
-      if (isFlipSummon && newPos === 'attack' && (card.atk || 0) >= 1000) {
+      if (isFlipSummon) {
         const opponentKey = action.player === 'player' ? 'opponent' : 'player';
-        const oppState = newState[opponentKey];
-        const trapIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'trap-hole' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-        
-        if (trapIndex !== -1) {
-          const trapCard = oppState.spellTrapZone[trapIndex]!;
-          const newOppSTZone = [...oppState.spellTrapZone];
-          newOppSTZone[trapIndex] = null;
-          const newOppGy = [...oppState.graveyard, trapCard];
-          
-          const newPlayerZone = [...newState[action.player].monsterZone];
-          newPlayerZone[action.zoneIndex] = null;
-          const newPlayerGy = [...newState[action.player].graveyard, card];
-          
-          newState = {
-            ...newState,
-            [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-            [action.player]: { ...newState[action.player], monsterZone: newPlayerZone, graveyard: newPlayerGy },
-            log: [
-              ...newState.log,
-              generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-              generateLog('MONSTER_DESTROYED', { player: action.player, cardName: card.name })
-            ]
-          };
+        const responseOptions = getResponseWindowOptions(
+          newState[opponentKey],
+          {
+            player: newState[opponentKey],
+            opponent: newState[action.player],
+            normalSummonUsed: newState.normalSummonUsed,
+            phase: newState.phase,
+          },
+          {
+            type: 'monster_summoned',
+            actingPlayer: action.player,
+            summonedCard: card,
+            zoneIndex: action.zoneIndex,
+            summonKind: 'flip',
+            position: newPos,
+          },
+        ).filter(option => canResolveResponse(option.card, action.responseOverrides));
+
+        if (responseOptions.length > 0) {
+          newState = resolveTriggeredResponse(
+            newState,
+            opponentKey,
+            responseOptions[0].fromZone,
+            {
+              type: 'monster_summoned',
+              actingPlayer: action.player,
+              summonedCard: card,
+              zoneIndex: action.zoneIndex,
+              summonKind: 'flip',
+              position: newPos,
+            },
+          );
         }
       }
 
@@ -404,85 +425,48 @@ export function gameReducer(state: GameState, action: Action): GameState {
       
       const newAttackerZone = [...state[state.turn].monsterZone];
       newAttackerZone[action.attackerIndex] = { ...attacker, hasAttacked: true };
-      
-      let newState = {
+      const attackState = {
         ...state,
         [state.turn]: { ...state[state.turn], monsterZone: newAttackerZone },
       };
+      const declareAttackLog = {
+        type: 'DECLARE_ATTACK' as const,
+        data: { player: state.turn, cardName: attacker.name, targetName: action.targetIndex !== null ? oppState.monsterZone[action.targetIndex]?.name : 'directly' },
+      };
+      const responseOptions = getResponseWindowOptions(
+        attackState[opponentKey],
+        {
+          player: attackState[opponentKey],
+          opponent: attackState[state.turn],
+          normalSummonUsed: attackState.normalSummonUsed,
+          phase: attackState.phase,
+        },
+        {
+          type: 'attack_declared',
+          actingPlayer: state.turn,
+          attacker,
+          attackerIndex: action.attackerIndex,
+          targetIndex: action.targetIndex,
+        },
+      ).filter(option => canResolveResponse(option.card, action.responseOverrides));
 
-      // Check for traps
-      const mirrorForceIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'mirror-force' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-      if (mirrorForceIndex !== -1) {
-        const trapCard = oppState.spellTrapZone[mirrorForceIndex]!;
-        const newOppSTZone = [...oppState.spellTrapZone];
-        newOppSTZone[mirrorForceIndex] = null;
-        const newOppGy = [...oppState.graveyard, trapCard];
-        
-        const newTurnZone = [...newState[state.turn].monsterZone];
-        const newTurnGy = [...newState[state.turn].graveyard];
-        
-        newTurnZone.forEach((m, i) => {
-          if (m && m.position === 'attack') {
-            newTurnGy.push(m);
-            newTurnZone[i] = null;
-          }
-        });
-        
-        return {
-          ...newState,
-          [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-          [state.turn]: { ...newState[state.turn], monsterZone: newTurnZone, graveyard: newTurnGy },
-          log: [
-            ...newState.log, 
-            generateLog('DECLARE_ATTACK', { player: state.turn, cardName: attacker.name, targetName: action.targetIndex !== null ? oppState.monsterZone[action.targetIndex]?.name : 'directly' }),
-            generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-            generateLog('MONSTER_DESTROYED', { player: state.turn, cardName: 'All Attack Position monsters' })
-          ]
-        };
+      if (responseOptions.length > 0) {
+        return resolveTriggeredResponse(
+          attackState,
+          opponentKey,
+          responseOptions[0].fromZone,
+          {
+            type: 'attack_declared',
+            actingPlayer: state.turn,
+            attacker,
+            attackerIndex: action.attackerIndex,
+            targetIndex: action.targetIndex,
+          },
+          [declareAttackLog],
+        );
       }
 
-      const magicCylinderIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'magic-cylinder' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-      if (magicCylinderIndex !== -1) {
-        const trapCard = oppState.spellTrapZone[magicCylinderIndex]!;
-        const newOppSTZone = [...oppState.spellTrapZone];
-        newOppSTZone[magicCylinderIndex] = null;
-        const newOppGy = [...oppState.graveyard, trapCard];
-        
-        const newTurnLp = Math.max(0, newState[state.turn].lp - (attacker.atk || 0));
-        
-        return {
-          ...newState,
-          [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-          [state.turn]: { ...newState[state.turn], lp: newTurnLp },
-          winner: newTurnLp === 0 ? opponentKey : newState.winner,
-          log: [
-            ...newState.log, 
-            generateLog('DECLARE_ATTACK', { player: state.turn, cardName: attacker.name, targetName: action.targetIndex !== null ? oppState.monsterZone[action.targetIndex]?.name : 'directly' }),
-            generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-            generateLog('BATTLE_DAMAGE', { player: state.turn, damage: attacker.atk || 0, cardName: trapCard.name })
-          ]
-        };
-      }
-
-      const negateAttackIndex = oppState.spellTrapZone.findIndex(c => c?.id === 'negate-attack' && c.position === 'set-spell' && canResolveResponse(c, action.responseOverrides));
-      if (negateAttackIndex !== -1) {
-        const trapCard = oppState.spellTrapZone[negateAttackIndex]!;
-        const newOppSTZone = [...oppState.spellTrapZone];
-        newOppSTZone[negateAttackIndex] = null;
-        const newOppGy = [...oppState.graveyard, trapCard];
-
-        return {
-          ...newState,
-          phase: 'M2',
-          [opponentKey]: { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy },
-          log: [
-            ...newState.log,
-            generateLog('DECLARE_ATTACK', { player: state.turn, cardName: attacker.name, targetName: action.targetIndex !== null ? oppState.monsterZone[action.targetIndex]?.name : 'directly' }),
-            generateLog('ACTIVATE_TRAP', { player: opponentKey, cardName: trapCard.name }),
-            generateLog('SYSTEM_MESSAGE', { message: 'The attack was negated and the Battle Phase ended.' }),
-          ],
-        };
-      }
+      let newState = attackState;
 
       if (action.targetIndex === null) {
         const newLp = Math.max(0, oppState.lp - (attacker.atk || 0));
@@ -576,200 +560,10 @@ export function gameReducer(state: GameState, action: Action): GameState {
       };
     }
     case 'ACTIVATE_SPELL': {
-      const pState = state[action.player];
-      const oppKey = action.player === 'player' ? 'opponent' : 'player';
-      const oppState = state[oppKey];
-      
-      let card: GameCard;
-      let newHand = [...pState.hand];
-      let newSpellZone = [...pState.spellTrapZone];
-      
-      if (action.fromZone !== undefined) {
-        card = newSpellZone[action.fromZone]!;
-        newSpellZone[action.fromZone] = null;
-      } else {
-        const cardIndex = newHand.findIndex(c => c.instanceId === action.cardInstanceId);
-        if (cardIndex === -1) return state;
-        card = newHand[cardIndex];
-        newHand.splice(cardIndex, 1);
-      }
-
-      let newState = { ...state };
-      let newOppZone = [...oppState.monsterZone];
-      let newOppGy = [...oppState.graveyard];
-      let newTurnGy = [...pState.graveyard];
-      let newTurnZone = [...pState.monsterZone];
-      let newOppSTZone = [...oppState.spellTrapZone];
-      let newOppLp = oppState.lp;
-      let newTurnLp = pState.lp;
-
-      newState.log = [...newState.log, generateLog('ACTIVATE_SPELL', { player: action.player, cardName: card.name })];
-
-      if (card.id === 'dark-hole') {
-        newOppZone.forEach(m => m && newOppGy.push(m));
-        newOppZone = [null, null, null, null, null];
-        newTurnZone.forEach(m => m && newTurnGy.push(m));
-        newTurnZone = [null, null, null, null, null];
-        newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'dark-hole' })];
-      } else if (card.id === 'raigeki') {
-        newOppZone.forEach(m => m && newOppGy.push(m));
-        newOppZone = [null, null, null, null, null];
-        newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'raigeki' })];
-      } else if (card.id === 'fissure') {
-        let lowestAtk = Infinity;
-        let targetIdx = -1;
-        newOppZone.forEach((m, idx) => {
-          if (m && m.position !== 'set-monster' && m.atk! < lowestAtk) {
-            lowestAtk = m.atk!;
-            targetIdx = idx;
-          }
-        });
-        if (targetIdx !== -1) {
-          newOppGy.push(newOppZone[targetIdx]!);
-          newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: oppKey, cardName: newOppZone[targetIdx]!.name })];
-          newOppZone[targetIdx] = null;
-        } else {
-           newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'fissure-fail' })];
-        }
-      } else if (card.id === 'hinotama') {
-        newOppLp = Math.max(0, newOppLp - 500);
-        newState.log = [...newState.log, generateLog('BATTLE_DAMAGE', { player: oppKey, damage: 500, cardName: card.name })];
-        if (newOppLp === 0) newState.winner = action.player;
-      } else if (card.id === 'pot-of-greed') {
-        let pDeck = [...pState.deck];
-        for (let i = 0; i < 2; i++) {
-          if (pDeck.length > 0) {
-             newHand.push(pDeck.pop()!);
-          }
-        }
-        newState[action.player] = { ...newState[action.player], deck: pDeck };
-        newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'pot-of-greed' })];
-      } else if (card.id === 'harpie-s-feather-duster') {
-        newOppSTZone.forEach(c => c && newOppGy.push(c));
-        newOppSTZone = [null, null, null, null, null];
-        newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'harpies-feather-duster' })];
-      } else if (card.id === 'tribute-to-the-doomed') {
-        if (action.discardInstanceId && action.targetIndex !== undefined && action.targetPlayer) {
-          const discardIdx = newHand.findIndex(c => c.instanceId === action.discardInstanceId);
-          if (discardIdx !== -1) {
-            const discardedCard = newHand[discardIdx];
-            newHand.splice(discardIdx, 1);
-            newTurnGy.push(discardedCard);
-            
-            const targetZone = action.targetPlayer === action.player ? newTurnZone : newOppZone;
-            const targetGy = action.targetPlayer === action.player ? newTurnGy : newOppGy;
-            
-            if (targetZone[action.targetIndex]) {
-               targetGy.push(targetZone[action.targetIndex]!);
-               newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: action.targetPlayer, cardName: targetZone[action.targetIndex]!.name })];
-               targetZone[action.targetIndex] = null;
-            }
-          }
-        }
-      } else if (card.id === 'monster-reborn') {
-        if (action.targetIndex !== undefined && action.targetPlayer) {
-           const targetGy = action.targetPlayer === action.player ? newTurnGy : newOppGy;
-           if (targetGy[action.targetIndex]) {
-             const rebornCard = targetGy[action.targetIndex];
-             targetGy.splice(action.targetIndex, 1);
-             
-             const emptyZoneIndex = newTurnZone.findIndex(z => z === null);
-             if (emptyZoneIndex !== -1) {
-               newTurnZone[emptyZoneIndex] = { ...rebornCard, position: 'attack', justSummoned: true };
-               newState.log = [...newState.log, generateLog('SUMMON_MONSTER', { player: action.player, cardName: rebornCard.name })];
-             }
-           }
-        }
-      } else if (card.id === 'brain-control') {
-        if (newTurnLp < 800) {
-          newState.log = [...newState.log, generateLog('SYSTEM_MESSAGE', { message: 'Brain Control could not resolve because you do not have enough LP to pay its cost.' })];
-        } else if (action.targetIndex !== undefined && action.targetPlayer === oppKey) {
-          const targetMonster = newOppZone[action.targetIndex];
-          const emptyZoneIndex = newTurnZone.findIndex(z => z === null);
-          const canTakeControl = targetMonster && targetMonster.position !== 'set-monster' && !targetMonster.isFusion;
-          if (canTakeControl && emptyZoneIndex !== -1) {
-            newOppZone[action.targetIndex] = null;
-            newTurnZone[emptyZoneIndex] = {
-              ...targetMonster,
-              originalOwner: oppKey,
-              temporaryControl: true,
-            };
-            newTurnLp -= 800;
-            if (newTurnLp === 0) {
-              newState.winner = oppKey;
-            }
-            newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'brain-control', targetCardName: targetMonster.name })];
-          } else {
-            newState.log = [...newState.log, generateLog('SYSTEM_MESSAGE', { message: 'Brain Control could not resolve because there was no valid face-up target or no open monster zone.' })];
-          }
-        }
-      } else if (card.id === 'de-spell') {
-        if (action.targetIndex !== undefined && action.targetPlayer === oppKey) {
-          if (newOppSTZone[action.targetIndex]) {
-            const targetedCard = newOppSTZone[action.targetIndex]!;
-            if (targetedCard.type === 'Spell') {
-              newOppSTZone[action.targetIndex] = null;
-              newOppGy.push(targetedCard);
-              newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'de-spell', targetCardName: targetedCard.name })];
-            } else {
-              newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'de-spell-reveal', targetCardName: targetedCard.name })];
-            }
-          } else {
-            newState.log = [...newState.log, generateLog('SYSTEM_MESSAGE', { message: 'De-Spell had no valid Spell/Trap target.' })];
-          }
-        }
-      } else {
-        newState.log = [...newState.log, generateLog('SYSTEM_MESSAGE', { message: `The effect of ${card.name} is not implemented yet.` })];
-      }
-
-      newTurnGy.push(card);
-
-      newState[action.player] = { ...pState, hand: newHand, spellTrapZone: newSpellZone, graveyard: newTurnGy, monsterZone: newTurnZone, lp: newTurnLp };
-      newState[oppKey] = { ...oppState, lp: newOppLp, monsterZone: newOppZone, graveyard: newOppGy, spellTrapZone: newOppSTZone };
-
-      return newState;
+      return resolveActivatedCardEffect(state, action);
     }
     case 'ACTIVATE_TRAP': {
-      const pState = state[action.player];
-      const oppKey = action.player === 'player' ? 'opponent' : 'player';
-      const oppState = state[oppKey];
-      
-      let card: GameCard;
-      let newSpellZone = [...pState.spellTrapZone];
-      
-      if (action.fromZone !== undefined) {
-        card = newSpellZone[action.fromZone]!;
-        newSpellZone[action.fromZone] = null;
-      } else {
-        return state;
-      }
-
-      let newState = { ...state };
-      let newOppSTZone = [...oppState.spellTrapZone];
-      let newOppGy = [...oppState.graveyard];
-      let newTurnGy = [...pState.graveyard];
-
-      newState.log = [...newState.log, generateLog('ACTIVATE_TRAP', { player: action.player, cardName: card.name })];
-
-      if (card.id === 'dust-tornado') {
-        if (action.targetIndex !== undefined && action.targetPlayer === oppKey) {
-          if (newOppSTZone[action.targetIndex]) {
-            const destroyedCard = newOppSTZone[action.targetIndex]!;
-            newOppSTZone[action.targetIndex] = null;
-            newOppGy.push(destroyedCard);
-            newState.log = [...newState.log, generateLog('SPELL_EFFECT', { player: action.player, effectType: 'dust-tornado', targetCardName: destroyedCard.name })];
-          }
-        }
-      } else {
-        newState.log = [...newState.log, generateLog('SYSTEM_MESSAGE', { message: `The effect of ${card.name} is not implemented yet.` })];
-      }
-
-      newTurnGy.push(card);
-
-      newState[action.player] = { ...pState, spellTrapZone: newSpellZone, graveyard: newTurnGy };
-      newState[oppKey] = { ...oppState, spellTrapZone: newOppSTZone, graveyard: newOppGy };
-
-      return newState;
+      return resolveActivatedCardEffect(state, action);
     }
     default:
       return state;

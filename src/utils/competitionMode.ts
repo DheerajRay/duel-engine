@@ -1,6 +1,7 @@
 import type { SavedDeck } from '../pages/DeckBuilder';
 import type { LogEntry } from '../types';
 import { CHARACTER_DECKS } from './characterDecks';
+import type { CompetitionAiProfile, CompetitionSummaryLines } from '../effects/types';
 
 type CompetitionOpponentId = 'char_joey' | 'char_mai' | 'char_pegasus' | 'char_yugi' | 'char_kaiba';
 
@@ -19,6 +20,9 @@ export type CompetitionOpponent = SavedDeck & {
   stage: number;
   totalStages: number;
   voice: CompetitionVoiceProfile;
+  signatureCardIds: string[];
+  summaryLines: CompetitionSummaryLines;
+  aiProfile: CompetitionAiProfile;
 };
 
 const ladderOrder: CompetitionOpponentId[] = ['char_joey', 'char_mai', 'char_pegasus', 'char_yugi', 'char_kaiba'];
@@ -76,6 +80,45 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
   },
 };
 
+const signatureCards: Record<CompetitionOpponentId, string[]> = {
+  char_joey: ['time-wizard', 'jinzo', 'thousand-dragon'],
+  char_mai: ['harpie-lady-sisters', 'harpie-s-feather-duster', 'mirror-wall'],
+  char_pegasus: ['relinquished', 'toon-world', 'blue-eyes-toon-dragon'],
+  char_yugi: ['dark-magician', 'dark-paladin', 'monster-reborn'],
+  char_kaiba: ['blue-eyes-white-dragon', 'blue-eyes-ultimate-dragon', 'crush-card-virus'],
+};
+
+const summaryProfiles: Record<CompetitionOpponentId, CompetitionSummaryLines> = {
+  char_joey: {
+    stageClear: 'Joey laughs it off, but you clearly took the momentum away from him.',
+    defeat: 'Joey rode the chaos and pushed you out of the ladder this round.',
+  },
+  char_mai: {
+    stageClear: 'Mai gives a measured nod. You outplayed her cleanly.',
+    defeat: 'Mai kept control of the duel and punished every opening you gave her.',
+  },
+  char_pegasus: {
+    stageClear: 'Pegasus applauds the upset. You broke through his tricks and stole the stage.',
+    defeat: 'Pegasus turned the duel into his showpiece and you never regained the tempo.',
+  },
+  char_yugi: {
+    stageClear: 'Yugi accepts the loss with respect. You beat one of the ladder’s steadiest duelists.',
+    defeat: 'Yugi trusted the heart of the cards and found the line you could not answer.',
+  },
+  char_kaiba: {
+    stageClear: 'Kaiba is furious, which means you did what few duelists can: you crushed his ego.',
+    defeat: 'Kaiba never let the pressure up and closed the ladder with brute force.',
+  },
+};
+
+const aiProfiles: Record<CompetitionOpponentId, CompetitionAiProfile> = {
+  char_joey: { aggression: 1.25, signatureWeight: 1.1, removalBias: 0.75, backrowBias: 0.2, comebackBias: 0.8 },
+  char_mai: { aggression: 0.7, signatureWeight: 0.8, removalBias: 0.8, backrowBias: 1.1, comebackBias: 0.5 },
+  char_pegasus: { aggression: 0.4, signatureWeight: 1.2, removalBias: 0.9, backrowBias: 1.3, comebackBias: 0.9 },
+  char_yugi: { aggression: 0.9, signatureWeight: 1.1, removalBias: 1.0, backrowBias: 0.6, comebackBias: 1.2 },
+  char_kaiba: { aggression: 1.4, signatureWeight: 1.3, removalBias: 1.1, backrowBias: 0.2, comebackBias: 0.6 },
+};
+
 export const COMPETITION_LADDER: CompetitionOpponent[] = ladderOrder.map((id, index) => {
   const deck = CHARACTER_DECKS.find(characterDeck => characterDeck.id === id);
 
@@ -88,8 +131,19 @@ export const COMPETITION_LADDER: CompetitionOpponent[] = ladderOrder.map((id, in
     stage: index + 1,
     totalStages: ladderOrder.length,
     voice: voiceProfiles[id],
+    signatureCardIds: signatureCards[id],
+    summaryLines: summaryProfiles[id],
+    aiProfile: aiProfiles[id],
   };
 });
+
+export const getCompetitionNotablePlay = (logs: LogEntry[]) => {
+  const recentInterestingLog = [...logs].reverse().find(entry =>
+    ['ACTIVATE_SPELL', 'ACTIVATE_TRAP', 'SUMMON_MONSTER', 'DIRECT_ATTACK', 'MONSTER_DESTROYED'].includes(entry.type),
+  );
+
+  return recentInterestingLog?.message ?? 'The duel turned on steady pressure and clean sequencing.';
+};
 
 export const formatCompetitionLogMessage = (entry: LogEntry, opponent: CompetitionOpponent): string => {
   const isOpponentEvent = entry.data?.player === 'opponent' || entry.data?.nextTurn === 'opponent';

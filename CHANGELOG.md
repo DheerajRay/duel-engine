@@ -11,6 +11,24 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.1.0 - 2026-03-27
+
+Feature release focused on a registry-backed duel engine and a stronger Competition Mode flow.
+
+Included in this release:
+
+- added a new local `src/effects` registry layer so card support status, summon legality, activation legality, target rules, effect resolution, and CPU weighting all come from one place
+- made unsupported or partially supported cards explicit in the UI instead of letting them leak through generic action handling
+- migrated spell/trap resolution and reactive trap handling onto the registry-backed flow
+- added support-status details to duel and deck-builder card inspection panels
+- deepened Competition Mode with:
+  - a ladder progress entry overlay
+  - signature-card metadata per duelist
+  - local character preference profiles for CPU decision weighting
+  - a streamlined duel-intro overlay focused on the character entrance quip
+  - richer post-duel stage summaries with turns, LP, finishing card, and a notable-play line
+- expanded automated coverage with effect-registry tests and updated competition-flow UI tests
+
 ## v1.0.4 - 2026-03-27
 
 Documentation release focused on deployment and mobile install guidance.
