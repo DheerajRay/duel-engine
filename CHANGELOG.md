@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.0.1 - 2026-03-26
+
+Patch release focused on announcement behavior and local preview consistency.
+
+Included in this release:
+
+- replaced remaining transient top-edge toasts with the shared centered announcement overlay
+- added player turn phase announcements during duels
+- routed deck builder feedback through the shared announcement system
+- disabled service worker registration on local HTTP preview/LAN runs to avoid stale cached bundles during testing
+- removed the unused `sonner` dependency
+
 ## v1.0.0 - 2026-03-26
 
 Initial stable hosted release.

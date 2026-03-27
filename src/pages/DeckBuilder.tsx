@@ -4,9 +4,9 @@ import { CARD_DB } from '../utils/cardParser';
 import { CardView } from '../components/CardView';
 import { Card } from '../types';
 import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, ChevronUp } from 'lucide-react';
-import { toast } from 'sonner';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
 import { ensureStarterCustomDeck } from '../utils/deckStorage';
+import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
 
 export interface SavedDeck {
   id: string;
@@ -29,7 +29,7 @@ const getInitialDecks = (): SavedDeck[] => {
   return [...userDecks, ...CHARACTER_DECKS];
 };
 
-export default function DeckBuilder({ onBack }: { onBack: () => void }) {
+export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: () => void; announce?: (input: AnnouncementInput) => void }) {
   const { reduced } = useMotionPreference();
   const [decks, setDecks] = useState<SavedDeck[]>(getInitialDecks);
   const [primaryDeckId, setPrimaryDeckId] = useState<string>(() => localStorage.getItem('ygo_primary_deck_id') || getInitialDecks()[0].id);
@@ -102,7 +102,7 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
 
   const handleAddCard = (id: string) => {
     if (isCurrentPredefined) {
-      toast.error('Cannot modify predefined character decks. Please create a new custom deck.');
+      announce({ title: 'Deck Builder', message: 'Cannot modify predefined character decks. Please create a new custom deck.' });
       return;
     }
 
@@ -111,23 +111,23 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
 
     if (card.isFusion) {
       if (extraDeck.length >= 15) {
-        toast.error('Extra Deck cannot exceed 15 cards.');
+        announce({ title: 'Deck Builder', message: 'Extra Deck cannot exceed 15 cards.' });
         return;
       }
       const count = extraDeck.filter(c => c === id).length;
       if (count >= 3) {
-        toast.error('You can only have up to 3 copies of a card.');
+        announce({ title: 'Deck Builder', message: 'You can only have up to 3 copies of a card.' });
         return;
       }
       setExtraDeck([...extraDeck, id]);
     } else {
       if (deck.length >= 60) {
-        toast.error('Main Deck cannot exceed 60 cards.');
+        announce({ title: 'Deck Builder', message: 'Main Deck cannot exceed 60 cards.' });
         return;
       }
       const count = deck.filter(c => c === id).length;
       if (count >= 3) {
-        toast.error('You can only have up to 3 copies of a card.');
+        announce({ title: 'Deck Builder', message: 'You can only have up to 3 copies of a card.' });
         return;
       }
       setDeck([...deck, id]);
@@ -136,7 +136,7 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
 
   const handleRemoveCard = (id: string, isFusion: boolean) => {
     if (isCurrentPredefined) {
-      toast.error('Cannot modify predefined character decks. Please create a new custom deck.');
+      announce({ title: 'Deck Builder', message: 'Cannot modify predefined character decks. Please create a new custom deck.' });
       return;
     }
 
@@ -159,12 +159,12 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
 
   const handleSave = () => {
     if (isCurrentPredefined) {
-      toast.error('Cannot save predefined character decks.');
+      announce({ title: 'Deck Builder', message: 'Cannot save predefined character decks.' });
       return;
     }
 
     if (deck.length < 40) {
-      toast.error('Main Deck must have at least 40 cards.');
+      announce({ title: 'Deck Builder', message: 'Main Deck must have at least 40 cards.' });
       return;
     }
     
@@ -182,7 +182,7 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
       localStorage.setItem('ygo_custom_extra_deck', JSON.stringify(extraDeck));
     }
     
-    toast.success('Deck saved successfully!');
+    announce({ title: 'Deck Builder', message: 'Deck saved successfully.' });
   };
 
   const handleCreateDeck = () => {
@@ -232,13 +232,13 @@ export default function DeckBuilder({ onBack }: { onBack: () => void }) {
       
       localStorage.setItem('ygo_custom_deck', JSON.stringify(d!.mainDeck));
       localStorage.setItem('ygo_custom_extra_deck', JSON.stringify(d!.extraDeck));
-      toast.success(`${d!.name} set as primary deck!`);
+      announce({ title: 'Deck Builder', message: `${d!.name} set as primary deck.` });
     }
   };
   
   const handleDeleteDeck = (id: string) => {
     if (decks.length <= 1) {
-      toast.error('You must have at least one deck.');
+      announce({ title: 'Deck Builder', message: 'You must have at least one deck.' });
       return;
     }
     

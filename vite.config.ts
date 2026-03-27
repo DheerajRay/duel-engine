@@ -74,8 +74,7 @@ export default defineConfig({
 
             if (
               id.includes('motion') ||
-              id.includes('lucide-react') ||
-              id.includes('sonner')
+              id.includes('lucide-react')
             ) {
               return 'ui-vendor';
             }

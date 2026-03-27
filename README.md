@@ -180,14 +180,14 @@ Using Git tags plus Vercel deployment history gives you two rollback paths:
 - `vite-plugin-pwa` for installability and offline asset caching
 - `motion` for animations
 - `lucide-react` for icons
-- `sonner` for toast notifications
+- shared centered announcement overlays for transient UI feedback
 - `papaparse` for parsing the card CSV into an in-memory card database
 
 ## High-Level Application Flow
 
 At runtime the app works like this:
 
-1. `src/main.tsx` mounts the React app and global toast system.
+1. `src/main.tsx` mounts the React app and handles PWA registration logic.
 2. `src/App.tsx` controls top-level navigation between:
    - start screen
    - duel screen
@@ -341,7 +341,7 @@ It currently does things like:
 
 This is rule-based local logic, not a model-backed opponent.
 
-### 8. Logging and toasts
+### 8. Logging and announcements
 
 `src/utils/logGenerator.ts` creates stylized duel log messages for events like:
 
@@ -354,7 +354,7 @@ This is rule-based local logic, not a model-backed opponent.
 - destruction
 - turn changes
 
-`src/App.tsx` also mirrors new log entries into `sonner` toast notifications.
+`src/App.tsx` also mirrors new log entries into the centered announcement overlay and uses the same announcement system for action prompts, validation feedback, and deck-builder status messages.
 
 ## Deck Builder
 

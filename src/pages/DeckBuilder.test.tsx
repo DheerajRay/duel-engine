@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import DeckBuilder from './DeckBuilder';
 
 describe('DeckBuilder', () => {
@@ -27,4 +27,17 @@ describe('DeckBuilder', () => {
     expect(screen.getByPlaceholderText(/search cards/i)).toBeInTheDocument();
     expect(screen.queryByText(/current deck/i)).not.toBeInTheDocument();
   }, 15000);
+
+  it('routes deck builder status messages through the shared announcement callback', () => {
+    const announce = vi.fn();
+
+    render(<DeckBuilder onBack={() => {}} announce={announce} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(announce).toHaveBeenCalledWith({
+      title: 'Deck Builder',
+      message: 'Deck saved successfully.',
+    });
+  });
 });

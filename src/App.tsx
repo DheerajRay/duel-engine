@@ -1,6 +1,8 @@
 import React, { Suspense, lazy, useReducer, useEffect, useState, useRef } from 'react';
 import { gameReducer, initialState, type Action } from './engine/reducer';
+import { AnnouncementOverlay } from './components/AnnouncementOverlay';
 import { CardView } from './components/CardView';
+import { AnnouncementInput, useAnnouncementQueue } from './hooks/useAnnouncementQueue';
 import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronDown, ChevronUp, Settings } from 'lucide-react';
@@ -9,7 +11,6 @@ import { ensureStarterCustomDeck } from './utils/deckStorage';
 import { COMPETITION_LADDER, formatCompetitionLogMessage } from './utils/competitionMode';
 import { canActivateSpell, canManuallyActivateTrap, getHandCardActionAvailability, getPossibleFusionMonsters, isMaterialMatch } from './utils/cardActionRules';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
-import { toast } from 'sonner';
 
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder'));
 const HowToPlay = lazy(() => import('./pages/HowToPlay'));
@@ -62,10 +63,9 @@ export default function App() {
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
   const [mobileInfoTab, setMobileInfoTab] = useState<'details' | 'log'>('details');
   const [mobileInfoExpanded, setMobileInfoExpanded] = useState(false);
-  const [announcementQueue, setAnnouncementQueue] = useState<string[]>([]);
-  const [activeAnnouncement, setActiveAnnouncement] = useState<string | null>(null);
   const [aiResumeTick, setAiResumeTick] = useState(0);
   const prevLogLengthRef = useRef(state.log.length);
+  const prevPlayerPhaseKeyRef = useRef<string | null>(null);
   const mobileBattlefieldRef = useRef<HTMLDivElement | null>(null);
   const currentCompetitionOpponent = competitionStageIndex !== null ? COMPETITION_LADDER[competitionStageIndex] : null;
   const opponentLabel = currentCompetitionOpponent?.name ?? 'COM';
@@ -80,10 +80,31 @@ export default function App() {
           : null;
   const canPlayerDraw = state.turn === 'player' && state.phase === 'DP';
   const { reduced } = useMotionPreference();
+  const { activeAnnouncement, announce, clearAnnouncements } = useAnnouncementQueue(990);
   const playerActivationContext = {
     player: state.player,
     opponent: state.opponent,
     normalSummonUsed: state.normalSummonUsed,
+  };
+
+  const showAnnouncement = (input: AnnouncementInput) => announce(input);
+  const showNotice = (message: string, title = 'Notice') => announce({ title, message });
+
+  const getPhaseAnnouncement = (phase: Phase) => {
+    switch (phase) {
+      case 'DP':
+        return 'Draw Phase';
+      case 'M1':
+        return 'Main Phase 1';
+      case 'BP':
+        return 'Battle Phase';
+      case 'M2':
+        return 'Main Phase 2';
+      case 'EP':
+        return 'End Phase';
+      default:
+        return phase;
+    }
   };
 
   const renderLazyScreenFallback = (label: string) => (
@@ -110,21 +131,17 @@ export default function App() {
 
     if (state.log.length > prevLogLengthRef.current) {
       const newLogs = state.log.slice(prevLogLengthRef.current);
-      setAnnouncementQueue(prev => [...prev, ...newLogs.map(getDisplayLogMessage)]);
+      announce(newLogs.map((entry) => ({
+        title: 'Duel Event',
+        message: getDisplayLogMessage(entry),
+      })));
       prevLogLengthRef.current = state.log.length;
     }
-  }, [state.log, gameMode, currentCompetitionOpponent]);
+  }, [state.log, gameMode, currentCompetitionOpponent, announce]);
 
   useEffect(() => {
     ensureStarterCustomDeck();
   }, []);
-
-  useEffect(() => {
-    if (view !== 'game') {
-      setActiveAnnouncement(null);
-      setAnnouncementQueue([]);
-    }
-  }, [view]);
 
   useEffect(() => {
     if (view === 'game') {
@@ -133,21 +150,22 @@ export default function App() {
   }, [view]);
 
   useEffect(() => {
-    if (view !== 'game' || activeAnnouncement || announcementQueue.length === 0) return;
+    if (view !== 'game' || pendingCpuModeSelection || state.winner) {
+      prevPlayerPhaseKeyRef.current = null;
+      return;
+    }
 
-    setActiveAnnouncement(announcementQueue[0]);
-    setAnnouncementQueue(prev => prev.slice(1));
-  }, [announcementQueue, activeAnnouncement, view]);
+    const phaseKey = `${state.turn}-${state.turnCount}-${state.phase}`;
+    if (state.turn !== 'player') {
+      prevPlayerPhaseKeyRef.current = phaseKey;
+      return;
+    }
 
-  useEffect(() => {
-    if (!activeAnnouncement) return;
-
-    const timeout = window.setTimeout(() => {
-      setActiveAnnouncement(null);
-    }, 990);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeAnnouncement]);
+    if (prevPlayerPhaseKeyRef.current !== phaseKey) {
+      announce({ title: 'Current Phase', message: getPhaseAnnouncement(state.phase) });
+      prevPlayerPhaseKeyRef.current = phaseKey;
+    }
+  }, [view, pendingCpuModeSelection, state.winner, state.turn, state.turnCount, state.phase, announce]);
 
   useEffect(() => {
     if (view !== 'game' || !mobileBattlefieldRef.current || state.turnCount !== 1) return;
@@ -194,8 +212,8 @@ export default function App() {
     stageIndex?: number | null;
   }) => {
     prevLogLengthRef.current = 0;
-    setAnnouncementQueue([]);
-    setActiveAnnouncement(null);
+    prevPlayerPhaseKeyRef.current = null;
+    clearAnnouncements();
     setUiState({ type: 'IDLE' });
     setGameMode(mode);
     setCompetitionStageIndex(stageIndex);
@@ -216,8 +234,7 @@ export default function App() {
     setCompetitionStageIndex(null);
     setPendingCpuModeSelection(false);
     setUiState({ type: 'IDLE' });
-    setAnnouncementQueue([]);
-    setActiveAnnouncement(null);
+    prevPlayerPhaseKeyRef.current = null;
   };
 
   const startRandomGame = () => {
@@ -234,7 +251,7 @@ export default function App() {
     const deckData = loadPrimaryDeck();
 
     if (!deckData) {
-      toast.error('Your custom deck must have at least 40 cards. Please use the Deck Builder.');
+      showNotice('Your custom deck must have at least 40 cards. Please use the Deck Builder.', 'Deck Required');
       return;
     }
 
@@ -251,7 +268,7 @@ export default function App() {
     const deckData = loadPrimaryDeck();
 
     if (!deckData) {
-      toast.error('Competition Mode uses your saved custom deck. Build a 40-card deck first.');
+      showNotice('Competition Mode uses your saved custom deck. Build a 40-card deck first.', 'Deck Required');
       return;
     }
 
@@ -274,8 +291,8 @@ export default function App() {
 
   const openCpuModeSelection = () => {
     prevLogLengthRef.current = state.log.length;
-    setAnnouncementQueue([]);
-    setActiveAnnouncement(null);
+    prevPlayerPhaseKeyRef.current = null;
+    clearAnnouncements();
     setUiState({ type: 'IDLE' });
     setGameMode(null);
     setCompetitionStageIndex(null);
@@ -291,7 +308,7 @@ export default function App() {
 
     const nextStageIndex = competitionStageIndex + 1;
     if (nextStageIndex >= COMPETITION_LADDER.length) {
-      toast.success('Competition cleared. You defeated every duelist in the ladder.');
+      showNotice('Competition cleared. You defeated every duelist in the ladder.', 'Competition');
       returnToMenu();
       return;
     }
@@ -491,7 +508,7 @@ export default function App() {
       .filter(Boolean) as { card: GameCard, sourceIndex: number }[];
 
     if (cards.length === 0) {
-      toast.error(`No monsters in ${targetPlayer === 'player' ? 'your' : "opponent's"} Graveyard!`);
+      showNotice(`No monsters in ${targetPlayer === 'player' ? 'your' : "opponent's"} Graveyard!`, 'No Target');
       return;
     }
 
@@ -888,7 +905,7 @@ export default function App() {
     
     if (uiState.type === 'SELECT_DISCARD') {
       if (card.instanceId === uiState.spellCard.instanceId) {
-        toast.error('You cannot discard the spell you are activating!');
+        showNotice('You cannot discard the spell you are activating!', 'Invalid Action');
         return;
       }
       setUiState({ 
@@ -897,7 +914,7 @@ export default function App() {
         discardInstanceId: card.instanceId,
         fromZone: uiState.fromZone 
       });
-      toast('Select a monster to destroy');
+      showNotice('Select a monster to destroy.', 'Action Required');
       return;
     }
 
@@ -926,7 +943,7 @@ export default function App() {
         }
 
         if (!isValid) {
-          toast.error('Selected materials do not match the required Fusion Materials!');
+          showNotice('Selected materials do not match the required Fusion Materials!', 'Invalid Selection');
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -934,7 +951,7 @@ export default function App() {
         // Check if there will be an empty zone
         const willHaveEmptyZone = state.player.monsterZone.some((m, i) => m === null || newSelected.includes(m.instanceId));
         if (!willHaveEmptyZone) {
-          toast.error('No empty monster zones available for the Fusion Monster!');
+          showNotice('No empty monster zones available for the Fusion Monster!', 'No Open Zone');
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -960,7 +977,7 @@ export default function App() {
 
     const availableActions = getHandCardActionAvailability(card, playerActivationContext);
     if (!availableActions.summon && !availableActions.setMonster && !availableActions.activate && !availableActions.setSpellTrap) {
-      toast.error(`No legal actions available for ${card.name} right now.`);
+      showNotice(`No legal actions available for ${card.name} right now.`, 'Unavailable');
       return;
     }
 
@@ -969,14 +986,14 @@ export default function App() {
 
   const beginSpellActivation = (card: GameCard, fromZone?: number) => {
     if (!canActivateSpell(card, playerActivationContext, fromZone)) {
-      toast.error(`${card.name} cannot be activated right now.`);
+      showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
       setUiState({ type: 'IDLE' });
       return;
     }
 
     if (card.id === 'tribute-to-the-doomed') {
       if (state.player.hand.length < (fromZone === undefined ? 2 : 1)) {
-        toast.error(fromZone === undefined ? 'You need another card to discard!' : 'You need a card to discard!');
+        showNotice(fromZone === undefined ? 'You need another card to discard!' : 'You need a card to discard!', 'Action Required');
         setUiState({ type: 'IDLE' });
         return;
       }
@@ -984,85 +1001,85 @@ export default function App() {
       const hasOpponentMonsters = state.opponent.monsterZone.some(m => m !== null);
       const hasPlayerMonsters = state.player.monsterZone.some(m => m !== null);
       if (!hasOpponentMonsters && !hasPlayerMonsters) {
-        toast.error('No monsters to destroy!');
+        showNotice('No monsters to destroy!', 'No Target');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_DISCARD', spellCard: card, fromZone });
-      toast('Select a card to discard');
+      showNotice('Select a card to discard.', 'Action Required');
       return;
     }
 
     if (card.id === 'monster-reborn') {
       const hasMonstersInGy = state.player.graveyard.some(c => c.type === 'Monster') || state.opponent.graveyard.some(c => c.type === 'Monster');
       if (!hasMonstersInGy) {
-        toast.error('No monsters in Graveyard!');
+        showNotice('No monsters in Graveyard!', 'No Target');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasEmptyZone = state.player.monsterZone.some(z => z === null);
       if (!hasEmptyZone) {
-        toast.error('No empty monster zones!');
+        showNotice('No empty monster zones!', 'No Open Zone');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      toast('Select a monster from either Graveyard');
+      showNotice('Select a monster from either Graveyard.', 'Action Required');
       return;
     }
 
     if (card.id === 'brain-control') {
       if (state.player.lp < 800) {
-        toast.error('You need at least 800 LP to activate Brain Control!');
+        showNotice('You need at least 800 LP to activate Brain Control!', 'Unavailable');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasTargetableMonster = state.opponent.monsterZone.some(m => m !== null && m.position !== 'set-monster');
       if (!hasTargetableMonster) {
-        toast.error('No opponent face-up monsters to take control of!');
+        showNotice('No opponent face-up monsters to take control of!', 'No Target');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasEmptyZone = state.player.monsterZone.some(z => z === null);
       if (!hasEmptyZone) {
-        toast.error('No empty monster zones!');
+        showNotice('No empty monster zones!', 'No Open Zone');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      toast("Select an opponent's face-up monster to take control of");
+      showNotice("Select an opponent's face-up monster to take control of.", 'Action Required');
       return;
     }
 
     if (card.id === 'de-spell') {
       const hasSpellTrapTarget = state.opponent.spellTrapZone.some(c => c !== null);
       if (!hasSpellTrapTarget) {
-        toast.error("No opponent Spell/Trap cards to target!");
+        showNotice("No opponent Spell/Trap cards to target!", 'No Target');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      toast("Select an opponent's Spell/Trap card");
+      showNotice("Select an opponent's Spell/Trap card.", 'Action Required');
       return;
     }
 
     if (card.id === 'polymerization') {
       const possibleFusions = getPossibleFusionMonsters(state.player);
       if (possibleFusions.length === 0) {
-        toast.error('You do not have the materials for any Fusion Monster!');
+        showNotice('You do not have the materials for any Fusion Monster!', 'Unavailable');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_FUSION_MONSTER', possibleFusions, spellInstanceId: card.instanceId, fromZone });
-      toast('Select a Fusion Monster to summon');
+      showNotice('Select a Fusion Monster to summon.', 'Action Required');
       return;
     }
 
@@ -1072,7 +1089,7 @@ export default function App() {
 
   const beginTrapActivation = (card: GameCard, fromZone: number) => {
     if (!canManuallyActivateTrap(card, playerActivationContext)) {
-      toast.error(`${card.name} cannot be activated right now.`);
+      showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
       setUiState({ type: 'IDLE' });
       return;
     }
@@ -1080,17 +1097,17 @@ export default function App() {
     if (card.id === 'dust-tornado') {
       const hasOpponentST = state.opponent.spellTrapZone.some(c => c !== null);
       if (!hasOpponentST) {
-        toast.error('No opponent Spell/Trap cards to destroy!');
+        showNotice('No opponent Spell/Trap cards to destroy!', 'No Target');
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      toast("Select an opponent's Spell/Trap card to destroy");
+      showNotice("Select an opponent's Spell/Trap card to destroy.", 'Action Required');
       return;
     }
 
-    toast.error('This trap card cannot be activated manually!');
+    showNotice('This trap card cannot be activated manually!', 'Unavailable');
   };
 
   const executeHandAction = (action: 'summon' | 'set' | 'activate') => {
@@ -1100,12 +1117,12 @@ export default function App() {
     
     if (card.type === 'Monster') {
       if ((action === 'summon' && !availableActions.summon) || (action === 'set' && !availableActions.setMonster)) {
-        toast.error(`${card.name} cannot be ${action === 'summon' ? 'Summoned' : 'Set'} right now.`);
+        showNotice(`${card.name} cannot be ${action === 'summon' ? 'Summoned' : 'Set'} right now.`, 'Unavailable');
         setUiState({ type: 'IDLE' });
         return;
       }
       if (state.normalSummonUsed) {
-        toast.error('You already Normal Summoned/Set this turn!');
+        showNotice('You already Normal Summoned or Set this turn!', 'Unavailable');
         setUiState({ type: 'IDLE' });
         return;
       }
@@ -1116,7 +1133,7 @@ export default function App() {
       if (tributesNeeded > 0) {
         const availableTributes = state.player.monsterZone.filter(m => m !== null).length;
         if (availableTributes < tributesNeeded) {
-          toast.error('Not enough monsters to tribute!');
+          showNotice('Not enough monsters to tribute!', 'Unavailable');
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1128,7 +1145,7 @@ export default function App() {
     } else if (card.type === 'Spell' || card.type === 'Trap') {
       if (action === 'set') {
         if (!availableActions.setSpellTrap) {
-          toast.error('No open Spell/Trap Zone to set this card.');
+          showNotice('No open Spell or Trap Zone to set this card.', 'No Open Zone');
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1136,7 +1153,7 @@ export default function App() {
         setUiState({ type: 'IDLE' });
       } else if (action === 'activate' && card.type === 'Spell') {
         if (!availableActions.activate) {
-          toast.error(`${card.name} cannot be activated right now.`);
+          showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1152,11 +1169,14 @@ export default function App() {
 
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id === 'monster-reborn') {
-        toast.error('Select a monster from a Graveyard!');
+        showNotice('Select a monster from a Graveyard!', 'Invalid Target');
         return;
       }
       if (uiState.spellCard.id === 'dust-tornado' || uiState.spellCard.id === 'de-spell' || uiState.spellCard.id === 'brain-control') {
-        toast.error(uiState.spellCard.id === 'brain-control' ? "Select an opponent's face-up monster!" : "Select an opponent's Spell/Trap card!");
+        showNotice(
+          uiState.spellCard.id === 'brain-control' ? "Select an opponent's face-up monster!" : "Select an opponent's Spell/Trap card!",
+          'Invalid Target',
+        );
         return;
       }
       const target = state.player.monsterZone[index];
@@ -1220,7 +1240,7 @@ export default function App() {
         }
 
         if (!isValid) {
-          toast.error('Selected materials do not match the required Fusion Materials!');
+          showNotice('Selected materials do not match the required Fusion Materials!', 'Invalid Selection');
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1228,7 +1248,7 @@ export default function App() {
         // Check if there will be an empty zone
         const willHaveEmptyZone = state.player.monsterZone.some((m, i) => m === null || newSelected.includes(m.instanceId));
         if (!willHaveEmptyZone) {
-          toast.error('No empty monster zones available for the Fusion Monster!');
+          showNotice('No empty monster zones available for the Fusion Monster!', 'No Open Zone');
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1273,7 +1293,7 @@ export default function App() {
       setUiState({ type: 'IDLE' });
     } else {
       setUiState({ type: 'SELECT_ATTACK_TARGET', attackerIndex: index });
-      toast('Select an opponent\'s monster to attack');
+      showNotice("Select an opponent's monster to attack.", 'Action Required');
     }
   };
 
@@ -1296,16 +1316,16 @@ export default function App() {
     
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id === 'monster-reborn') {
-        toast.error('Select a monster from a Graveyard!');
+        showNotice('Select a monster from a Graveyard!', 'Invalid Target');
         return;
       }
       if (uiState.spellCard.id === 'dust-tornado' || uiState.spellCard.id === 'de-spell') {
-        toast.error("Select an opponent's Spell/Trap card!");
+        showNotice("Select an opponent's Spell/Trap card!", 'Invalid Target');
         return;
       }
       const target = state.opponent.monsterZone[index];
       if (uiState.spellCard.id === 'brain-control' && target && (target.position === 'set-monster' || target.isFusion)) {
-        toast.error('Brain Control can only target a face-up monster that can be Normal Summoned or Set!');
+        showNotice('Brain Control can only target a face-up monster that can be Normal Summoned or Set!', 'Invalid Target');
         return;
       }
       if (target) {
@@ -1368,7 +1388,7 @@ export default function App() {
     if (state.turn !== 'player') return;
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id !== 'monster-reborn') {
-        toast.error('Invalid target!');
+        showNotice('Invalid target!', 'Invalid Target');
         return;
       }
       openMonsterRebornZoneSelection('player', uiState.spellCard, uiState.fromZone);
@@ -1379,7 +1399,7 @@ export default function App() {
     if (state.turn !== 'player') return;
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id !== 'monster-reborn') {
-        toast.error('Invalid target!');
+        showNotice('Invalid target!', 'Invalid Target');
         return;
       }
       openMonsterRebornZoneSelection('opponent', uiState.spellCard, uiState.fromZone);
@@ -1493,7 +1513,7 @@ export default function App() {
       )}
       {view === 'deck-builder' && (
         <Suspense fallback={renderLazyScreenFallback('Deck Builder')}>
-          <DeckBuilder onBack={() => setView('start')} />
+          <DeckBuilder onBack={() => setView('start')} announce={showAnnouncement} />
         </Suspense>
       )}
       {view === 'how-to-play' && (
@@ -1501,28 +1521,26 @@ export default function App() {
           <HowToPlay onBack={() => setView('start')} />
         </Suspense>
       )}
+      <AnimatePresence>
+        {view !== 'game' && activeAnnouncement && (
+          <AnnouncementOverlay
+            announcement={activeAnnouncement}
+            reduced={reduced}
+            className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none px-4"
+          />
+        )}
+      </AnimatePresence>
       {view === 'game' && (
         <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col md:flex-row pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
           {/* Main Game Area */}
           <div className="flex-grow flex flex-col relative overflow-hidden min-h-0">
             <AnimatePresence>
               {activeAnnouncement && (
-                <motion.div
-                  initial={{ opacity: 0, scale: reduced ? 1 : 0.97, y: reduced ? 0 : 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: reduced ? 1 : 0.99, y: reduced ? 0 : -6 }}
-                  transition={getSharedTransition(reduced, 'normal')}
+                <AnnouncementOverlay
+                  announcement={activeAnnouncement}
+                  reduced={reduced}
                   className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none px-4"
-                >
-                  <div className="max-w-xl border border-zinc-700 bg-black/95 px-5 py-4 text-center shadow-2xl backdrop-blur-sm">
-                    <div className="text-[11px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-2">
-                      Duel Event
-                    </div>
-                    <div className="text-sm sm:text-base font-mono leading-relaxed text-white">
-                      {activeAnnouncement}
-                    </div>
-                  </div>
-                </motion.div>
+                />
               )}
             </AnimatePresence>
 
@@ -2245,7 +2263,7 @@ export default function App() {
                         fromZone: uiState.fromZone,
                         selectedMaterials: []
                       });
-                      toast(`Select materials for ${fm.name}`);
+                      showNotice(`Select materials for ${fm.name}.`, 'Action Required');
                     }}>
                       <CardView 
                         card={fm} 
