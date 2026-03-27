@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.0.4 - 2026-03-27
+
+Documentation release focused on deployment and mobile install guidance.
+
+Included in this release:
+
+- added Vercel hosting guidance to the README
+- documented the live deployment URL pattern and GitHub-to-Vercel production flow
+- expanded the iPhone PWA install notes and update behavior guidance
+- updated the README gameplay flow to match the current `CPU Mode` and `Competition Mode` structure
+
 ## v1.0.3 - 2026-03-27
 
 Patch release focused on competition continuity and cleaner in-duel exits.

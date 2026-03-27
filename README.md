@@ -61,14 +61,34 @@ This is enough for layout, touch, and gameplay testing.
 
 ### Install as an iPhone app
 
-To get the installable app-style experience, deploy the site to an HTTPS host first.
+To get the installable app-style experience, use the live HTTPS deployment first.
 
-Recommended static hosts:
+### Hosted deployment on Vercel
+
+The project is designed to deploy cleanly to Vercel as a static Vite app.
+
+Production URL format:
+
+```text
+https://<your-vercel-project>.vercel.app
+```
+
+If you have connected the GitHub repo to Vercel and set `main` as the production branch, then:
+
+1. Every push to `main` triggers a new production deployment.
+2. Vercel serves the built `dist/` output.
+3. Preview deployments are created automatically for non-`main` branches when enabled.
+
+If you want this README to point to your exact live app, replace the placeholder above with your actual Vercel production URL.
+
+Recommended static hosts if you ever move away from Vercel:
 
 - Vercel
 - Netlify
 - GitHub Pages
 - Cloudflare Pages
+
+### Install the live site as a PWA on iPhone
 
 After deployment:
 
@@ -78,6 +98,12 @@ After deployment:
 4. Launch `Duel Engine` from the new home-screen icon.
 
 The installed app uses standalone display mode, so it opens without normal browser chrome.
+
+Important notes:
+
+- the installed app updates from new Vercel deployments, but iPhone may cache some older assets for a short time
+- if the icon, manifest, or home-screen metadata changes, you may need to remove the app from the home screen and add it again
+- saved decks live in browser/device `localStorage`, so your PC deck list does not automatically sync to your phone
 
 ### Production build
 
@@ -251,29 +277,48 @@ Each live card instance gets a unique `instanceId` so duplicate copies can be tr
 
 From the start screen, the player can choose:
 
-- `Random Deck`
-- `Custom Deck`
+- `CPU Mode`
+- `Competition Mode`
 - `Deck Builder`
 - `How to Play`
 
-#### Random Deck
+#### CPU Mode
 
-Random mode:
+When the player opens `CPU Mode`, the app loads the battlefield and then prompts for:
+
+- `Random Deck`
+- `Custom Deck`
+
+##### Random Deck
+
+Random CPU mode:
 
 - generates a curated 40-card main deck for both players
 - generates a curated extra deck for both players
 - shuffles both decks
 - deals 5 cards to each player
 
-#### Custom Deck
+##### Custom Deck
 
-Custom mode:
+Custom CPU mode:
 
 - reads `ygo_custom_deck` and `ygo_custom_extra_deck` from browser storage
 - requires at least 40 cards in the saved main deck
 - uses the saved player deck against a generated opponent deck
 
-If no valid saved custom deck exists, the UI blocks game start and tells the user to use the deck builder.
+If no saved deck exists yet, the app seeds the user with a starter deck automatically so `Custom Deck` and `Competition Mode` can launch immediately.
+
+#### Competition Mode
+
+Competition Mode uses the saved primary/custom deck and runs a five-stage ladder:
+
+1. Joey Wheeler
+2. Mai Valentine
+3. Maximillion Pegasus
+4. Yugi Muto
+5. Seto Kaiba
+
+The current ladder stage is saved locally so the player can leave and resume the ladder later without restarting from Stage 1.
 
 ### 4. Reducer-driven duel state changes
 
@@ -525,13 +570,14 @@ Fusion materials are parsed from CSV text and matched using simple string checks
 
 1. Run the app with `npm run dev`
 2. Open the start screen
-3. Choose `Random Deck` for a quick match, or open `Deck Builder` first
-4. In the deck builder, save a deck with at least 40 cards if you want to use `Custom Deck`
-5. Start the duel
-6. Click your deck during draw phase to draw
-7. Use hand cards during main phases
-8. Use the arrow button on the right side of the board to advance phases
-9. Attack during battle phase using the attack action on eligible monsters
+3. Choose `CPU Mode` for a quick duel or `Competition Mode` for the character ladder
+4. If you open `CPU Mode`, choose either `Random Deck` or `Custom Deck`
+5. Open `Deck Builder` if you want to edit the saved primary deck
+6. Start the duel
+7. Click your deck during draw phase to draw
+8. Use hand cards during main phases
+9. Use the phase advance control to move through the turn
+10. Attack during battle phase using the attack action on eligible monsters
 
 ## Deployment Notes
 
@@ -543,6 +589,13 @@ This is a static front-end app from a gameplay perspective. The current codebase
 - provider configuration
 
 The app can be deployed anywhere a Vite-built React SPA can be hosted.
+
+For the current hosting flow:
+
+- GitHub stores the source history and release tags
+- Vercel deploys from the `main` branch
+- the production build is generated with `npm run build`
+- the PWA manifest and service worker are part of the production output
 
 ## Verification Summary
 
