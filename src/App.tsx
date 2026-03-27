@@ -9,6 +9,7 @@ import { ArrowRight, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { ensureStarterCustomDeck } from './utils/deckStorage';
 import { COMPETITION_LADDER, formatCompetitionLogMessage } from './utils/competitionMode';
+import { clearCompetitionResumeStage, getCompetitionResumeStage, setCompetitionResumeStage } from './utils/competitionProgress';
 import { canActivateSpell, canManuallyActivateTrap, getHandCardActionAvailability, getPossibleFusionMonsters, isMaterialMatch } from './utils/cardActionRules';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
 
@@ -58,6 +59,7 @@ export default function App() {
   const [gameMode, setGameMode] = useState<'random' | 'custom' | 'competition' | null>(null);
   const [competitionStageIndex, setCompetitionStageIndex] = useState<number | null>(null);
   const [pendingCpuModeSelection, setPendingCpuModeSelection] = useState(false);
+  const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -79,6 +81,7 @@ export default function App() {
           ? 'CPU Mode'
           : null;
   const canPlayerDraw = state.turn === 'player' && state.phase === 'DP';
+  const hasActiveDuel = view === 'game' && !pendingCpuModeSelection && gameMode !== null && !state.winner;
   const { reduced } = useMotionPreference();
   const { activeAnnouncement, announce, clearAnnouncements } = useAnnouncementQueue(990);
   const playerActivationContext = {
@@ -178,6 +181,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (gameMode !== 'competition' || competitionStageIndex === null) return;
+
+    if (state.winner === 'player') {
+      const nextStageIndex = competitionStageIndex + 1;
+      if (nextStageIndex >= COMPETITION_LADDER.length) {
+        clearCompetitionResumeStage();
+      } else {
+        setCompetitionResumeStage(nextStageIndex);
+      }
+      return;
+    }
+
+    setCompetitionResumeStage(competitionStageIndex);
+  }, [gameMode, competitionStageIndex, state.winner]);
+
+  useEffect(() => {
     if (view === 'game') {
       setMobileInfoExpanded(false);
     }
@@ -267,8 +286,18 @@ export default function App() {
     setGameMode(null);
     setCompetitionStageIndex(null);
     setPendingCpuModeSelection(false);
+    setShowMenuConfirm(false);
     setUiState({ type: 'IDLE' });
     prevPlayerPhaseKeyRef.current = null;
+  };
+
+  const handleMenuClick = () => {
+    if (!hasActiveDuel) {
+      returnToMenu();
+      return;
+    }
+
+    setShowMenuConfirm(true);
   };
 
   const startRandomGame = () => {
@@ -320,7 +349,7 @@ export default function App() {
   };
 
   const startCompetitionMode = () => {
-    startCompetitionDuel(0);
+    startCompetitionDuel(getCompetitionResumeStage(COMPETITION_LADDER.length));
   };
 
   const openCpuModeSelection = () => {
@@ -342,6 +371,7 @@ export default function App() {
 
     const nextStageIndex = competitionStageIndex + 1;
     if (nextStageIndex >= COMPETITION_LADDER.length) {
+      clearCompetitionResumeStage();
       showNotice('Competition cleared. You defeated every duelist in the ladder.', 'Competition');
       returnToMenu();
       return;
@@ -349,6 +379,41 @@ export default function App() {
 
     startCompetitionDuel(nextStageIndex);
   };
+
+  const getMenuPromptContent = () => {
+    if (gameMode === 'competition' && currentCompetitionOpponent) {
+      return {
+        eyebrow: `Stage ${currentCompetitionOpponent.stage} of ${currentCompetitionOpponent.totalStages}`,
+        title: 'Forfeit Duel?',
+        message: currentCompetitionOpponent.voice.forfeit,
+        detail: `Your ladder progress will stay at ${currentCompetitionOpponent.name}.`,
+        confirmLabel: 'Forfeit Duel',
+        cancelLabel: 'Stay in Duel',
+      };
+    }
+
+    if (gameMode === 'custom') {
+      return {
+        eyebrow: 'CPU Mode: Custom Deck',
+        title: 'Forfeit Duel?',
+        message: 'The CPU smirks. "Walking out already? Leave now and this duel is a forfeit."',
+        detail: 'You will return to the menu and can start a fresh custom duel any time.',
+        confirmLabel: 'Forfeit Duel',
+        cancelLabel: 'Stay in Duel',
+      };
+    }
+
+    return {
+      eyebrow: 'CPU Mode: Random Deck',
+      title: 'Forfeit Duel?',
+      message: 'The CPU shrugs. "No dramatic finish? Leave now and I will take the win by forfeit."',
+      detail: 'You will return to the menu and can spin up another random duel immediately.',
+      confirmLabel: 'Forfeit Duel',
+      cancelLabel: 'Stay in Duel',
+    };
+  };
+
+  const menuPromptContent = getMenuPromptContent();
 
   const renderPhaseTracker = (className = 'flex gap-3 text-xs font-mono') => (
     <div className={className}>
@@ -1592,7 +1657,7 @@ export default function App() {
                     {state.turn === 'player' ? 'P1 Turn' : `${opponentShortLabel} Turn`}
                   </motion.span>
                   <button 
-                    onClick={returnToMenu}
+                    onClick={handleMenuClick}
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors border border-zinc-800 px-2 py-1 rounded hover:border-zinc-600 shrink-0"
                   >
                     <Settings size={12} /> Menu
@@ -1615,7 +1680,7 @@ export default function App() {
                     {state.turn === 'player' ? 'P1 Turn' : `${opponentShortLabel} Turn`}
                   </motion.span>
                   <button 
-                    onClick={returnToMenu}
+                    onClick={handleMenuClick}
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors border border-zinc-800 px-2 py-1 rounded hover:border-zinc-600 shrink-0"
                   >
                     <Settings size={12} /> Menu
@@ -1638,7 +1703,7 @@ export default function App() {
                     {state.turn === 'player' ? 'P1 Turn' : `${opponentShortLabel} Turn`}
                   </motion.span>
                   <button 
-                    onClick={returnToMenu}
+                    onClick={handleMenuClick}
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors border border-zinc-800 px-2 py-1 rounded hover:border-zinc-600 shrink-0"
                   >
                     <Settings size={12} /> Menu
@@ -2370,6 +2435,55 @@ export default function App() {
                       className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white mt-2"
                     >
                       Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {showMenuConfirm && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+                onClick={() => setShowMenuConfirm(false)}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
+                  transition={getSharedTransition(reduced, 'normal')}
+                  className="w-full max-w-md border border-zinc-700 bg-black p-6 flex flex-col items-center text-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-3">
+                    {menuPromptContent.eyebrow}
+                  </div>
+                  <h2 className="text-xl font-sans font-bold uppercase tracking-wide text-white mb-3">
+                    {menuPromptContent.title}
+                  </h2>
+                  <p className="text-sm text-zinc-300 leading-6 mb-3">
+                    {menuPromptContent.message}
+                  </p>
+                  <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-zinc-500 mb-6">
+                    {menuPromptContent.detail}
+                  </p>
+                  <div className="w-full flex flex-col gap-3">
+                    <button
+                      onClick={returnToMenu}
+                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                    >
+                      {menuPromptContent.confirmLabel}
+                    </button>
+                    <button
+                      onClick={() => setShowMenuConfirm(false)}
+                      className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white"
+                    >
+                      {menuPromptContent.cancelLabel}
                     </button>
                   </div>
                 </motion.div>

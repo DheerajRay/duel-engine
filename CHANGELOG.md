@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.0.3 - 2026-03-27
+
+Patch release focused on competition continuity and cleaner in-duel exits.
+
+Included in this release:
+
+- added local competition-stage persistence so the ladder resumes from the last unlocked opponent instead of always restarting from Stage 1
+- added an in-duel forfeit confirmation when opening the menu mid-match
+- gave the competition forfeit prompt character-specific voice and matched CPU mode prompts to the app's sassier duel tone
+- added regression coverage for competition resume and forfeit behavior
+
 ## v1.0.2 - 2026-03-26
 
 Patch release focused on clearer in-duel phase guidance.

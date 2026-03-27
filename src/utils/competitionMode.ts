@@ -12,6 +12,7 @@ type CompetitionVoiceProfile = {
   attack: string;
   turn: string;
   loss: string;
+  forfeit: string;
 };
 
 export type CompetitionOpponent = SavedDeck & {
@@ -31,6 +32,7 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
     attack: 'Joey points forward. "Go on, finish the job!"',
     turn: 'Joey draws fast. "My move now!"',
     loss: 'Joey exhales. "Aw, man... you got me that time."',
+    forfeit: 'Joey leans in. "C\'mon, you can\'t bail now. Leave and I\'m takin\' this one by forfeit."',
   },
   char_mai: {
     intro: 'Mai smiles. "Try to keep up with me."',
@@ -40,6 +42,7 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
     attack: 'Mai gives a calm nod. "Now strike."',
     turn: 'Mai draws with confidence. "Watch closely."',
     loss: 'Mai folds her arms. "Not bad. You earned that win."',
+    forfeit: 'Mai smiles faintly. "Leaving already? If you walk away now, this duel is mine."',
   },
   char_pegasus: {
     intro: 'Pegasus smiles. "Welcome to my delightful little performance."',
@@ -49,6 +52,7 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
     attack: 'Pegasus gestures grandly. "Take the stage and attack."',
     turn: 'Pegasus draws elegantly. "Now then, let the show continue."',
     loss: 'Pegasus sighs. "What an unexpectedly marvelous upset."',
+    forfeit: 'Pegasus chuckles. "Ending the show so soon? If you exit now, I shall gladly accept the forfeit."',
   },
   char_yugi: {
     intro: 'Yugi steadies his hand. "I trust the heart of the cards."',
@@ -58,6 +62,7 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
     attack: 'Yugi calls out. "Now, attack with everything you have!"',
     turn: 'Yugi draws calmly. "My turn. I believe in this deck."',
     loss: 'Yugi lowers his gaze. "You dueled with real conviction."',
+    forfeit: 'Yugi stays calm. "If you leave now, I\'ll take this duel by forfeit. Come back when you\'re ready."',
   },
   char_kaiba: {
     intro: 'Kaiba smirks. "Prepare to be outclassed."',
@@ -67,6 +72,7 @@ const voiceProfiles: Record<CompetitionOpponentId, CompetitionVoiceProfile> = {
     attack: 'Kaiba points ahead. "Crush them."',
     turn: 'Kaiba draws sharply. "My turn. Try to keep up."',
     loss: 'Kaiba clenches his jaw. "Do not get used to it."',
+    forfeit: 'Kaiba scoffs. "Running away? Fine. Leave now and I\'ll take the win by forfeit."',
   },
 };
 

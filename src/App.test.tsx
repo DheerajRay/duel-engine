@@ -77,4 +77,39 @@ describe('App', () => {
     expect(screen.getAllByText(/Joey Wheeler LP/i).length).toBeGreaterThan(0);
     expect(JSON.parse(window.localStorage.getItem('ygo_custom_deck') || '[]').length).toBeGreaterThanOrEqual(40);
   });
+
+  it('resumes competition from saved stage progress and confirms forfeits with character-specific copy', async () => {
+    vi.useFakeTimers();
+    window.localStorage.setItem('ygo_competition_stage_index', '2');
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByText(/Stage 3 of 5: Maximillion Pegasus/i)).toBeInTheDocument();
+    expect(window.localStorage.getItem('ygo_competition_stage_index')).toBe('2');
+
+    fireEvent.click(screen.getByRole('button', { name: /menu/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByText(/Forfeit Duel\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ending the show so soon\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your ladder progress will stay at Maximillion Pegasus\./i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /forfeit duel/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByRole('button', { name: /competition mode/i })).toBeInTheDocument();
+    expect(window.localStorage.getItem('ygo_competition_stage_index')).toBe('2');
+
+    fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
+
+    await act(async () => {});
+
+    expect(screen.getByText(/Stage 3 of 5: Maximillion Pegasus/i)).toBeInTheDocument();
+  });
 });
