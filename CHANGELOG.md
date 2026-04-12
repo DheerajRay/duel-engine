@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.3 - 2026-04-12
+
+Patch release focused on the home-page auth action.
+
+Included in this release:
+
+- replaced the signed-in `Profile` button on the home page with a direct `Logout` action
+- kept `Sign In` as the guest-state action on the same button slot
+- preserved the dedicated sign-in screen and the launch-time auth prompt for full account management
+
 ## v1.3.2 - 2026-04-12
 
 Patch release focused on the sign-in flow and launch-time auth prompt.

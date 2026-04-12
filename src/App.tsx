@@ -20,7 +20,7 @@ import {
   isMaterialMatch,
 } from './effects/registry';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
-import { ensureProfile, getCurrentUser, onAuthStateChange } from './services/auth';
+import { ensureProfile, getCurrentUser, onAuthStateChange, signOut } from './services/auth';
 import { initializeGameContent } from './services/gameContent';
 import { appendDuelHistoryEntry } from './services/history';
 import {
@@ -426,6 +426,17 @@ export default function App() {
 
   const dismissAuthPrompt = () => {
     setShowAuthPrompt(false);
+  };
+
+  const handleHomeAuthAction = async () => {
+    if (!userProfile) {
+      setView('sign-in');
+      return;
+    }
+
+    await signOut();
+    setUserProfile(null);
+    setShowAuthPrompt(true);
   };
 
   const forfeitToMenu = async () => {
@@ -1890,11 +1901,11 @@ export default function App() {
               </motion.button>
 
               <motion.button 
-                onClick={() => setView('sign-in')} 
+                onClick={() => void handleHomeAuthAction()} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
                 className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
               >
-                {userProfile ? 'Profile' : 'Sign In'}
+                {userProfile ? 'Logout' : 'Sign In'}
               </motion.button>
             </motion.div>
           </motion.div>
