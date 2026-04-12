@@ -6,46 +6,66 @@ import {
 } from './gameContentStore';
 import type {
   CloudCardRow,
+  CloudCardEngineMetadataRow,
   CloudCharacterRow,
   CloudCompetitionStageRow,
   CloudPredefinedDeckRow,
   GameContentBundle,
 } from '../types/cloud';
 
-const GAME_CONTENT_CACHE_KEY = 'ygo_game_content_cache_v1';
+const mapCloudCards = (
+  rows: CloudCardRow[],
+  engineRows: CloudCardEngineMetadataRow[],
+) => {
+  const engineMap = new Map(engineRows.map((row) => [row.card_id, row]));
 
-const serializeBundle = (bundle: GameContentBundle) => JSON.stringify(bundle);
-
-const readCachedBundle = (): GameContentBundle | null => {
-  const raw = localStorage.getItem(GAME_CONTENT_CACHE_KEY);
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw) as GameContentBundle;
-  } catch {
-    return null;
-  }
+  return rows.map((row) => {
+    const engineRow = engineMap.get(row.id);
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      description: row.description,
+      sourceType: row.source_type ?? undefined,
+      textSource: row.text_source ?? undefined,
+      verificationStatus: row.verification_status ?? undefined,
+      lastVerifiedAt: row.last_verified_at ?? undefined,
+      notes: row.notes ?? undefined,
+      originalPage: row.original_page ?? undefined,
+      matchedSnapshot: row.matched_snapshot ?? undefined,
+      passcode: row.passcode ?? undefined,
+      cardStatus: row.card_status ?? undefined,
+      attribute: row.attribute ?? undefined,
+      level: row.level ?? undefined,
+      rank: row.rank ?? undefined,
+      linkRating: row.link_rating ?? undefined,
+      linkArrows: row.link_arrows ?? undefined,
+      pendulumScale: row.pendulum_scale ?? undefined,
+      atk: row.atk ?? undefined,
+      def: row.def ?? undefined,
+      subType: row.sub_type ?? undefined,
+      monsterTypeLine: row.monster_type_line ?? undefined,
+      monsterRace: row.monster_race ?? undefined,
+      monsterAbilities: row.monster_abilities ?? undefined,
+      spellTrapProperty: row.spell_trap_property ?? undefined,
+      isFusion: row.is_fusion ?? undefined,
+      fusionMaterials: row.fusion_materials ?? undefined,
+      summoningCondition: row.summoning_condition ?? undefined,
+      pendulumEffect: row.pendulum_effect ?? undefined,
+      supports: row.support_tags ?? undefined,
+      antiSupports: row.anti_support_tags ?? undefined,
+      cardActions: row.card_actions ?? undefined,
+      effectTypes: row.effect_types ?? undefined,
+      effectSupportStatus: engineRow?.effect_support_status ?? row.effect_support_status ?? undefined,
+      effectSupportNote: engineRow?.effect_support_note ?? row.effect_support_note ?? undefined,
+      engineBehaviorKey: engineRow?.engine_behavior_key ?? undefined,
+      isPlayableInEngine: engineRow?.is_playable_in_engine ?? undefined,
+      requiresManualTargeting: engineRow?.requires_manual_targeting ?? undefined,
+      hasHiddenInformationImpact: engineRow?.has_hidden_information_impact ?? undefined,
+      aiPriorityWeight: engineRow?.ai_priority_weight ?? undefined,
+    };
+  });
 };
-
-const cacheBundle = (bundle: GameContentBundle) => {
-  localStorage.setItem(GAME_CONTENT_CACHE_KEY, serializeBundle(bundle));
-};
-
-const mapCloudCards = (rows: CloudCardRow[]) => rows.map((row) => ({
-  id: row.id,
-  name: row.name,
-  type: row.type,
-  description: row.description,
-  attribute: row.attribute ?? undefined,
-  level: row.level ?? undefined,
-  atk: row.atk ?? undefined,
-  def: row.def ?? undefined,
-  subType: row.sub_type ?? undefined,
-  isFusion: row.is_fusion ?? undefined,
-  fusionMaterials: row.fusion_materials ?? undefined,
-  effectSupportStatus: row.effect_support_status ?? undefined,
-  effectSupportNote: row.effect_support_note ?? undefined,
-}));
 
 const mapCloudDecks = (rows: CloudPredefinedDeckRow[]) => rows.map((row) => ({
   id: row.id,
@@ -76,7 +96,7 @@ const mapCloudStages = (rows: CloudCompetitionStageRow[]) => rows.map((row) => (
   summaryOrder: row.summary_order,
 }));
 
-export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'cache' | 'local'; bundle: GameContentBundle }> => {
+export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'local'; bundle: GameContentBundle }> => {
   const localBundle = getLocalGameContentBundle();
   const client = getSupabaseClient();
 
@@ -87,19 +107,23 @@ export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'c
   }
 
   try {
-    const [cardsResult, decksResult, charactersResult, stagesResult] = await Promise.all([
+    const [cardsResult, engineResult, decksResult, charactersResult, stagesResult] = await Promise.all([
       client.from('cards').select('*').order('name'),
+      client.from('card_engine_metadata').select('*').order('card_id'),
       client.from('predefined_decks').select('*').order('name'),
       client.from('characters').select('*').order('name'),
       client.from('competition_stages').select('*').order('stage_number'),
     ]);
 
-    if (cardsResult.error || decksResult.error || charactersResult.error || stagesResult.error) {
-      throw cardsResult.error || decksResult.error || charactersResult.error || stagesResult.error;
+    if (cardsResult.error || engineResult.error || decksResult.error || charactersResult.error || stagesResult.error) {
+      throw cardsResult.error || engineResult.error || decksResult.error || charactersResult.error || stagesResult.error;
     }
 
     const bundle: GameContentBundle = {
-      cards: mapCloudCards((cardsResult.data as CloudCardRow[]) ?? []),
+      cards: mapCloudCards(
+        (cardsResult.data as CloudCardRow[]) ?? [],
+        (engineResult.data as CloudCardEngineMetadataRow[]) ?? [],
+      ),
       predefinedDecks: mapCloudDecks((decksResult.data as CloudPredefinedDeckRow[]) ?? []),
       characters: mapCloudCharacters((charactersResult.data as CloudCharacterRow[]) ?? []),
       competitionStages: mapCloudStages((stagesResult.data as CloudCompetitionStageRow[]) ?? []),
@@ -112,17 +136,14 @@ export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'c
       bundle.competitionStages.length > 0
     ) {
       replaceGameContent(bundle);
-      cacheBundle(bundle);
       rebuildEffectRegistry();
       return { source: 'supabase', bundle };
     }
 
     throw new Error('Supabase game content is incomplete.');
   } catch {
-    const cachedBundle = readCachedBundle();
-    const bundle = cachedBundle ?? localBundle;
-    replaceGameContent(bundle);
+    replaceGameContent(localBundle);
     rebuildEffectRegistry();
-    return { source: cachedBundle ? 'cache' : 'local', bundle };
+    return { source: 'local', bundle: localBundle };
   }
 };

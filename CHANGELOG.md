@@ -11,6 +11,25 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.0 - 2026-04-12
+
+Feature release focused on strengthening the card catalog, moving richer card metadata into Supabase, and removing the local card-content cache layer.
+
+Included in this release:
+
+- widened the card data model with richer catalog fields including provenance, support metadata, passcodes, type-line details, and additional rule text
+- added a wiki-backed override sync pipeline to backfill missing card descriptions and strengthen incomplete card rows
+- generated and applied Supabase migrations for:
+  - enriched card fields
+  - card governance metadata
+  - refreshed game-content seed data
+  - refreshed card descriptions and metadata
+- populated the live `cards` table so all cards now have descriptions
+- updated duel and deck-builder card details to render the richer catalog data
+- updated deck-builder search to use the enriched card metadata
+- removed the `localStorage` game-content cache so card content now comes from Supabase first with bundled local fallback only
+- kept the full validation suite green after the data-layer and content refresh changes
+
 ## v1.2.0 - 2026-04-11
 
 Feature release focused on cloud-ready app data, optional auth surfaces, history, and the first AI-assisted deck workflow.

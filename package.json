@@ -1,13 +1,17 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
+    "generate:supabase-seed": "tsx scripts/generateSupabaseSeed.ts",
+    "sync:card-overrides": "tsx scripts/syncCardOverrides.ts",
+    "sync:wiki-card-overrides": "tsx scripts/syncWikiCardOverrides.ts",
+    "audit:card-data": "tsx scripts/auditCardData.ts",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

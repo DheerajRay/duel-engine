@@ -1,19 +1,50 @@
 export type CardType = 'Monster' | 'Spell' | 'Trap';
+export type CardSourceType = 'official' | 'anime' | 'custom' | 'unknown';
+export type CardTextSource = 'csv' | 'manual' | 'external_api' | 'mixed';
+export type CardVerificationStatus = 'verified' | 'needs_review' | 'unverified';
 
 export interface Card {
   id: string;
   name: string;
   type: CardType;
   description: string;
+  sourceType?: CardSourceType;
+  textSource?: CardTextSource;
+  verificationStatus?: CardVerificationStatus;
+  lastVerifiedAt?: string;
+  notes?: string;
+  originalPage?: number;
+  matchedSnapshot?: boolean;
+  passcode?: string;
+  cardStatus?: string;
   attribute?: string;
   level?: number;
+  rank?: number;
+  linkRating?: number;
+  linkArrows?: string[];
+  pendulumScale?: number;
   atk?: number;
   def?: number;
   subType?: 'Normal' | 'Equip' | 'Field' | 'Quick-Play' | 'Continuous' | 'Counter';
+  monsterTypeLine?: string;
+  monsterRace?: string;
+  monsterAbilities?: string[];
+  spellTrapProperty?: string;
   isFusion?: boolean;
   fusionMaterials?: string[];
+  summoningCondition?: string;
+  pendulumEffect?: string;
+  supports?: string[];
+  antiSupports?: string[];
+  cardActions?: string[];
+  effectTypes?: string[];
   effectSupportStatus?: 'implemented' | 'partial' | 'unsupported';
   effectSupportNote?: string;
+  engineBehaviorKey?: string;
+  isPlayableInEngine?: boolean;
+  requiresManualTargeting?: boolean;
+  hasHiddenInformationImpact?: boolean;
+  aiPriorityWeight?: number;
 }
 
 export interface GameCard extends Card {

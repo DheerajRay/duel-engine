@@ -1,4 +1,4 @@
-import type { Card } from '../types';
+import type { Card, CardSourceType, CardTextSource, CardVerificationStatus } from '../types';
 import type { CompetitionAiProfile, CompetitionSummaryLines, EffectSupportStatus } from '../effects/types';
 
 export interface SavedDeck {
@@ -44,6 +44,17 @@ export interface CompetitionStageContent {
 export interface CloudCardRecord extends Card {
   effectSupportStatus?: EffectSupportStatus;
   effectSupportNote?: string;
+}
+
+export interface CardReviewQueueEntry {
+  cardId: string;
+  missingDescription: boolean;
+  missingPasscode: boolean;
+  missingMonsterTypeLine: boolean;
+  suggestedSourceType: CardSourceType;
+  reviewStatus: 'needs_review' | 'in_progress' | 'verified' | 'ignored';
+  reviewNotes: string | null;
+  updatedAt: string;
 }
 
 export interface GameContentBundle {
@@ -162,15 +173,61 @@ export interface CloudCardRow {
   name: string;
   type: Card['type'];
   description: string;
+  source_type: CardSourceType | null;
+  text_source: CardTextSource | null;
+  verification_status: CardVerificationStatus | null;
+  last_verified_at: string | null;
+  notes: string | null;
+  original_page: number | null;
+  matched_snapshot: boolean | null;
+  passcode: string | null;
+  card_status: string | null;
   attribute: string | null;
   level: number | null;
+  rank: number | null;
+  link_rating: number | null;
+  link_arrows: string[] | null;
+  pendulum_scale: number | null;
   atk: number | null;
   def: number | null;
   sub_type: Card['subType'] | null;
+  monster_type_line: string | null;
+  monster_race: string | null;
+  monster_abilities: string[] | null;
+  spell_trap_property: string | null;
   is_fusion: boolean | null;
   fusion_materials: string[] | null;
+  summoning_condition: string | null;
+  pendulum_effect: string | null;
+  support_tags: string[] | null;
+  anti_support_tags: string[] | null;
+  card_actions: string[] | null;
+  effect_types: string[] | null;
   effect_support_status: EffectSupportStatus | null;
   effect_support_note: string | null;
+}
+
+export interface CloudCardEngineMetadataRow {
+  card_id: string;
+  effect_support_status: EffectSupportStatus | null;
+  effect_support_note: string | null;
+  engine_behavior_key: string | null;
+  is_playable_in_engine: boolean | null;
+  requires_manual_targeting: boolean | null;
+  has_hidden_information_impact: boolean | null;
+  ai_priority_weight: number | null;
+  updated_at: string;
+}
+
+export interface CloudCardReviewQueueRow {
+  card_id: string;
+  missing_description: boolean;
+  missing_passcode: boolean;
+  missing_monster_type_line: boolean;
+  suggested_source_type: CardSourceType;
+  review_status: 'needs_review' | 'in_progress' | 'verified' | 'ignored';
+  review_notes: string | null;
+  updated_at: string;
 }
 
 export interface CompetitionOpponentContent extends SavedDeck {
