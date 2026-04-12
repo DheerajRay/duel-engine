@@ -4,6 +4,7 @@ import App from './App';
 
 vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => null,
+  isSupabaseConfigured: () => false,
 }));
 
 describe('App', () => {
@@ -12,9 +13,15 @@ describe('App', () => {
     window.localStorage.clear();
   });
 
+  const continueAsGuest = async () => {
+    await waitFor(() => expect(screen.getByRole('button', { name: /continue as guest/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /continue as guest/i }));
+  };
+
   it('starts a cpu random duel from the battlefield picker and shows the centered mode heading', async () => {
     const { container } = render(<App />);
 
+    await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /cpu mode/i }));
 
@@ -41,6 +48,7 @@ describe('App', () => {
   it('starts a cpu custom duel for a new user by seeding the starter deck as the saved custom deck', async () => {
     render(<App />);
 
+    await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /cpu mode/i }));
 
@@ -55,6 +63,7 @@ describe('App', () => {
   it('opens the competition lobby and starts stage one for a new user with the starter deck', async () => {
     render(<App />);
 
+    await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /competition mode/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
 
@@ -80,6 +89,7 @@ describe('App', () => {
 
     render(<App />);
 
+    await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /competition mode/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
 
@@ -110,4 +120,14 @@ describe('App', () => {
 
     await screen.findByText(/Stage 3 of 5: Maximillion Pegasus/i);
   }, 15000);
+
+  it('shows the auth prompt on app open for guests', async () => {
+    render(<App />);
+
+    expect(await screen.findByText(/cloud sync/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^sign in$/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/you@example.com/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/enter password/i)).toBeInTheDocument();
+  });
 });

@@ -11,6 +11,19 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.2 - 2026-04-12
+
+Patch release focused on the sign-in flow and launch-time auth prompt.
+
+Included in this release:
+
+- replaced Supabase magic-link auth with email/password sign-in
+- added create-account support from the same auth screen
+- added a launch-time sign-in prompt for guest users when the app opens
+- kept guest access available through an explicit `Continue As Guest` action
+- relied on Supabase persisted sessions for same-device auto-login instead of adding a custom local auth token
+- updated the test suite to cover the guest auth prompt and the new boot flow
+
 ## v1.3.1 - 2026-04-12
 
 Patch release focused on restoring the simpler card-detail presentation.

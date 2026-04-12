@@ -40,18 +40,31 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
   return toUserProfile(user, data as CloudProfileRow | null);
 };
 
-export const signInWithMagicLink = async (email: string) => {
+export const signInWithPassword = async (email: string, password: string) => {
   const client = getSupabaseClient();
   if (!client) {
     throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
   }
 
-  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
-  const { error } = await client.auth.signInWithOtp({
+  const { error } = await client.auth.signInWithPassword({
     email,
-    options: {
-      emailRedirectTo: redirectTo,
-    },
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+};
+
+export const signUpWithPassword = async (email: string, password: string) => {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
+
+  const { error } = await client.auth.signUp({
+    email,
+    password,
   });
 
   if (error) {

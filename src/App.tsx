@@ -84,6 +84,7 @@ export default function App() {
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [showCompetitionLobby, setShowCompetitionLobby] = useState(false);
   const [showCompetitionIntro, setShowCompetitionIntro] = useState(false);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(true);
   const [bootState, setBootState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [bootSource, setBootSource] = useState<'supabase' | 'local' | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -252,6 +253,11 @@ export default function App() {
 
     const unsubscribe = onAuthStateChange((profile) => {
       setUserProfile(profile);
+      if (profile) {
+        setShowAuthPrompt(false);
+      } else {
+        setShowAuthPrompt(true);
+      }
     });
 
     void bootstrap();
@@ -416,6 +422,10 @@ export default function App() {
     setUiState({ type: 'IDLE' });
     prevPlayerPhaseKeyRef.current = null;
     duelHistorySavedRef.current = null;
+  };
+
+  const dismissAuthPrompt = () => {
+    setShowAuthPrompt(false);
   };
 
   const forfeitToMenu = async () => {
@@ -1890,6 +1900,33 @@ export default function App() {
           </motion.div>
 
           <AnimatePresence>
+            {!userProfile && showAuthPrompt && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-30 bg-black/90 flex items-center justify-center px-4"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
+                  transition={getSharedTransition(reduced, 'normal')}
+                  className="w-full max-w-lg"
+                >
+                  <SignInPage
+                    mode="modal"
+                    onBack={dismissAuthPrompt}
+                    onContinueAsGuest={dismissAuthPrompt}
+                    onSuccess={() => {
+                      setShowAuthPrompt(false);
+                      setView('start');
+                    }}
+                  />
+                </motion.div>
+              </motion.div>
+            )}
             {showCompetitionLobby && competitionResumeOpponent && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -1984,7 +2021,10 @@ export default function App() {
       )}
       {view === 'sign-in' && (
         <Suspense fallback={renderLazyScreenFallback('Sign In')}>
-          <SignInPage onBack={() => setView('start')} />
+          <SignInPage
+            onBack={() => setView('start')}
+            onSuccess={() => setView('start')}
+          />
         </Suspense>
       )}
       {view === 'history' && (
