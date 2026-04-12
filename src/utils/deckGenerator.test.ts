@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CARD_DB } from './cardParser';
+import { CARD_DB } from '../constants';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './deckGenerator';
 
 const countCopies = (cards: string[]) =>

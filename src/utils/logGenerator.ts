@@ -26,7 +26,7 @@ const actorName = (player: 'player' | 'opponent') => player === 'player' ? 'You'
 const possessiveName = (player: 'player' | 'opponent') => player === 'player' ? 'Your' : "Opponent's";
 
 export const generateLog = (type: LogActionType, data: any = {}): LogEntry => {
-  const { player, cardName, targetName, damage, nextTurn, effectType, targetCardName } = data;
+  const { player, cardName, targetName, damage, nextTurn, effectType, targetCardName, summonKind, tributeCount, isLethal, remainingLp } = data;
   const actor = player === 'player' || player === 'opponent' ? actorName(player) : null;
   const possessive = player === 'player' || player === 'opponent' ? possessiveName(player) : null;
 
@@ -46,7 +46,15 @@ export const generateLog = (type: LogActionType, data: any = {}): LogEntry => {
       break;
 
     case 'SUMMON_MONSTER':
-      message = `${actor} summoned ${cardName}.`;
+      if (summonKind === 'fusion') {
+        message = `${actor} Fusion Summoned ${cardName}.`;
+      } else if (tributeCount >= 2) {
+        message = `${actor} Tribute Summoned ${cardName} by offering 2 monsters.`;
+      } else if (tributeCount === 1) {
+        message = `${actor} Tribute Summoned ${cardName} by offering 1 monster.`;
+      } else {
+        message = `${actor} summoned ${cardName}.`;
+      }
       break;
 
     case 'SET_MONSTER':
@@ -120,7 +128,10 @@ export const generateLog = (type: LogActionType, data: any = {}): LogEntry => {
       break;
 
     case 'DIRECT_ATTACK':
-      message = `${actor} attacked directly with ${cardName}${typeof damage === 'number' ? ` for ${damage} damage` : ''}.`;
+      message = `${actor} attacked directly with ${cardName}${typeof damage === 'number' ? ` for ${damage} damage` : ''}${typeof remainingLp === 'number' ? `, leaving ${actorName(player === 'player' ? 'opponent' : 'player')} at ${remainingLp} LP` : ''}.`;
+      if (isLethal) {
+        message = `${actor} attacked directly with ${cardName} for the finishing blow.`;
+      }
       break;
 
     case 'MONSTER_DESTROYED':
@@ -133,9 +144,12 @@ export const generateLog = (type: LogActionType, data: any = {}): LogEntry => {
 
     case 'BATTLE_DAMAGE':
       if (cardName) {
-        message = `${actor} lost ${damage} LP${cardName ? ` from ${cardName}` : ''}.`;
+        message = `${actor} lost ${damage} LP${cardName ? ` from ${cardName}` : ''}${typeof remainingLp === 'number' ? ` and dropped to ${remainingLp} LP` : ''}.`;
       } else {
-        message = `${actor} lost ${damage} LP.`;
+        message = `${actor} lost ${damage} LP${typeof remainingLp === 'number' ? ` and dropped to ${remainingLp} LP` : ''}.`;
+      }
+      if (isLethal) {
+        message = `${actor} took ${damage} LP damage and the duel ended on that hit.`;
       }
       break;
 

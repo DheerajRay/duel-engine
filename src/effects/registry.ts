@@ -53,6 +53,7 @@ const hasSpecialSummonOnlyText = (card: Card) => {
 };
 
 const inferMonsterSupportStatus = (card: Card) => {
+  if (card.effectSupportStatus) return card.effectSupportStatus;
   if (card.isFusion) return 'implemented' as const;
   if (hasSpecialSummonOnlyText(card)) return 'partial' as const;
 
@@ -87,12 +88,15 @@ const buildDefaultAiHints = (card: Card): CardAiHints => {
 const buildDefaultEntry = (card: Card): CardEffectRegistryEntry => {
   if (card.type === 'Monster') {
     const specialSummonOnly = hasSpecialSummonOnlyText(card);
+    const supportStatus = inferMonsterSupportStatus(card);
     return {
       id: card.id,
-      supportStatus: inferMonsterSupportStatus(card),
-      supportNote: specialSummonOnly
-        ? 'Printed summon restriction is enforced. Monster effect text beyond summon rules is not fully implemented.'
-        : undefined,
+      supportStatus,
+      supportNote: card.effectSupportNote || (
+        specialSummonOnly
+          ? 'Printed summon restriction is enforced. Monster effect text beyond summon rules is not fully implemented.'
+          : undefined
+      ),
       playRules: {
         canNormalSummon: !card.isFusion && !specialSummonOnly,
         canSetMonster: !card.isFusion && !specialSummonOnly,
@@ -107,8 +111,8 @@ const buildDefaultEntry = (card: Card): CardEffectRegistryEntry => {
 
   return {
     id: card.id,
-    supportStatus: 'unsupported',
-    supportNote: `${card.type} effect is not implemented yet.`,
+    supportStatus: card.effectSupportStatus || 'unsupported',
+    supportNote: card.effectSupportNote || `${card.type} effect is not implemented yet.`,
     playRules: {
       canNormalSummon: false,
       canSetMonster: false,
@@ -328,7 +332,13 @@ const overrideEntries: Record<string, Partial<CardEffectRegistryEntry>> = {
     canActivate: () => true,
     resolveActivated: (context) => {
       context.opponentLp = Math.max(0, context.opponentLp - 500);
-      appendLog(context, 'BATTLE_DAMAGE', { player: context.opponentKey, damage: 500, cardName: context.card.name });
+      appendLog(context, 'BATTLE_DAMAGE', {
+        player: context.opponentKey,
+        damage: 500,
+        cardName: context.card.name,
+        remainingLp: context.opponentLp,
+        isLethal: context.opponentLp === 0,
+      });
       if (context.opponentLp === 0) {
         context.winner = context.playerKey;
       }
@@ -772,7 +782,13 @@ const overrideEntries: Record<string, Partial<CardEffectRegistryEntry>> = {
           { type: 'ACTIVATE_TRAP', data: { player: context.responder, cardName: trapCard.name } },
           {
             type: 'BATTLE_DAMAGE',
-            data: { player: opponentKey, damage: context.trigger.attacker.atk || 0, cardName: trapCard.name },
+            data: {
+              player: opponentKey,
+              damage: context.trigger.attacker.atk || 0,
+              cardName: trapCard.name,
+              remainingLp: newOpponentLp,
+              isLethal: newOpponentLp === 0,
+            },
           },
         ],
       );
@@ -830,7 +846,7 @@ const overrideEntries: Record<string, Partial<CardEffectRegistryEntry>> = {
   },
 };
 
-const effectRegistry = Object.fromEntries(
+const buildEffectRegistry = () => Object.fromEntries(
   Object.values(CARD_DB).map((card) => {
     const baseEntry = buildDefaultEntry(card);
     return [
@@ -857,6 +873,13 @@ const effectRegistry = Object.fromEntries(
     ];
   }),
 ) as Record<string, CardEffectRegistryEntry>;
+
+let effectRegistry = buildEffectRegistry();
+
+export const rebuildEffectRegistry = () => {
+  effectRegistry = buildEffectRegistry();
+  return effectRegistry;
+};
 
 const getDefaultEntryFromCard = (cardId: string): CardEffectRegistryEntry => {
   const card = CARD_DB[cardId];

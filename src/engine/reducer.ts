@@ -207,7 +207,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
           monsterZone: newMonsterZone,
           graveyard: newGraveyard,
         },
-        log: [...state.log, generateLog(action.position === 'attack' ? 'SUMMON_MONSTER' : 'SET_MONSTER', { player: action.player, cardName: action.position === 'attack' || action.player === 'player' ? card.name : undefined })],
+        log: [...state.log, generateLog(action.position === 'attack' ? 'SUMMON_MONSTER' : 'SET_MONSTER', {
+          player: action.player,
+          cardName: action.position === 'attack' || action.player === 'player' ? card.name : undefined,
+          tributeCount: action.tributes.length,
+          summonKind: 'normal',
+        })],
       };
 
       const opponentKey = action.player === 'player' ? 'opponent' : 'player';
@@ -316,7 +321,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         log: [
           ...state.log, 
           generateLog('ACTIVATE_SPELL', { player: action.player, cardName: spellCard.name }),
-          generateLog('SUMMON_MONSTER', { player: action.player, cardName: fusionMonster.name })
+          generateLog('SUMMON_MONSTER', { player: action.player, cardName: fusionMonster.name, summonKind: 'fusion' })
         ],
       };
 
@@ -471,7 +476,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (action.targetIndex === null) {
         const newLp = Math.max(0, oppState.lp - (attacker.atk || 0));
         newState[opponentKey] = { ...oppState, lp: newLp };
-        newState.log = [...newState.log, generateLog('DIRECT_ATTACK', { player: state.turn, cardName: attacker.name, damage: attacker.atk || 0 })];
+        newState.log = [...newState.log, generateLog('DIRECT_ATTACK', {
+          player: state.turn,
+          cardName: attacker.name,
+          damage: attacker.atk || 0,
+          remainingLp: newLp,
+          isLethal: newLp === 0,
+        })];
         if (newLp === 0) newState.winner = state.turn;
       } else {
         const target = oppState.monsterZone[action.targetIndex];
@@ -490,12 +501,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
             newOppGy.push(target);
             newOppZone[action.targetIndex] = null;
             newOppLp = Math.max(0, newOppLp - (attacker.atk! - target.atk!));
-            newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: opponentKey, cardName: target.name }), generateLog('BATTLE_DAMAGE', { player: opponentKey, damage: attacker.atk! - target.atk!, cardName: attacker.name })];
+            newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: opponentKey, cardName: target.name }), generateLog('BATTLE_DAMAGE', { player: opponentKey, damage: attacker.atk! - target.atk!, cardName: attacker.name, remainingLp: newOppLp, isLethal: newOppLp === 0 })];
           } else if (attacker.atk! < target.atk!) {
             newTurnGy.push(attacker);
             newAttackerZone[action.attackerIndex] = null;
             newTurnLp = Math.max(0, newTurnLp - (target.atk! - attacker.atk!));
-            newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: state.turn, cardName: attacker.name }), generateLog('BATTLE_DAMAGE', { player: state.turn, damage: target.atk! - attacker.atk!, cardName: target.name })];
+            newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: state.turn, cardName: attacker.name }), generateLog('BATTLE_DAMAGE', { player: state.turn, damage: target.atk! - attacker.atk!, cardName: target.name, remainingLp: newTurnLp, isLethal: newTurnLp === 0 })];
           } else {
             newOppGy.push(target);
             newOppZone[action.targetIndex] = null;
@@ -513,7 +524,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             newState.log = [...newState.log, generateLog('MONSTER_DESTROYED', { player: opponentKey, cardName: target.name })];
           } else if (attacker.atk! < target.def!) {
             newTurnLp = Math.max(0, newTurnLp - (target.def! - attacker.atk!));
-            newState.log = [...newState.log, generateLog('BATTLE_DAMAGE', { player: state.turn, damage: target.def! - attacker.atk!, cardName: target.name })];
+            newState.log = [...newState.log, generateLog('BATTLE_DAMAGE', { player: state.turn, damage: target.def! - attacker.atk!, cardName: target.name, remainingLp: newTurnLp, isLethal: newTurnLp === 0 })];
             if (target.position === 'set-monster') {
                newOppZone[action.targetIndex] = { ...target, position: 'defense' };
             }

@@ -1,6 +1,6 @@
-import { SavedDeck } from '../pages/DeckBuilder';
+import type { SavedDeck } from '../types/cloud';
 
-export const CHARACTER_DECKS: SavedDeck[] = [
+export const LOCAL_CHARACTER_DECKS: SavedDeck[] = [
   {
     id: 'char_yugi',
     name: 'Yugi Muto',
@@ -159,3 +159,21 @@ export const CHARACTER_DECKS: SavedDeck[] = [
     extraDeck: []
   }
 ];
+
+export const CHARACTER_DECKS: SavedDeck[] = LOCAL_CHARACTER_DECKS.map(deck => ({
+  ...deck,
+  mainDeck: [...deck.mainDeck],
+  extraDeck: [...deck.extraDeck],
+}));
+
+export const replaceCharacterDecks = (decks: SavedDeck[]) => {
+  CHARACTER_DECKS.splice(
+    0,
+    CHARACTER_DECKS.length,
+    ...decks.map((deck) => ({
+      ...deck,
+      mainDeck: [...deck.mainDeck],
+      extraDeck: [...deck.extraDeck],
+    })),
+  );
+};

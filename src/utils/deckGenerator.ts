@@ -1,4 +1,4 @@
-import { CARD_DB } from './cardParser';
+import { CARD_DB } from '../constants';
 
 export function generateCuratedDeck(): string[] {
   const allCards = Object.values(CARD_DB);

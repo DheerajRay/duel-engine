@@ -101,7 +101,7 @@ describe('gameReducer', () => {
     });
 
     expect(nextState.opponent.lp).toBe(6300);
-    expect(nextState.log.at(-1)?.message).toBe('You attacked directly with Battle Ox for 1700 damage.');
+    expect(nextState.log.at(-1)?.message).toBe('You attacked directly with Battle Ox for 1700 damage, leaving Opponent at 6300 LP.');
   });
 
   it('resolves Hinotama damage and records the source in the log', () => {
@@ -123,7 +123,7 @@ describe('gameReducer', () => {
 
     expect(nextState.opponent.lp).toBe(7500);
     expect(nextState.player.graveyard.map(card => card.id)).toContain('hinotama');
-    expect(nextState.log.at(-1)?.message).toBe('Opponent lost 500 LP from Hinotama.');
+    expect(nextState.log.at(-1)?.message).toBe('Opponent lost 500 LP from Hinotama and dropped to 7500 LP.');
   });
 
   it('lets Dust Tornado destroy the targeted spell or trap and logs the destroyed card', () => {
@@ -300,6 +300,6 @@ describe('gameReducer', () => {
     expect(nextState.player.spellTrapZone[0]?.id).toBe('mirror-force');
     expect(nextState.opponent.monsterZone[0]?.id).toBe('battle-ox');
     expect(nextState.player.lp).toBe(6300);
-    expect(nextState.log.at(-1)?.message).toBe('Opponent attacked directly with Battle Ox for 1700 damage.');
+    expect(nextState.log.at(-1)?.message).toBe('Opponent attacked directly with Battle Ox for 1700 damage, leaving You at 6300 LP.');
   });
 });

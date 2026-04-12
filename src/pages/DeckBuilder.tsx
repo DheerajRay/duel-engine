@@ -1,58 +1,44 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CARD_DB } from '../utils/cardParser';
+import { CARD_DB } from '../constants';
 import { CardView } from '../components/CardView';
 import { Card } from '../types';
-import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
-import { ensureStarterCustomDeck } from '../utils/deckStorage';
 import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
 import { getCardSupportMeta } from '../effects/registry';
-
-export interface SavedDeck {
-  id: string;
-  name: string;
-  mainDeck: string[];
-  extraDeck: string[];
-  isPredefined?: boolean;
-}
-
 import { CHARACTER_DECKS } from '../utils/characterDecks';
-
-const getInitialDecks = (): SavedDeck[] => {
-  let userDecks: SavedDeck[] = [];
-  const saved = localStorage.getItem('ygo_saved_decks');
-  if (saved) {
-    userDecks = JSON.parse(saved).filter((d: SavedDeck) => !d.isPredefined);
-  } else {
-    userDecks = [ensureStarterCustomDeck()];
-  }
-  return [...userDecks, ...CHARACTER_DECKS];
-};
+import { getCurrentUser } from '../services/auth';
+import { requestDeckAssistant } from '../services/deckAssistant';
+import { getUserDeckState, saveUserDeckState, setPrimaryDeckSelection } from '../services/userData';
+import type { SavedDeck } from '../types/cloud';
+import type { DeckAssistantResponse } from '../types/assistant';
 
 export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: () => void; announce?: (input: AnnouncementInput) => void }) {
   const { reduced } = useMotionPreference();
-  const [decks, setDecks] = useState<SavedDeck[]>(getInitialDecks);
-  const [primaryDeckId, setPrimaryDeckId] = useState<string>(() => localStorage.getItem('ygo_primary_deck_id') || getInitialDecks()[0].id);
-  const [editingDeckId, setEditingDeckId] = useState<string>(() => localStorage.getItem('ygo_primary_deck_id') || getInitialDecks()[0].id);
-  
-  const initialEditingDeck = useMemo(() => {
-    return decks.find(d => d.id === editingDeckId) || decks[0];
-  }, []);
-
-  const [deckName, setDeckName] = useState<string>(initialEditingDeck.name);
-  const [deck, setDeck] = useState<string[]>(initialEditingDeck.mainDeck);
-  const [extraDeck, setExtraDeck] = useState<string[]>(initialEditingDeck.extraDeck);
+  const [decks, setDecks] = useState<SavedDeck[]>([]);
+  const [primaryDeckId, setPrimaryDeckId] = useState<string>('');
+  const [editingDeckId, setEditingDeckId] = useState<string>('');
+  const [deckName, setDeckName] = useState<string>('');
+  const [deck, setDeck] = useState<string[]>([]);
+  const [extraDeck, setExtraDeck] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'All' | 'Monster' | 'Spell' | 'Trap' | 'Fusion'>('All');
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null);
   const [isDeckView, setIsDeckView] = useState(false);
-  const [mobilePanelTab, setMobilePanelTab] = useState<'details' | 'decks'>('details');
+  const [mobilePanelTab, setMobilePanelTab] = useState<'details' | 'decks' | 'assistant'>('details');
   const [mobilePanelExpanded, setMobilePanelExpanded] = useState(false);
+  const [desktopLowerTab, setDesktopLowerTab] = useState<'decks' | 'assistant'>('decks');
+  const [syncStatus, setSyncStatus] = useState<'loading' | 'local' | 'syncing' | 'synced' | 'error'>('loading');
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [assistantPrompt, setAssistantPrompt] = useState('Improve consistency and reduce unsupported cards.');
+  const [assistantStatus, setAssistantStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [assistantError, setAssistantError] = useState<string | null>(null);
+  const [assistantResult, setAssistantResult] = useState<DeckAssistantResponse | null>(null);
   const hoveredSupportMeta = hoveredCard ? getCardSupportMeta(hoveredCard) : null;
 
-  const allCards = useMemo(() => Object.values(CARD_DB), []);
+  const allCards = useMemo(() => Object.values(CARD_DB), [decks.length]);
 
   const filteredAndSortedCards = useMemo(() => {
     let filtered = allCards.filter(card => {
@@ -101,6 +87,32 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
   const isCurrentPredefined = useMemo(() => {
     return decks.find(d => d.id === editingDeckId)?.isPredefined || false;
   }, [decks, editingDeckId]);
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      setSyncStatus('loading');
+      const [deckState, user] = await Promise.all([
+        getUserDeckState(),
+        getCurrentUser(),
+      ]);
+
+      const userDecks = deckState.decks.filter((entry) => !entry.isPredefined);
+      const combinedDecks = [...userDecks, ...CHARACTER_DECKS];
+      const selectedDeckId = deckState.primaryDeckId || combinedDecks[0]?.id || '';
+      const selectedDeck = combinedDecks.find((entry) => entry.id === selectedDeckId) || combinedDecks[0];
+
+      setDecks(combinedDecks);
+      setPrimaryDeckId(selectedDeckId);
+      setEditingDeckId(selectedDeck?.id || '');
+      setDeckName(selectedDeck?.name || '');
+      setDeck(selectedDeck?.mainDeck || []);
+      setExtraDeck(selectedDeck?.extraDeck || []);
+      setCurrentUserEmail(user?.email ?? null);
+      setSyncStatus(user ? 'synced' : 'local');
+    };
+
+    void bootstrap();
+  }, []);
 
   const handleAddCard = (id: string) => {
     if (isCurrentPredefined) {
@@ -169,35 +181,46 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
       announce({ title: 'Deck Builder', message: 'Main Deck must have at least 40 cards.' });
       return;
     }
-    
-    const updatedDecks = decks.map(d => 
-      d.id === editingDeckId 
-        ? { ...d, name: deckName, mainDeck: deck, extraDeck: extraDeck }
-        : d
-    );
-    
-    setDecks(updatedDecks);
-    localStorage.setItem('ygo_saved_decks', JSON.stringify(updatedDecks.filter(d => !d.isPredefined)));
-    
-    if (editingDeckId === primaryDeckId) {
-      localStorage.setItem('ygo_custom_deck', JSON.stringify(deck));
-      localStorage.setItem('ygo_custom_extra_deck', JSON.stringify(extraDeck));
-    }
-    
-    announce({ title: 'Deck Builder', message: 'Deck saved successfully.' });
+
+    const persist = async () => {
+      setSyncStatus(currentUserEmail ? 'syncing' : 'local');
+      const updatedUserDecks = decks
+        .filter((entry) => !entry.isPredefined)
+        .map((entry) =>
+          entry.id === editingDeckId
+            ? { ...entry, name: deckName, mainDeck: deck, extraDeck, updatedAt: new Date().toISOString() }
+            : entry,
+        );
+
+      await saveUserDeckState({
+        decks: updatedUserDecks,
+        primaryDeckId,
+        primaryDeckUpdatedAt: new Date().toISOString(),
+      });
+
+      setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
+      setSyncStatus(currentUserEmail ? 'synced' : 'local');
+      announce({ title: 'Deck Builder', message: 'Deck saved successfully.' });
+    };
+
+    void persist().catch(() => {
+      setSyncStatus('error');
+      announce({ title: 'Deck Builder', message: 'Deck save failed. Your local deck remains unchanged.' });
+    });
   };
 
   const handleCreateDeck = () => {
     const newDeck: SavedDeck = {
       id: Date.now().toString(),
-      name: `New Deck ${decks.length + 1}`,
+      name: `New Deck ${decks.filter((entry) => !entry.isPredefined).length + 1}`,
       mainDeck: [],
-      extraDeck: []
+      extraDeck: [],
+      kind: 'user',
+      characterId: null,
+      updatedAt: new Date().toISOString(),
     };
-    const updatedDecks = [...decks, newDeck];
-    setDecks(updatedDecks);
-    localStorage.setItem('ygo_saved_decks', JSON.stringify(updatedDecks.filter(d => !d.isPredefined)));
-    
+    const updatedUserDecks = [...decks.filter((entry) => !entry.isPredefined), newDeck];
+    setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
     setEditingDeckId(newDeck.id);
     setDeckName(newDeck.name);
     setDeck(newDeck.mainDeck);
@@ -216,26 +239,33 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
 
   const handleSetPrimary = (id: string) => {
     setPrimaryDeckId(id);
-    localStorage.setItem('ygo_primary_deck_id', id);
-    
-    let d = decks.find(d => d.id === id);
-    if (d) {
-      if (id === editingDeckId && !d.isPredefined) {
-        // Save current edits
-        const updatedDecks = decks.map(deckItem => 
-          deckItem.id === editingDeckId 
-            ? { ...deckItem, name: deckName, mainDeck: deck, extraDeck: extraDeck }
-            : deckItem
+
+    const persist = async () => {
+      const updatedUserDecks = decks
+        .filter((entry) => !entry.isPredefined)
+        .map((entry) =>
+          entry.id === editingDeckId && !entry.isPredefined
+            ? { ...entry, name: deckName, mainDeck: deck, extraDeck, updatedAt: new Date().toISOString() }
+            : entry,
         );
-        setDecks(updatedDecks);
-        localStorage.setItem('ygo_saved_decks', JSON.stringify(updatedDecks.filter(d => !d.isPredefined)));
-        d = updatedDecks.find(deckItem => deckItem.id === id);
-      }
-      
-      localStorage.setItem('ygo_custom_deck', JSON.stringify(d!.mainDeck));
-      localStorage.setItem('ygo_custom_extra_deck', JSON.stringify(d!.extraDeck));
-      announce({ title: 'Deck Builder', message: `${d!.name} set as primary deck.` });
-    }
+
+      await saveUserDeckState({
+        decks: updatedUserDecks,
+        primaryDeckId: id,
+        primaryDeckUpdatedAt: new Date().toISOString(),
+      });
+      await setPrimaryDeckSelection(id);
+      setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
+      const selectedDeck = [...updatedUserDecks, ...CHARACTER_DECKS].find((entry) => entry.id === id);
+      announce({ title: 'Deck Builder', message: `${selectedDeck?.name || 'Deck'} set as primary deck.` });
+      setSyncStatus(currentUserEmail ? 'synced' : 'local');
+    };
+
+    setSyncStatus(currentUserEmail ? 'syncing' : 'local');
+    void persist().catch(() => {
+      setSyncStatus('error');
+      announce({ title: 'Deck Builder', message: 'Could not update the primary deck.' });
+    });
   };
   
   const handleDeleteDeck = (id: string) => {
@@ -246,7 +276,14 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     
     const updatedDecks = decks.filter(d => d.id !== id);
     setDecks(updatedDecks);
-    localStorage.setItem('ygo_saved_decks', JSON.stringify(updatedDecks.filter(d => !d.isPredefined)));
+
+    void saveUserDeckState({
+      decks: updatedDecks.filter((entry) => !entry.isPredefined),
+      primaryDeckId: primaryDeckId === id ? updatedDecks[0].id : primaryDeckId,
+      primaryDeckUpdatedAt: new Date().toISOString(),
+    }).catch(() => {
+      setSyncStatus('error');
+    });
     
     if (primaryDeckId === id) {
       handleSetPrimary(updatedDecks[0].id);
@@ -272,7 +309,7 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     handleAddCard(hoveredCard.id);
   };
 
-  const handleMobilePanelTabChange = (tab: 'details' | 'decks') => {
+  const handleMobilePanelTabChange = (tab: 'details' | 'decks' | 'assistant') => {
     if (mobilePanelTab === tab) {
       setMobilePanelExpanded((prev) => !prev);
       return;
@@ -281,6 +318,158 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     setMobilePanelTab(tab);
     setMobilePanelExpanded(true);
   };
+
+  const handleAssistantRequest = async () => {
+    setAssistantStatus('loading');
+    setAssistantError(null);
+
+    try {
+      const result = await requestDeckAssistant({
+        deckName,
+        mainDeck: deck,
+        extraDeck,
+        prompt: assistantPrompt,
+        cardPool: allCards.map((card) => ({
+          id: card.id,
+          name: card.name,
+          type: card.type,
+          description: card.description,
+        })),
+        supportMatrix: allCards.map((card) => ({
+          id: card.id,
+          name: card.name,
+          support: getCardSupportMeta(card),
+        })),
+      });
+
+      setAssistantResult(result);
+      setAssistantStatus('done');
+    } catch (assistantRequestError) {
+      setAssistantStatus('error');
+      setAssistantError(
+        assistantRequestError instanceof Error
+          ? assistantRequestError.message
+          : 'Deck assistant request failed.',
+      );
+    }
+  };
+
+  const renderDeckList = () => (
+    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+      {decks.map((d) => (
+        <div
+          key={d.id}
+          className={`p-3 rounded border flex flex-col gap-2 transition-colors ${editingDeckId === d.id ? 'border-white bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-600 cursor-pointer'}`}
+          onClick={() => {
+            if (editingDeckId !== d.id) handleSwitchDeck(d.id);
+          }}
+        >
+          <div className="flex items-center justify-between">
+            {editingDeckId === d.id && !d.isPredefined ? (
+              <input
+                type="text"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                className="bg-transparent border-b border-zinc-700 text-white font-mono text-xs uppercase tracking-widest focus:outline-none focus:border-white w-full mr-2"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="font-mono text-xs uppercase tracking-widest text-zinc-300 truncate pr-2">{d.name}</span>
+            )}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleSetPrimary(d.id); }}
+                className={`transition-colors ${primaryDeckId === d.id ? 'text-yellow-500' : 'text-zinc-600 hover:text-yellow-500'}`}
+                title={primaryDeckId === d.id ? 'Primary Deck' : 'Set as Primary'}
+              >
+                <Star size={14} fill={primaryDeckId === d.id ? 'currentColor' : 'none'} />
+              </button>
+              {decks.length > 1 && !d.isPredefined && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteDeck(d.id); }}
+                  className="text-zinc-600 hover:text-red-500 transition-colors"
+                  title="Delete Deck"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex justify-between">
+            <span>Main: {editingDeckId === d.id ? deck.length : d.mainDeck.length}</span>
+            <span>Extra: {editingDeckId === d.id ? extraDeck.length : d.extraDeck.length}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderAssistantPanel = () => (
+    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+        Suggest + explain
+      </div>
+      <textarea
+        value={assistantPrompt}
+        onChange={(event) => setAssistantPrompt(event.target.value)}
+        rows={4}
+        className="w-full bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        placeholder="Make this deck more aggressive. Reduce unsupported cards."
+      />
+      <button
+        onClick={() => void handleAssistantRequest()}
+        disabled={assistantStatus === 'loading' || deck.length === 0}
+        className="border border-zinc-600 hover:bg-white hover:text-black text-white disabled:border-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+      >
+        <Sparkles size={14} />
+        {assistantStatus === 'loading' ? 'Analyzing...' : 'Analyze Deck'}
+      </button>
+
+      {assistantError && <div className="text-sm text-red-400">{assistantError}</div>}
+
+      {assistantResult ? (
+        <div className="space-y-4">
+          <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Summary</div>
+            <div className="text-sm text-zinc-300 leading-6">{assistantResult.summary}</div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Strengths</div>
+              <div className="space-y-2 text-sm text-zinc-300">
+                {assistantResult.strengths.map((item) => <div key={item}>• {item}</div>)}
+              </div>
+            </div>
+            <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Weaknesses</div>
+              <div className="space-y-2 text-sm text-zinc-300">
+                {assistantResult.weaknesses.map((item) => <div key={item}>• {item}</div>)}
+              </div>
+            </div>
+          </div>
+          <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
+            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Suggested Changes</div>
+            <div className="space-y-3">
+              {assistantResult.suggestions.map((suggestion, index) => {
+                const card = CARD_DB[suggestion.cardId];
+                return (
+                  <div key={`${suggestion.cardId}-${index}`} className="text-sm text-zinc-300">
+                    <span className="font-mono uppercase tracking-[0.16em] text-white">{suggestion.action}</span>
+                    <span className="ml-2 text-white">{card?.name || suggestion.cardId}</span>
+                    <div className="mt-1 text-zinc-400 leading-5">{suggestion.reason}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
+          Ask for a direction like “make this deck feel more like Kaiba” or “cut unsupported cards.”
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
@@ -294,7 +483,12 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
             <ArrowLeft size={14} /> Back
           </button>
           <div className="h-4 w-px bg-zinc-800 mx-2"></div>
-          <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest hidden sm:block">Deck Builder</h1>
+          <div className="hidden sm:flex flex-col">
+            <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Deck Builder</h1>
+            <div className="text-[9px] font-mono uppercase tracking-[0.22em] text-zinc-600">
+              {currentUserEmail ? `${syncStatus} · ${currentUserEmail}` : 'local only'}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button 
@@ -601,9 +795,22 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
 
           {/* Decks Section */}
           <div className="h-1/2 flex flex-col bg-black">
-            <div className="p-4 border-b border-zinc-800 flex justify-between items-center shrink-0">
-              <h2 className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Decks</h2>
-              <button 
+            <div className="p-4 border-b border-zinc-800 flex justify-between items-center shrink-0 gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDesktopLowerTab('decks')}
+                  className={`text-[10px] font-mono uppercase tracking-widest transition-colors ${desktopLowerTab === 'decks' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  Decks
+                </button>
+                <button
+                  onClick={() => setDesktopLowerTab('assistant')}
+                  className={`text-[10px] font-mono uppercase tracking-widest transition-colors ${desktopLowerTab === 'assistant' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                >
+                  AI Assist
+                </button>
+              </div>
+              <button
                 onClick={handleCreateDeck}
                 className="text-zinc-400 hover:text-white transition-colors"
                 title="Create New Deck"
@@ -611,58 +818,12 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                 <Plus size={16} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-              {decks.map(d => (
-                <div 
-                  key={d.id} 
-                  className={`p-3 rounded border flex flex-col gap-2 transition-colors ${editingDeckId === d.id ? 'border-white bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-600 cursor-pointer'}`}
-                  onClick={() => {
-                    if (editingDeckId !== d.id) handleSwitchDeck(d.id);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    {editingDeckId === d.id && !d.isPredefined ? (
-                      <input 
-                        type="text" 
-                        value={deckName}
-                        onChange={e => setDeckName(e.target.value)}
-                        className="bg-transparent border-b border-zinc-700 text-white font-mono text-xs uppercase tracking-widest focus:outline-none focus:border-white w-full mr-2"
-                        onClick={e => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span className="font-mono text-xs uppercase tracking-widest text-zinc-300 truncate pr-2">{d.name}</span>
-                    )}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleSetPrimary(d.id); }}
-                        className={`transition-colors ${primaryDeckId === d.id ? 'text-yellow-500' : 'text-zinc-600 hover:text-yellow-500'}`}
-                        title={primaryDeckId === d.id ? "Primary Deck" : "Set as Primary"}
-                      >
-                        <Star size={14} fill={primaryDeckId === d.id ? "currentColor" : "none"} />
-                      </button>
-                      {decks.length > 1 && !d.isPredefined && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteDeck(d.id); }}
-                          className="text-zinc-600 hover:text-red-500 transition-colors"
-                          title="Delete Deck"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex justify-between">
-                    <span>Main: {editingDeckId === d.id ? deck.length : d.mainDeck.length}</span>
-                    <span>Extra: {editingDeckId === d.id ? extraDeck.length : d.extraDeck.length}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {desktopLowerTab === 'decks' ? renderDeckList() : renderAssistantPanel()}
           </div>
         </div>
 
         <div className={`md:hidden border-t border-zinc-800 bg-zinc-950 flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobilePanelExpanded ? 'h-[36vh] min-h-[240px]' : 'h-[53px]'}`}>
-          <div className="grid grid-cols-[1fr_1fr_auto] border-b border-zinc-800 shrink-0">
+          <div className="grid grid-cols-[1fr_1fr_1fr_auto] border-b border-zinc-800 shrink-0">
             <button
               onClick={() => handleMobilePanelTabChange('details')}
               className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'details' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
@@ -674,6 +835,12 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
               className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'decks' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
             >
               Decks
+            </button>
+            <button
+              onClick={() => handleMobilePanelTabChange('assistant')}
+              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'assistant' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
+            >
+              AI
             </button>
             <button
               onClick={() => setMobilePanelExpanded((prev) => !prev)}
@@ -811,61 +978,27 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                     )}
                     </AnimatePresence>
                   </motion.div>
-                ) : (
+                ) : mobilePanelTab === 'decks' ? (
                   <motion.div
                     key="mobile-decks"
                     initial={{ opacity: 0, x: reduced ? 0 : 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: reduced ? 0 : -8 }}
                     transition={getSharedTransition(reduced, 'fast')}
-                    className="p-4 flex flex-col gap-2"
+                    className="h-full"
                   >
-                    {decks.map(d => (
-                      <motion.div 
-                        key={d.id} 
-                        layout
-                        className={`p-3 rounded border flex flex-col gap-2 transition-colors ${editingDeckId === d.id ? 'border-white bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-600 cursor-pointer'}`}
-                        onClick={() => {
-                          if (editingDeckId !== d.id) handleSwitchDeck(d.id);
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          {editingDeckId === d.id && !d.isPredefined ? (
-                            <input 
-                              type="text" 
-                              value={deckName}
-                              onChange={e => setDeckName(e.target.value)}
-                              className="bg-transparent border-b border-zinc-700 text-white font-mono text-xs uppercase tracking-widest focus:outline-none focus:border-white w-full mr-2"
-                              onClick={e => e.stopPropagation()}
-                            />
-                          ) : (
-                            <span className="font-mono text-xs uppercase tracking-widest text-zinc-300 truncate pr-2">{d.name}</span>
-                          )}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleSetPrimary(d.id); }}
-                              className={`transition-colors ${primaryDeckId === d.id ? 'text-yellow-500' : 'text-zinc-600 hover:text-yellow-500'}`}
-                              title={primaryDeckId === d.id ? "Primary Deck" : "Set as Primary"}
-                            >
-                              <Star size={14} fill={primaryDeckId === d.id ? "currentColor" : "none"} />
-                            </button>
-                            {decks.length > 1 && !d.isPredefined && (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteDeck(d.id); }}
-                                className="text-zinc-600 hover:text-red-500 transition-colors"
-                                title="Delete Deck"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex justify-between">
-                          <span>Main: {editingDeckId === d.id ? deck.length : d.mainDeck.length}</span>
-                          <span>Extra: {editingDeckId === d.id ? extraDeck.length : d.extraDeck.length}</span>
-                        </div>
-                      </motion.div>
-                    ))}
+                    {renderDeckList()}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="mobile-assistant"
+                    initial={{ opacity: 0, x: reduced ? 0 : 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: reduced ? 0 : -8 }}
+                    transition={getSharedTransition(reduced, 'fast')}
+                    className="h-full"
+                  >
+                    {renderAssistantPanel()}
                   </motion.div>
                 )}
                 </AnimatePresence>

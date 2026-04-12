@@ -11,6 +11,27 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.2.0 - 2026-04-11
+
+Feature release focused on cloud-ready app data, optional auth surfaces, history, and the first AI-assisted deck workflow.
+
+Included in this release:
+
+- added a Supabase-ready data layer for:
+  - game catalog/config bootstrapping with local fallback
+  - optional auth/profile handling
+  - synced user decks
+  - competition progress sync
+  - duel history storage
+- added a database migration for cards, predefined decks, competition stages, characters, profiles, user decks, competition progress, and duel history
+- added new `Sign In` and `Game History` pages and wired them into the main app flow
+- refactored app boot so content loads through a dedicated game-content service instead of relying only on bundled local data
+- preserved the duel engine as fully local and deterministic while making content and user data cloud-ready
+- expanded local duel narration with richer structured context for summon and battle events
+- added a first-pass Deck Assistant integration with a server-side route and structured suggestion model, while keeping manual deck edits in the UI
+- updated deck builder persistence to support local-only guest play and Supabase-backed signed-in play through one service layer
+- updated tests to cover the new async competition boot flow and kept the suite green after the service-layer migration
+
 ## v1.1.0 - 2026-03-27
 
 Feature release focused on a registry-backed duel engine and a stronger Competition Mode flow.

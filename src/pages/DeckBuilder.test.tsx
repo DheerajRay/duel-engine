@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import DeckBuilder from './DeckBuilder';
 
@@ -28,16 +28,29 @@ describe('DeckBuilder', () => {
     expect(screen.queryByText(/current deck/i)).not.toBeInTheDocument();
   }, 15000);
 
-  it('routes deck builder status messages through the shared announcement callback', () => {
+  it('routes deck builder status messages through the shared announcement callback', async () => {
     const announce = vi.fn();
+    window.localStorage.setItem('ygo_saved_decks', JSON.stringify([
+      {
+        id: 'starter-local',
+        name: 'Starter Deck',
+        mainDeck: Array.from({ length: 40 }, () => 'battle-ox'),
+        extraDeck: [],
+        updatedAt: new Date().toISOString(),
+      },
+    ]));
+    window.localStorage.setItem('ygo_primary_deck_id', 'starter-local');
 
     render(<DeckBuilder onBack={() => {}} announce={announce} />);
 
+    await waitFor(() => expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
-    expect(announce).toHaveBeenCalledWith({
-      title: 'Deck Builder',
-      message: 'Deck saved successfully.',
-    });
+    await waitFor(() =>
+      expect(announce).toHaveBeenCalledWith({
+        title: 'Deck Builder',
+        message: 'Deck saved successfully.',
+      }),
+    );
   });
 });

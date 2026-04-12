@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import { Card } from '../types';
 import csvData from '../resource/original_yugioh_cards.csv?raw';
 
-export const CARD_DB: Record<string, Card> = {};
+export const LOCAL_CARD_DB: Record<string, Card> = {};
 
 const parsed = Papa.parse(csvData, {
   header: true,
@@ -49,6 +49,5 @@ parsed.data.forEach((row: any) => {
     card.subType = row['Spell/Trap Property'] as any;
   }
 
-  CARD_DB[id] = card;
+  LOCAL_CARD_DB[id] = card;
 });
-

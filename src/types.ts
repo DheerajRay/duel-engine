@@ -12,6 +12,8 @@ export interface Card {
   subType?: 'Normal' | 'Equip' | 'Field' | 'Quick-Play' | 'Continuous' | 'Counter';
   isFusion?: boolean;
   fusionMaterials?: string[];
+  effectSupportStatus?: 'implemented' | 'partial' | 'unsupported';
+  effectSupportNote?: string;
 }
 
 export interface GameCard extends Card {

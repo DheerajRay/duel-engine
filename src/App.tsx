@@ -7,9 +7,7 @@ import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
-import { ensureStarterCustomDeck } from './utils/deckStorage';
 import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
-import { clearCompetitionResumeStage, getCompetitionResumeStage, setCompetitionResumeStage } from './utils/competitionProgress';
 import {
   buildCompetitionPreviewCard,
   canActivateCard,
@@ -22,9 +20,22 @@ import {
   isMaterialMatch,
 } from './effects/registry';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
+import { ensureProfile, getCurrentUser, onAuthStateChange } from './services/auth';
+import { initializeGameContent } from './services/gameContent';
+import { appendDuelHistoryEntry } from './services/history';
+import {
+  clearCompetitionProgress,
+  ensureStarterCustomDeck,
+  getCompetitionProgress,
+  getPrimaryDeckSnapshot,
+  setCompetitionProgress,
+} from './services/userData';
+import type { DuelHistoryEntry, UserProfile } from './types/cloud';
 
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder'));
 const HowToPlay = lazy(() => import('./pages/HowToPlay'));
+const SignInPage = lazy(() => import('./pages/SignInPage'));
+const GameHistoryPage = lazy(() => import('./pages/GameHistoryPage'));
 
 type UIState = 
   | { type: 'IDLE' }
@@ -65,13 +76,17 @@ type UIState =
     };
 
 export default function App() {
-  const [view, setView] = useState<'start' | 'game' | 'deck-builder' | 'how-to-play'>('start');
+  const [view, setView] = useState<'start' | 'game' | 'deck-builder' | 'how-to-play' | 'sign-in' | 'history'>('start');
   const [gameMode, setGameMode] = useState<'random' | 'custom' | 'competition' | null>(null);
   const [competitionStageIndex, setCompetitionStageIndex] = useState<number | null>(null);
+  const [competitionResumeStageIndex, setCompetitionResumeStageIndex] = useState(0);
   const [pendingCpuModeSelection, setPendingCpuModeSelection] = useState(false);
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [showCompetitionLobby, setShowCompetitionLobby] = useState(false);
   const [showCompetitionIntro, setShowCompetitionIntro] = useState(false);
+  const [bootState, setBootState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [bootSource, setBootSource] = useState<'supabase' | 'cache' | 'local' | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -80,9 +95,9 @@ export default function App() {
   const [aiResumeTick, setAiResumeTick] = useState(0);
   const prevLogLengthRef = useRef(state.log.length);
   const prevPlayerPhaseKeyRef = useRef<string | null>(null);
+  const duelHistorySavedRef = useRef<string | null>(null);
   const mobileBattlefieldRef = useRef<HTMLDivElement | null>(null);
   const currentCompetitionOpponent = competitionStageIndex !== null ? COMPETITION_LADDER[competitionStageIndex] : null;
-  const competitionResumeStageIndex = getCompetitionResumeStage(COMPETITION_LADDER.length);
   const competitionResumeOpponent = COMPETITION_LADDER[competitionResumeStageIndex];
   const competitionSignatureCards = currentCompetitionOpponent?.signatureCardIds.map(buildCompetitionPreviewCard) ?? [];
   const opponentLabel = currentCompetitionOpponent?.name ?? 'COM';
@@ -217,24 +232,94 @@ export default function App() {
   }, [state.log, gameMode, currentCompetitionOpponent, announce]);
 
   useEffect(() => {
-    ensureStarterCustomDeck();
+    const bootstrap = async () => {
+      try {
+        const [{ source }, user] = await Promise.all([
+          initializeGameContent(),
+          getCurrentUser(),
+        ]);
+
+        setBootSource(source);
+        await ensureStarterCustomDeck();
+        const progress = await getCompetitionProgress(COMPETITION_LADDER.length);
+        setCompetitionResumeStageIndex(progress.currentStageIndex);
+        setUserProfile(user ? await ensureProfile(user) : null);
+        setBootState('ready');
+      } catch {
+        setBootState('error');
+      }
+    };
+
+    const unsubscribe = onAuthStateChange((profile) => {
+      setUserProfile(profile);
+    });
+
+    void bootstrap();
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     if (gameMode !== 'competition' || competitionStageIndex === null) return;
 
+    if (!state.winner) {
+      void setCompetitionProgress(competitionStageIndex).then((progress) => {
+        setCompetitionResumeStageIndex(progress.currentStageIndex);
+      });
+      return;
+    }
+
     if (state.winner === 'player') {
       const nextStageIndex = competitionStageIndex + 1;
       if (nextStageIndex >= COMPETITION_LADDER.length) {
-        clearCompetitionResumeStage();
+        void clearCompetitionProgress().then(() => setCompetitionResumeStageIndex(0));
       } else {
-        setCompetitionResumeStage(nextStageIndex);
+        void setCompetitionProgress(nextStageIndex).then((progress) => {
+          setCompetitionResumeStageIndex(progress.currentStageIndex);
+        });
       }
       return;
     }
 
-    setCompetitionResumeStage(competitionStageIndex);
+    void setCompetitionProgress(competitionStageIndex).then((progress) => {
+      setCompetitionResumeStageIndex(progress.currentStageIndex);
+    });
   }, [gameMode, competitionStageIndex, state.winner]);
+
+  useEffect(() => {
+    if (!state.winner || pendingCpuModeSelection || duelHistorySavedRef.current === `${state.turnCount}-${state.winner}`) {
+      return;
+    }
+
+    const saveHistory = async () => {
+      const summary = getCompetitionSummaryStats();
+      const fallbackNotablePlay = [...state.log].reverse().find((entry) => entry.message)?.message ?? 'The duel ended without a standout play.';
+      const finishingCard =
+        [...state.log].reverse().find((entry) => entry.data?.cardName)?.data?.cardName ?? null;
+
+      const historyEntry: DuelHistoryEntry = {
+        id: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        mode: gameMode === 'competition' ? 'competition' : gameMode === 'custom' ? 'cpu_custom' : 'cpu_random',
+        opponentLabel: currentCompetitionOpponent?.name ?? (gameMode === 'custom' ? 'CPU Custom' : 'CPU Random'),
+        stageIndex: competitionStageIndex,
+        result: state.winner === 'player' ? 'win' : 'loss',
+        turnCount: state.turnCount,
+        lpRemaining: state.winner === 'player' ? state.player.lp : state.opponent.lp,
+        finishingCard,
+        notablePlay: summary?.notablePlay ?? fallbackNotablePlay,
+        summary: summary?.summaryLine ?? (state.winner === 'player' ? 'You won the duel.' : 'You lost the duel.'),
+        logs: state.log,
+        createdAt: new Date().toISOString(),
+      };
+
+      await appendDuelHistoryEntry(historyEntry);
+      duelHistorySavedRef.current = `${state.turnCount}-${state.winner}`;
+    };
+
+    void saveHistory();
+  }, [state.winner, state.turnCount, state.log, state.player.lp, state.opponent.lp, pendingCpuModeSelection, gameMode, competitionStageIndex, currentCompetitionOpponent]);
 
   useEffect(() => {
     if (view === 'game') {
@@ -272,20 +357,15 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [view, state.turnCount]);
 
-  const loadPrimaryDeck = () => {
-    const starterDeck = ensureStarterCustomDeck();
-    const savedDeck = localStorage.getItem('ygo_custom_deck');
-    const savedExtraDeck = localStorage.getItem('ygo_custom_extra_deck');
-    const playerDeck = savedDeck ? JSON.parse(savedDeck) : starterDeck.mainDeck;
-    const playerExtraDeck = savedExtraDeck ? JSON.parse(savedExtraDeck) : starterDeck.extraDeck;
-
-    if (!playerDeck || playerDeck.length < 40) {
+  const loadPrimaryDeck = async () => {
+    const primaryDeck = (await getPrimaryDeckSnapshot()) ?? (await ensureStarterCustomDeck());
+    if (!primaryDeck?.mainDeck || primaryDeck.mainDeck.length < 40) {
       return null;
     }
 
     return {
-      playerDeck,
-      playerExtraDeck,
+      playerDeck: primaryDeck.mainDeck,
+      playerExtraDeck: primaryDeck.extraDeck,
     };
   };
 
@@ -306,6 +386,7 @@ export default function App() {
   }) => {
     prevLogLengthRef.current = 0;
     prevPlayerPhaseKeyRef.current = null;
+    duelHistorySavedRef.current = null;
     clearAnnouncements();
     setUiState({ type: 'IDLE' });
     setGameMode(mode);
@@ -334,6 +415,28 @@ export default function App() {
     setShowMenuConfirm(false);
     setUiState({ type: 'IDLE' });
     prevPlayerPhaseKeyRef.current = null;
+    duelHistorySavedRef.current = null;
+  };
+
+  const forfeitToMenu = async () => {
+    if (hasActiveDuel) {
+      await appendDuelHistoryEntry({
+        id: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        mode: gameMode === 'competition' ? 'competition' : gameMode === 'custom' ? 'cpu_custom' : 'cpu_random',
+        opponentLabel: currentCompetitionOpponent?.name ?? (gameMode === 'custom' ? 'CPU Custom' : 'CPU Random'),
+        stageIndex: competitionStageIndex,
+        result: 'forfeit',
+        turnCount: state.turnCount,
+        lpRemaining: state.player.lp,
+        finishingCard: null,
+        notablePlay: getCompetitionNotablePlay(state.log),
+        summary: 'You forfeited the duel from the in-game menu.',
+        logs: state.log,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    returnToMenu();
   };
 
   const handleMenuClick = () => {
@@ -355,8 +458,8 @@ export default function App() {
     });
   };
 
-  const startCustomGame = () => {
-    const deckData = loadPrimaryDeck();
+  const startCustomGame = async () => {
+    const deckData = await loadPrimaryDeck();
 
     if (!deckData) {
       showNotice('Your custom deck must have at least 40 cards. Please use the Deck Builder.', 'Deck Required');
@@ -372,8 +475,8 @@ export default function App() {
     });
   };
 
-  const startCompetitionDuel = (stageIndex: number) => {
-    const deckData = loadPrimaryDeck();
+  const startCompetitionDuel = async (stageIndex: number) => {
+    const deckData = await loadPrimaryDeck();
 
     if (!deckData) {
       showNotice('Competition Mode uses your saved custom deck. Build a 40-card deck first.', 'Deck Required');
@@ -419,13 +522,13 @@ export default function App() {
 
     const nextStageIndex = competitionStageIndex + 1;
     if (nextStageIndex >= COMPETITION_LADDER.length) {
-      clearCompetitionResumeStage();
+      void clearCompetitionProgress().then(() => setCompetitionResumeStageIndex(0));
       showNotice('Competition cleared. You defeated every duelist in the ladder.', 'Competition');
       returnToMenu();
       return;
     }
 
-    startCompetitionDuel(nextStageIndex);
+    void startCompetitionDuel(nextStageIndex);
   };
 
   const getMenuPromptContent = () => {
@@ -1661,6 +1764,20 @@ export default function App() {
     }
   };
 
+  if (bootState === 'loading') {
+    return renderLazyScreenFallback('Duel Engine');
+  }
+
+  if (bootState === 'error') {
+    return (
+      <div className="h-dvh md:h-screen box-border bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
+        <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400">
+          Failed to load game content.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {view === 'start' && (
@@ -1695,6 +1812,9 @@ export default function App() {
               <h1 className="mt-5 text-center text-3xl sm:text-5xl font-mono uppercase tracking-[0.32em] text-white">
                 Ready For A Duel
               </h1>
+              <div className="mt-4 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                {userProfile ? `Signed in as ${userProfile.displayName}` : 'Guest Mode'} · Content {bootSource}
+              </div>
             </motion.div>
             <motion.p
               variants={{
@@ -1745,6 +1865,22 @@ export default function App() {
                 className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
               >
                 How to Play
+              </motion.button>
+
+              <motion.button 
+                onClick={() => setView('history')} 
+                whileTap={{ scale: reduced ? 1 : 0.99 }}
+                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+              >
+                Game History
+              </motion.button>
+
+              <motion.button 
+                onClick={() => setView('sign-in')} 
+                whileTap={{ scale: reduced ? 1 : 0.99 }}
+                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+              >
+                {userProfile ? 'Profile' : 'Sign In'}
               </motion.button>
             </motion.div>
           </motion.div>
@@ -1801,7 +1937,7 @@ export default function App() {
                   </div>
                   <div className="grid gap-3">
                     <button
-                      onClick={() => startCompetitionDuel(competitionResumeStageIndex)}
+                      onClick={() => void startCompetitionDuel(competitionResumeStageIndex)}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                     >
                       {competitionResumeStageIndex > 0 ? 'Resume Ladder' : 'Begin Ladder'}
@@ -1809,8 +1945,10 @@ export default function App() {
                     {competitionResumeStageIndex > 0 && (
                       <button
                         onClick={() => {
-                          clearCompetitionResumeStage();
-                          startCompetitionDuel(0);
+                          void clearCompetitionProgress().then(() => {
+                            setCompetitionResumeStageIndex(0);
+                            void startCompetitionDuel(0);
+                          });
                         }}
                         className="border border-zinc-800 hover:border-zinc-600 hover:text-white text-zinc-500 px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                       >
@@ -1838,6 +1976,16 @@ export default function App() {
       {view === 'how-to-play' && (
         <Suspense fallback={renderLazyScreenFallback('How To Play')}>
           <HowToPlay onBack={() => setView('start')} />
+        </Suspense>
+      )}
+      {view === 'sign-in' && (
+        <Suspense fallback={renderLazyScreenFallback('Sign In')}>
+          <SignInPage onBack={() => setView('start')} />
+        </Suspense>
+      )}
+      {view === 'history' && (
+        <Suspense fallback={renderLazyScreenFallback('Game History')}>
+          <GameHistoryPage onBack={() => setView('start')} />
         </Suspense>
       )}
       <AnimatePresence>
@@ -2694,7 +2842,7 @@ export default function App() {
                   </p>
                   <div className="w-full flex flex-col gap-3">
                     <button
-                      onClick={returnToMenu}
+                      onClick={() => void forfeitToMenu()}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                     >
                       {menuPromptContent.confirmLabel}

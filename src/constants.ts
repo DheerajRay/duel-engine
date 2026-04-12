@@ -1,1 +1,1 @@
-export { CARD_DB } from './utils/cardParser';
+export { CARD_DB } from './services/gameContentStore';
