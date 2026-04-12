@@ -5,7 +5,6 @@ import { CardView } from '../components/CardView';
 import { Card } from '../types';
 import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
-import { getCardTypeLabel, getMonsterSummonLabel, getPrimaryCardFacts, getSecondaryCardSections } from '../utils/cardDetailMeta';
 import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
 import { getCardSupportMeta } from '../effects/registry';
 import { CHARACTER_DECKS } from '../utils/characterDecks';
@@ -38,9 +37,6 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [assistantResult, setAssistantResult] = useState<DeckAssistantResponse | null>(null);
   const hoveredSupportMeta = hoveredCard ? getCardSupportMeta(hoveredCard) : null;
-  const hoveredPrimaryFacts = hoveredCard ? getPrimaryCardFacts(hoveredCard) : [];
-  const hoveredSecondarySections = hoveredCard ? getSecondaryCardSections(hoveredCard) : [];
-  const hoveredSummonLabel = hoveredCard ? getMonsterSummonLabel(hoveredCard) : null;
 
   const allCards = useMemo(() => Object.values(CARD_DB), [decks.length]);
 
@@ -744,21 +740,11 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                     <div className="w-full max-w-[220px] rounded border border-zinc-700 p-4 flex flex-col bg-black">
                       <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{hoveredCard.name}</div>
                       <div className="text-[10px] font-mono text-zinc-500 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2 flex justify-between">
-                        <span>[{getCardTypeLabel(hoveredCard)}]</span>
+                        <span>[{hoveredCard.type}{hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}]</span>
                         {hoveredCard.type === 'Monster' && (
-                          <span>LVL {hoveredCard.level} {hoveredSummonLabel ? `(${hoveredSummonLabel})` : ''}</span>
+                          <span>LVL {hoveredCard.level} {hoveredCard.level! >= 7 ? '(2 Tributes)' : hoveredCard.level! >= 5 ? '(1 Tribute)' : ''}</span>
                         )}
                       </div>
-                      {hoveredPrimaryFacts.length > 0 && (
-                        <div className="mb-4 grid grid-cols-2 gap-2 border-b border-zinc-800 pb-3 text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-500">
-                          {hoveredPrimaryFacts.map((fact) => (
-                            <div key={fact.label}>
-                              <div>{fact.label}</div>
-                              <div className="mt-1 text-white tracking-normal normal-case">{fact.value}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                       <div className="text-xs text-zinc-400 font-sans leading-relaxed">
                         {hoveredCard.description}
                       </div>
@@ -778,14 +764,10 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                           <span>DEF {hoveredCard.def}</span>
                         </div>
                       )}
-                      {hoveredSecondarySections.length > 0 && (
-                        <div className="mt-4 border-t border-zinc-800 pt-3 space-y-3">
-                          {hoveredSecondarySections.map((section) => (
-                            <div key={section.title}>
-                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{section.title}</div>
-                              <div className="mt-1 text-[11px] text-zinc-300 leading-5">{section.value}</div>
-                            </div>
-                          ))}
+                      {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
+                        <div className="mt-4 border-t border-zinc-800 pt-3">
+                          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Fusion Materials</div>
+                          <div className="mt-1 text-[11px] text-zinc-300 leading-5">{hoveredCard.fusionMaterials.join(' + ')}</div>
                         </div>
                       )}
                     </div>
@@ -923,33 +905,23 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                               </div>
                               <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
                                 <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
-                                  {getCardTypeLabel(hoveredCard)}
+                                  {hoveredCard.type}
+                                  {hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}
                                 </span>
                                 {hoveredCard.type === 'Monster' && (
                                   <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
                                     Lvl {hoveredCard.level}
                                   </span>
                                 )}
-                                {hoveredCard.type === 'Monster' && hoveredSummonLabel && (
+                                {hoveredCard.type === 'Monster' && (
                                   <span className="border border-zinc-800 bg-zinc-950 px-2 py-1 text-zinc-500">
-                                    {hoveredSummonLabel}
+                                    {hoveredCard.level! >= 7 ? '2 Tributes' : hoveredCard.level! >= 5 ? '1 Tribute' : 'No Tribute'}
                                   </span>
                                 )}
                               </div>
                             </div>
 
                             <div className="px-4 py-3 space-y-3">
-                              {hoveredPrimaryFacts.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
-                                  {hoveredPrimaryFacts.map((fact) => (
-                                    <div key={fact.label} className="rounded border border-zinc-800 bg-zinc-950 px-2 py-2">
-                                      <div>{fact.label}</div>
-                                      <div className="mt-1 text-[11px] tracking-normal normal-case text-white">{fact.value}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
                               {hoveredCard.type === 'Monster' && (
                                 <div className="border-t border-zinc-800 pt-3">
                                   <div className="flex items-center gap-5 font-mono text-sm uppercase tracking-[0.2em]">
@@ -976,16 +948,16 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
                                 </div>
                               )}
 
-                              {hoveredSecondarySections.map((section) => (
+                              {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
                                 <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
                                   <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                                    {section.title}
+                                    Fusion Materials
                                   </div>
                                   <div className="text-[11px] text-zinc-300 leading-5">
-                                    {section.value}
+                                    {hoveredCard.fusionMaterials.join(' + ')}
                                   </div>
                                 </div>
-                              ))}
+                              )}
                             </div>
                           </div>
                         </div>

@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.1 - 2026-04-12
+
+Patch release focused on restoring the simpler card-detail presentation.
+
+Included in this release:
+
+- reverted duel card details to the earlier compact layout
+- reverted deck-builder card details to the earlier compact layout
+- removed the extra metadata presentation blocks such as passcode, page, and snapshot from the player-facing UI
+- kept the underlying Supabase-backed card catalog and enriched DB fields intact
+
 ## v1.3.0 - 2026-04-12
 
 Feature release focused on strengthening the card catalog, moving richer card metadata into Supabase, and removing the local card-content cache layer.

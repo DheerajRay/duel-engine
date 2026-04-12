@@ -20,7 +20,6 @@ import {
   isMaterialMatch,
 } from './effects/registry';
 import { getSharedTransition, useMotionPreference } from './utils/motion';
-import { getCardTypeLabel, getMonsterSummonLabel, getPrimaryCardFacts, getSecondaryCardSections } from './utils/cardDetailMeta';
 import { ensureProfile, getCurrentUser, onAuthStateChange } from './services/auth';
 import { initializeGameContent } from './services/gameContent';
 import { appendDuelHistoryEntry } from './services/history';
@@ -610,10 +609,6 @@ export default function App() {
     }
 
     const supportMeta = getCardSupportMeta(showCardDetail);
-    const primaryFacts = getPrimaryCardFacts(showCardDetail);
-    const secondarySections = getSecondaryCardSections(showCardDetail);
-    const summonLabel = getMonsterSummonLabel(showCardDetail);
-
     return (
       <motion.div
         key={showCardDetail.instanceId}
@@ -624,21 +619,11 @@ export default function App() {
       >
         <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{showCardDetail.name}</div>
         <div className="text-[10px] font-mono text-zinc-500 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2 flex justify-between gap-2">
-          <span>[{getCardTypeLabel(showCardDetail)}]</span>
+          <span>[{showCardDetail.type}{showCardDetail.subType ? ` / ${showCardDetail.subType}` : ''}]</span>
           {showCardDetail.type === 'Monster' && (
-            <span>LVL {showCardDetail.level} {summonLabel ? `(${summonLabel})` : ''}</span>
+            <span>LVL {showCardDetail.level} {showCardDetail.level! >= 7 ? '(2 Tributes)' : showCardDetail.level! >= 5 ? '(1 Tribute)' : ''}</span>
           )}
         </div>
-        {primaryFacts.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2 border-b border-zinc-800 pb-3 text-[10px] font-mono uppercase tracking-[0.16em] text-zinc-500">
-            {primaryFacts.map((fact) => (
-              <div key={fact.label}>
-                <div>{fact.label}</div>
-                <div className="mt-1 text-white tracking-normal normal-case">{fact.value}</div>
-              </div>
-            ))}
-          </div>
-        )}
         <div className="text-xs text-zinc-400 font-sans leading-relaxed">
           {showCardDetail.description}
         </div>
@@ -654,14 +639,10 @@ export default function App() {
             <span>DEF {showCardDetail.def}</span>
           </div>
         )}
-        {secondarySections.length > 0 && (
-          <div className="mt-4 border-t border-zinc-800 pt-3 space-y-3">
-            {secondarySections.map((section) => (
-              <div key={section.title}>
-                <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{section.title}</div>
-                <div className="mt-1 text-[11px] text-zinc-300 leading-5">{section.value}</div>
-              </div>
-            ))}
+        {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
+          <div className="mt-4 border-t border-zinc-800 pt-3">
+            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Fusion Materials</div>
+            <div className="mt-1 text-[11px] text-zinc-300 leading-5">{showCardDetail.fusionMaterials.join(' + ')}</div>
           </div>
         )}
       </motion.div>
@@ -683,10 +664,6 @@ export default function App() {
     }
 
     const supportMeta = getCardSupportMeta(showCardDetail);
-    const primaryFacts = getPrimaryCardFacts(showCardDetail);
-    const secondarySections = getSecondaryCardSections(showCardDetail);
-    const summonLabel = getMonsterSummonLabel(showCardDetail);
-
     return (
       <motion.div
         key={showCardDetail.instanceId}
@@ -701,33 +678,23 @@ export default function App() {
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
             <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
-              {getCardTypeLabel(showCardDetail)}
+              {showCardDetail.type}
+              {showCardDetail.subType ? ` / ${showCardDetail.subType}` : ''}
             </span>
             {showCardDetail.type === 'Monster' && (
               <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
                 Lvl {showCardDetail.level}
               </span>
             )}
-            {showCardDetail.type === 'Monster' && summonLabel && (
+            {showCardDetail.type === 'Monster' && (
               <span className="border border-zinc-800 bg-zinc-950 px-2 py-1 text-zinc-500">
-                {summonLabel}
+                {showCardDetail.level! >= 7 ? '2 Tributes' : showCardDetail.level! >= 5 ? '1 Tribute' : 'No Tribute'}
               </span>
             )}
           </div>
         </div>
 
         <div className="px-4 py-3 space-y-3">
-          {primaryFacts.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-zinc-500">
-              {primaryFacts.map((fact) => (
-                <div key={fact.label} className="rounded border border-zinc-800 bg-zinc-950 px-2 py-2">
-                  <div>{fact.label}</div>
-                  <div className="mt-1 text-[11px] tracking-normal normal-case text-white">{fact.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {showCardDetail.type === 'Monster' && (
             <div className="border-t border-zinc-800 pt-3">
               <div className="flex items-center gap-5 font-mono text-sm uppercase tracking-[0.2em]">
@@ -754,16 +721,16 @@ export default function App() {
             </div>
           )}
 
-          {secondarySections.map((section) => (
-            <div key={section.title} className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
+          {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
+            <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
               <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                {section.title}
+                Fusion Materials
               </div>
               <div className="text-[11px] text-zinc-300 leading-5">
-                {section.value}
+                {showCardDetail.fusionMaterials.join(' + ')}
               </div>
             </div>
-          ))}
+          )}
         </div>
       </motion.div>
     );
