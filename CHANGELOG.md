@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.12 - 2026-04-18
+
+Patch release focused on removing the guest sign-in flash during saved-session restoration.
+
+Included in this release:
+
+- prevented the auth listener from opening the guest sign-in flow before the initial account bootstrap has actually resolved
+- extended the startup auth gate so persisted sessions have time to restore before the app decides the user is a guest
+- hydrated the saved profile during the initial auth pass so returning users go from `Loading account` directly to the menu
+- added regression coverage for the specific race where a temporary null auth callback previously caused the guest modal to flash
+
 ## v1.3.11 - 2026-04-18
 
 Patch release focused on preventing the guest prompt from flashing before persisted account restoration completes.

@@ -38,6 +38,7 @@ const SignInPage = lazy(() => import('./pages/SignInPage'));
 const GameHistoryPage = lazy(() => import('./pages/GameHistoryPage'));
 
 const BOOT_TIMEOUT_MS = 900;
+const AUTH_GATE_TIMEOUT_MS = 5000;
 
 const withTimeout = <T,>(promise: PromiseLike<T>, fallback: T, timeoutMs = BOOT_TIMEOUT_MS): Promise<T> => {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
@@ -112,6 +113,7 @@ export default function App() {
   const [mobileInfoTab, setMobileInfoTab] = useState<'details' | 'log'>('details');
   const [mobileInfoExpanded, setMobileInfoExpanded] = useState(false);
   const [aiResumeTick, setAiResumeTick] = useState(0);
+  const authBootstrapResolvedRef = useRef(false);
   const prevLogLengthRef = useRef(state.log.length);
   const prevPlayerPhaseKeyRef = useRef<string | null>(null);
   const duelHistorySavedRef = useRef<string | null>(null);
@@ -260,9 +262,17 @@ export default function App() {
           BOOT_TIMEOUT_MS,
         );
 
-        const user = await withTimeout(getCurrentUser(), null, BOOT_TIMEOUT_MS);
+        const user = await withTimeout(getCurrentUser(), null, AUTH_GATE_TIMEOUT_MS);
+        const resolvedProfile = user
+          ? await withTimeout(
+              ensureProfile(user),
+              toUserProfile(user, null),
+              AUTH_GATE_TIMEOUT_MS,
+            )
+          : null;
 
-        setUserProfile(user ? toUserProfile(user, null) : null);
+        authBootstrapResolvedRef.current = true;
+        setUserProfile(resolvedProfile);
         setAuthCheckComplete(true);
         setAuthPromptDismissed(false);
 
@@ -286,7 +296,9 @@ export default function App() {
           });
         }
       } catch {
+        authBootstrapResolvedRef.current = true;
         setBootState('error');
+        setAuthCheckComplete(true);
       } finally {
         // Initial auth gate has resolved or timed out.
       }
@@ -294,7 +306,9 @@ export default function App() {
 
     const unsubscribe = onAuthStateChange((profile) => {
       setUserProfile(profile);
-      setAuthCheckComplete(true);
+      if (profile || authBootstrapResolvedRef.current) {
+        setAuthCheckComplete(true);
+      }
       if (profile) {
         setAuthPromptDismissed(false);
       }
