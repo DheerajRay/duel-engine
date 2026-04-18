@@ -6,8 +6,12 @@ export const getCurrentUser = async (): Promise<User | null> => {
   const client = getSupabaseClient();
   if (!client) return null;
 
-  const { data } = await client.auth.getUser();
-  return data.user ?? null;
+  const { data, error } = await client.auth.getSession();
+  if (error) {
+    return null;
+  }
+
+  return data.session?.user ?? null;
 };
 
 export const toUserProfile = (user: User, profileRow?: CloudProfileRow | null): UserProfile => ({
@@ -29,15 +33,19 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
     display_name: fallbackName,
   };
 
-  await client.from('profiles').upsert(upsertPayload, { onConflict: 'id' });
+  try {
+    await client.from('profiles').upsert(upsertPayload, { onConflict: 'id' });
 
-  const { data } = await client
-    .from('profiles')
-    .select('id, email, display_name')
-    .eq('id', user.id)
-    .single();
+    const { data } = await client
+      .from('profiles')
+      .select('id, email, display_name')
+      .eq('id', user.id)
+      .single();
 
-  return toUserProfile(user, data as CloudProfileRow | null);
+    return toUserProfile(user, data as CloudProfileRow | null);
+  } catch {
+    return toUserProfile(user, null);
+  }
 };
 
 export const signInWithPassword = async (email: string, password: string) => {
@@ -87,13 +95,13 @@ export const onAuthStateChange = (callback: (profile: UserProfile | null) => voi
     return () => undefined;
   }
 
-  client.auth.getUser().then(async ({ data }) => {
-    if (!data.user) {
+  client.auth.getSession().then(async ({ data }) => {
+    if (!data.session?.user) {
       callback(null);
       return;
     }
 
-    callback(await ensureProfile(data.user));
+    callback(await ensureProfile(data.session.user));
   });
 
   const { data } = client.auth.onAuthStateChange(async (_event, session) => {

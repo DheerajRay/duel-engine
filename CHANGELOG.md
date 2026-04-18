@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.4 - 2026-04-18
+
+Patch release focused on resilient app boot when Supabase is slow or unavailable.
+
+Included in this release:
+
+- changed auth bootstrap to use the locally persisted Supabase session instead of a network-dependent user fetch during initial app load
+- hardened profile hydration so profile lookup failures no longer block the app from leaving the loading screen
+- added a timeout around initial Supabase game-content fetches and forced fallback to bundled local content when cloud bootstrap stalls
+- preserved the existing cloud-backed content path when Supabase responds normally while restoring reliable guest boot behavior during outages or latency spikes
+
 ## v1.3.3 - 2026-04-12
 
 Patch release focused on the home-page auth action.

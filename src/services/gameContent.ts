@@ -13,6 +13,22 @@ import type {
   GameContentBundle,
 } from '../types/cloud';
 
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+};
+
 const mapCloudCards = (
   rows: CloudCardRow[],
   engineRows: CloudCardEngineMetadataRow[],
@@ -107,13 +123,16 @@ export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'l
   }
 
   try {
-    const [cardsResult, engineResult, decksResult, charactersResult, stagesResult] = await Promise.all([
-      client.from('cards').select('*').order('name'),
-      client.from('card_engine_metadata').select('*').order('card_id'),
-      client.from('predefined_decks').select('*').order('name'),
-      client.from('characters').select('*').order('name'),
-      client.from('competition_stages').select('*').order('stage_number'),
-    ]);
+    const [cardsResult, engineResult, decksResult, charactersResult, stagesResult] = await withTimeout(
+      Promise.all([
+        client.from('cards').select('*').order('name'),
+        client.from('card_engine_metadata').select('*').order('card_id'),
+        client.from('predefined_decks').select('*').order('name'),
+        client.from('characters').select('*').order('name'),
+        client.from('competition_stages').select('*').order('stage_number'),
+      ]),
+      5000,
+    );
 
     if (cardsResult.error || engineResult.error || decksResult.error || charactersResult.error || stagesResult.error) {
       throw cardsResult.error || engineResult.error || decksResult.error || charactersResult.error || stagesResult.error;
