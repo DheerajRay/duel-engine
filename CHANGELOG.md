@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.7 - 2026-04-18
+
+Patch release focused on recovering clients stuck behind stale PWA caches.
+
+Included in this release:
+
+- switched the generated service worker to a self-destroying recovery mode so previously installed stale workers unregister themselves and clear cached assets
+- restored the web deployment path as the priority by forcing clients back onto the latest network-served bundle instead of continuing to load an old precached app shell
+- kept the core duel app code intact while disabling the broken cache layer that was serving outdated hashed bundles in production
+
 ## v1.3.6 - 2026-04-18
 
 Patch release focused on guaranteeing the app leaves the loading screen even when authenticated boot paths stall.

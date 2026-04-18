@@ -9,6 +9,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      selfDestroying: true,
       registerType: 'autoUpdate',
       injectRegister: false,
       includeAssets: [
