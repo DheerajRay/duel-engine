@@ -16,8 +16,34 @@ const PRIMARY_DECK_EXTRA_KEY = 'ygo_custom_extra_deck';
 const COMPETITION_STAGE_KEY = 'ygo_competition_stage_index';
 const COMPETITION_UPDATED_AT_KEY = 'ygo_competition_updated_at';
 const STARTER_DECK_ID = 'starter-local';
+const CLOUD_TIMEOUT_MS = 5000;
 
 const nowIso = () => new Date().toISOString();
+
+const withTimeout = <T,>(promise: PromiseLike<T>, timeoutMs = CLOUD_TIMEOUT_MS): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+};
+
+const getSessionUser = async () => {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  const { data, error } = await withTimeout(client.auth.getSession());
+  if (error) return null;
+  return data.session?.user ?? null;
+};
 
 const parseJson = <T,>(raw: string | null, fallback: T): T => {
   if (!raw) return fallback;
@@ -178,11 +204,15 @@ const syncDecksToCloud = async (state: DeckStorageState) => {
   const client = getSupabaseClient();
   if (!client) return;
 
-  const { data } = await client.auth.getUser();
-  if (!data.user) return;
+  try {
+    const user = await getSessionUser();
+    if (!user) return;
 
-  const rows = toCloudDeckRows(data.user.id, state);
-  await client.from('user_decks').upsert(rows, { onConflict: 'id' });
+    const rows = toCloudDeckRows(user.id, state);
+    await withTimeout(client.from('user_decks').upsert(rows, { onConflict: 'id' }));
+  } catch {
+    return;
+  }
 };
 
 export const getUserDeckState = async (): Promise<DeckStorageState> => {
@@ -190,27 +220,33 @@ export const getUserDeckState = async (): Promise<DeckStorageState> => {
   const client = getSupabaseClient();
   if (!client) return localState;
 
-  const { data: authData } = await client.auth.getUser();
-  if (!authData.user) return localState;
+  try {
+    const user = await getSessionUser();
+    if (!user) return localState;
 
-  const { data, error } = await client
-    .from('user_decks')
-    .select('*')
-    .eq('user_id', authData.user.id)
-    .order('updated_at', { ascending: false });
+    const { data, error } = await withTimeout(
+      client
+        .from('user_decks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false }),
+    );
 
-  if (error) return localState;
+    if (error) return localState;
 
-  const remoteRows = (data as CloudDeckRow[]) ?? [];
-  if (remoteRows.length === 0) {
-    await syncDecksToCloud(localState);
+    const remoteRows = (data as CloudDeckRow[]) ?? [];
+    if (remoteRows.length === 0) {
+      await syncDecksToCloud(localState);
+      return localState;
+    }
+
+    const mergedState = mergeDeckStates(localState, fromCloudDeckRows(remoteRows));
+    writeLocalDeckState(mergedState);
+    await syncDecksToCloud(mergedState);
+    return mergedState;
+  } catch {
     return localState;
   }
-
-  const mergedState = mergeDeckStates(localState, fromCloudDeckRows(remoteRows));
-  writeLocalDeckState(mergedState);
-  await syncDecksToCloud(mergedState);
-  return mergedState;
 };
 
 export const saveUserDeckState = async (state: DeckStorageState) => {
@@ -261,67 +297,68 @@ const syncCompetitionProgressToCloud = async (progress: CompetitionProgressRecor
   const client = getSupabaseClient();
   if (!client) return;
 
-  const { data } = await client.auth.getUser();
-  if (!data.user) return;
+  try {
+    const user = await getSessionUser();
+    if (!user) return;
 
-  const row: CloudCompetitionProgressRow = {
-    user_id: data.user.id,
-    current_stage_index: progress.currentStageIndex,
-    last_cleared_stage: progress.lastClearedStage,
-    updated_at: progress.updatedAt,
-  };
+    const row: CloudCompetitionProgressRow = {
+      user_id: user.id,
+      current_stage_index: progress.currentStageIndex,
+      last_cleared_stage: progress.lastClearedStage,
+      updated_at: progress.updatedAt,
+    };
 
-  await client.from('user_competition_progress').upsert(row, { onConflict: 'user_id' });
+    await withTimeout(client.from('user_competition_progress').upsert(row, { onConflict: 'user_id' }));
+  } catch {
+    return;
+  }
 };
 
 export const getCompetitionProgress = async (totalStages: number): Promise<CompetitionProgressRecord> => {
   const localProgress = readLocalCompetitionProgress();
-  const client = getSupabaseClient();
-  if (!client) {
-    return {
-      ...localProgress,
-      currentStageIndex: Math.min(localProgress.currentStageIndex, Math.max(totalStages - 1, 0)),
-    };
-  }
-
-  const { data: authData } = await client.auth.getUser();
-  if (!authData.user) {
-    return {
-      ...localProgress,
-      currentStageIndex: Math.min(localProgress.currentStageIndex, Math.max(totalStages - 1, 0)),
-    };
-  }
-
-  const { data, error } = await client
-    .from('user_competition_progress')
-    .select('*')
-    .eq('user_id', authData.user.id)
-    .maybeSingle();
-
-  if (error || !data) {
-    await syncCompetitionProgressToCloud(localProgress);
-    return {
-      ...localProgress,
-      currentStageIndex: Math.min(localProgress.currentStageIndex, Math.max(totalStages - 1, 0)),
-    };
-  }
-
-  const remote = data as CloudCompetitionProgressRow;
-  const resolved =
-    new Date(remote.updated_at).getTime() > new Date(localProgress.updatedAt).getTime()
-      ? {
-          currentStageIndex: remote.current_stage_index,
-          lastClearedStage: remote.last_cleared_stage,
-          updatedAt: remote.updated_at,
-        }
-      : localProgress;
-
-  writeLocalCompetitionProgress(resolved);
-  await syncCompetitionProgressToCloud(resolved);
-  return {
-    ...resolved,
-    currentStageIndex: Math.min(resolved.currentStageIndex, Math.max(totalStages - 1, 0)),
+  const fallbackProgress = {
+    ...localProgress,
+    currentStageIndex: Math.min(localProgress.currentStageIndex, Math.max(totalStages - 1, 0)),
   };
+  const client = getSupabaseClient();
+  if (!client) return fallbackProgress;
+
+  try {
+    const user = await getSessionUser();
+    if (!user) return fallbackProgress;
+
+    const { data, error } = await withTimeout(
+      client
+        .from('user_competition_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    );
+
+    if (error || !data) {
+      await syncCompetitionProgressToCloud(localProgress);
+      return fallbackProgress;
+    }
+
+    const remote = data as CloudCompetitionProgressRow;
+    const resolved =
+      new Date(remote.updated_at).getTime() > new Date(localProgress.updatedAt).getTime()
+        ? {
+            currentStageIndex: remote.current_stage_index,
+            lastClearedStage: remote.last_cleared_stage,
+            updatedAt: remote.updated_at,
+          }
+        : localProgress;
+
+    writeLocalCompetitionProgress(resolved);
+    await syncCompetitionProgressToCloud(resolved);
+    return {
+      ...resolved,
+      currentStageIndex: Math.min(resolved.currentStageIndex, Math.max(totalStages - 1, 0)),
+    };
+  } catch {
+    return fallbackProgress;
+  }
 };
 
 export const setCompetitionProgress = async (stageIndex: number) => {
@@ -342,8 +379,12 @@ export const clearCompetitionProgress = async () => {
   const client = getSupabaseClient();
   if (!client) return;
 
-  const { data } = await client.auth.getUser();
-  if (!data.user) return;
+  try {
+    const user = await getSessionUser();
+    if (!user) return;
 
-  await client.from('user_competition_progress').delete().eq('user_id', data.user.id);
+    await withTimeout(client.from('user_competition_progress').delete().eq('user_id', user.id));
+  } catch {
+    return;
+  }
 };

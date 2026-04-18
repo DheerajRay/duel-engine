@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.5 - 2026-04-18
+
+Patch release focused on removing the remaining boot-time loading stalls tied to cloud-backed user data.
+
+Included in this release:
+
+- hardened deck bootstrap so starter-deck selection falls back to local storage if Supabase user-deck sync is slow or unavailable
+- hardened competition progress bootstrap so ladder resume falls back to local progress instead of blocking app startup on cloud reads
+- replaced additional boot-time `getUser()` calls with persisted-session checks for user-data services
+- added timeout protection around user deck and competition progress cloud sync paths to keep the app responsive during Supabase latency spikes
+
 ## v1.3.4 - 2026-04-18
 
 Patch release focused on resilient app boot when Supabase is slow or unavailable.
