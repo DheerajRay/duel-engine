@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.6 - 2026-04-18
+
+Patch release focused on guaranteeing the app leaves the loading screen even when authenticated boot paths stall.
+
+Included in this release:
+
+- added timeout protection around auth session lookup and profile hydration so signed-in startup no longer waits indefinitely on Supabase auth/profile calls
+- added a top-level app boot guard so content load, user lookup, starter deck seeding, competition progress lookup, and profile hydration all fall back instead of blocking the initial render forever
+- preserved normal cloud-backed behavior when Supabase responds in time while forcing local fallback when startup calls hang
+
 ## v1.3.5 - 2026-04-18
 
 Patch release focused on removing the remaining boot-time loading stalls tied to cloud-backed user data.

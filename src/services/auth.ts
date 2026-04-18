@@ -2,16 +2,38 @@ import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
 import type { CloudProfileRow, UserProfile } from '../types/cloud';
 
+const AUTH_TIMEOUT_MS = 5000;
+
+const withTimeout = <T,>(promise: PromiseLike<T>, timeoutMs = AUTH_TIMEOUT_MS): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+};
+
 export const getCurrentUser = async (): Promise<User | null> => {
   const client = getSupabaseClient();
   if (!client) return null;
 
-  const { data, error } = await client.auth.getSession();
-  if (error) {
+  try {
+    const { data, error } = await withTimeout(client.auth.getSession());
+    if (error) {
+      return null;
+    }
+
+    return data.session?.user ?? null;
+  } catch {
     return null;
   }
-
-  return data.session?.user ?? null;
 };
 
 export const toUserProfile = (user: User, profileRow?: CloudProfileRow | null): UserProfile => ({
@@ -34,13 +56,15 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
   };
 
   try {
-    await client.from('profiles').upsert(upsertPayload, { onConflict: 'id' });
+    await withTimeout(client.from('profiles').upsert(upsertPayload, { onConflict: 'id' }));
 
-    const { data } = await client
-      .from('profiles')
-      .select('id, email, display_name')
-      .eq('id', user.id)
-      .single();
+    const { data } = await withTimeout(
+      client
+        .from('profiles')
+        .select('id, email, display_name')
+        .eq('id', user.id)
+        .single(),
+    );
 
     return toUserProfile(user, data as CloudProfileRow | null);
   } catch {
@@ -95,13 +119,15 @@ export const onAuthStateChange = (callback: (profile: UserProfile | null) => voi
     return () => undefined;
   }
 
-  client.auth.getSession().then(async ({ data }) => {
+  withTimeout(client.auth.getSession()).then(async ({ data }) => {
     if (!data.session?.user) {
       callback(null);
       return;
     }
 
     callback(await ensureProfile(data.session.user));
+  }).catch(() => {
+    callback(null);
   });
 
   const { data } = client.auth.onAuthStateChange(async (_event, session) => {

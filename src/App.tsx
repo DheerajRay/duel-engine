@@ -37,6 +37,24 @@ const HowToPlay = lazy(() => import('./pages/HowToPlay'));
 const SignInPage = lazy(() => import('./pages/SignInPage'));
 const GameHistoryPage = lazy(() => import('./pages/GameHistoryPage'));
 
+const BOOT_TIMEOUT_MS = 7000;
+
+const withTimeout = <T,>(promise: PromiseLike<T>, fallback: T, timeoutMs = BOOT_TIMEOUT_MS): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timeoutHandle = setTimeout(() => {
+      resolve(fallback);
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }) as Promise<T>;
+};
+
 type UIState = 
   | { type: 'IDLE' }
   | { type: 'SELECT_HAND_CARD', card: GameCard }
@@ -236,15 +254,22 @@ export default function App() {
     const bootstrap = async () => {
       try {
         const [{ source }, user] = await Promise.all([
-          initializeGameContent(),
-          getCurrentUser(),
+          withTimeout(initializeGameContent(), { source: 'local' as const, bundle: null as never }),
+          withTimeout(getCurrentUser(), null),
         ]);
 
         setBootSource(source);
-        await ensureStarterCustomDeck();
-        const progress = await getCompetitionProgress(COMPETITION_LADDER.length);
+        await withTimeout(ensureStarterCustomDeck(), null);
+        const progress = await withTimeout(
+          getCompetitionProgress(COMPETITION_LADDER.length),
+          {
+            currentStageIndex: 0,
+            lastClearedStage: -1,
+            updatedAt: new Date().toISOString(),
+          },
+        );
         setCompetitionResumeStageIndex(progress.currentStageIndex);
-        setUserProfile(user ? await ensureProfile(user) : null);
+        setUserProfile(user ? await withTimeout(ensureProfile(user), null) : null);
         setBootState('ready');
       } catch {
         setBootState('error');
