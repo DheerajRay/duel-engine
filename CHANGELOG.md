@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.8 - 2026-04-18
+
+Patch release focused on fixing the signed-in prompt flow and reducing startup blocking on the home screen.
+
+Included in this release:
+
+- changed the post-boot auth prompt so returning users are asked whether to use the current account or sign in with a different account
+- removed the confusing flow where an already signed-in user had to open the sign-in screen only to be shown account-management controls
+- moved noncritical cloud sync work such as starter-deck seeding, competition progress refresh, and full profile hydration out of the critical first-render path
+- added regression coverage for the existing-session auth prompt behavior
+
 ## v1.3.7 - 2026-04-18
 
 Patch release focused on recovering clients stuck behind stale PWA caches.

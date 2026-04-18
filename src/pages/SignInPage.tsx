@@ -10,6 +10,7 @@ interface SignInPageProps {
   onBack: () => void;
   onSuccess?: () => void;
   onContinueAsGuest?: () => void;
+  onUseCurrentAccount?: () => void;
   mode?: 'page' | 'modal';
 }
 
@@ -17,6 +18,7 @@ export default function SignInPage({
   onBack,
   onSuccess,
   onContinueAsGuest,
+  onUseCurrentAccount,
   mode = 'page',
 }: SignInPageProps) {
   const [email, setEmail] = useState('');
@@ -79,7 +81,7 @@ export default function SignInPage({
     setProfile(null);
     setPassword('');
     setStatus('idle');
-    onBack();
+    setError(null);
   };
 
   const frameClasses = mode === 'modal'
@@ -108,13 +110,31 @@ export default function SignInPage({
             <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Signed In As</div>
             <div className="mt-2 text-base text-white">{profile.email ?? profile.displayName}</div>
           </div>
-          <button
-            onClick={() => void handleSignOut()}
-            className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-          >
-            <LogOut size={16} />
-            Sign Out
-          </button>
+          {onUseCurrentAccount ? (
+            <div className="grid gap-3">
+              <button
+                onClick={onUseCurrentAccount}
+                className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+              >
+                Use This Account
+              </button>
+              <button
+                onClick={() => void handleSignOut()}
+                className="w-full border border-zinc-800 hover:border-zinc-600 hover:text-white text-zinc-500 px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut size={16} />
+                Sign In Different Account
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => void handleSignOut()}
+              className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+            >
+              <LogOut size={16} />
+              Sign Out
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
