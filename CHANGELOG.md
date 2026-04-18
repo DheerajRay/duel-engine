@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.9 - 2026-04-18
+
+Patch release focused on cleaning user-facing account/source copy on the home and sign-in surfaces.
+
+Included in this release:
+
+- removed the home-screen content source label so the menu now shows only the user identity or guest status
+- removed remaining player-facing backend references from the account flow and replaced them with neutral product copy
+- kept the account behavior and sync wiring intact while simplifying what the user sees
+
 ## v1.3.8 - 2026-04-18
 
 Patch release focused on fixing the signed-in prompt flow and reducing startup blocking on the home screen.

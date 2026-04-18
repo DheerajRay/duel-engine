@@ -124,7 +124,7 @@ describe('App', () => {
   it('shows the auth prompt on app open for guests', async () => {
     render(<App />);
 
-    expect(await screen.findByText(/cloud sync/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^account$/i)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^sign in$/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/you@example.com/i)).toBeInTheDocument();

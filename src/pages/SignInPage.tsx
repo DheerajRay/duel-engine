@@ -27,7 +27,7 @@ export default function SignInPage({
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const supabaseReady = isSupabaseConfigured();
+  const accountSyncReady = isSupabaseConfigured();
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -62,7 +62,7 @@ export default function SignInPage({
       const user = await getCurrentUser();
       if (!user) {
         throw new Error(authMode === 'create-account'
-          ? 'Account created, but no session was returned. Check Supabase email confirmation settings if you expect immediate sign-in.'
+          ? 'Account created, but no session was returned. Check your account confirmation settings if you expect immediate sign-in.'
           : 'Sign-in succeeded, but no session was returned.');
       }
 
@@ -90,17 +90,17 @@ export default function SignInPage({
 
   const content = (
     <div className={frameClasses}>
-      <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-3">Cloud Sync</div>
+      <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-3">Account</div>
       <h2 className="text-2xl font-mono uppercase tracking-[0.18em] text-white mb-3">
         {profile ? 'Account Connected' : 'Sign In'}
       </h2>
       <p className="text-sm text-zinc-400 leading-6 mb-6">
-        Use email and password to sync decks, competition progress, and duel history on this device and any other device you sign into.
+        Use email and password to keep your decks, competition progress, and duel history tied to this account.
       </p>
 
-      {!supabaseReady && (
+      {!accountSyncReady && (
         <div className="mb-4 border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400">
-          Supabase auth is not configured in this environment. You can continue as a guest.
+          Account sign-in is not available in this environment. You can continue as a guest.
         </div>
       )}
 
@@ -190,7 +190,7 @@ export default function SignInPage({
 
           <button
             onClick={() => void handleAuth()}
-            disabled={!supabaseReady || !email || !password || status === 'submitting'}
+            disabled={!accountSyncReady || !email || !password || status === 'submitting'}
             className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white disabled:border-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
           >
             {status === 'submitting' ? <LoaderCircle size={16} className="animate-spin" /> : null}

@@ -105,7 +105,6 @@ export default function App() {
   const [showAuthPrompt, setShowAuthPrompt] = useState(true);
   const [showSessionPrompt, setShowSessionPrompt] = useState(false);
   const [bootState, setBootState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [bootSource, setBootSource] = useState<'supabase' | 'local' | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
@@ -255,12 +254,11 @@ export default function App() {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const [{ source }, user] = await Promise.all([
+        const [, user] = await Promise.all([
           withTimeout(initializeGameContent(), { source: 'local' as const, bundle: null as never }),
           withTimeout(getCurrentUser(), null),
         ]);
 
-        setBootSource(source);
         setUserProfile(user ? toUserProfile(user, null) : null);
         setShowAuthPrompt(!user);
         setShowSessionPrompt(Boolean(user));
@@ -1884,7 +1882,7 @@ export default function App() {
                 Ready For A Duel
               </h1>
               <div className="mt-4 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
-                {userProfile ? `Signed in as ${userProfile.displayName}` : 'Guest Mode'} · Content {bootSource}
+                {userProfile ? `Signed in as ${userProfile.displayName}` : 'Guest Mode'}
               </div>
             </motion.div>
             <motion.p
@@ -3192,3 +3190,5 @@ export default function App() {
     </>
   );
 }
+
+

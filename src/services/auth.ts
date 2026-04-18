@@ -75,7 +75,7 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
 export const signInWithPassword = async (email: string, password: string) => {
   const client = getSupabaseClient();
   if (!client) {
-    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Account sign-in is not configured in this environment.');
   }
 
   const { error } = await client.auth.signInWithPassword({
@@ -91,7 +91,7 @@ export const signInWithPassword = async (email: string, password: string) => {
 export const signUpWithPassword = async (email: string, password: string) => {
   const client = getSupabaseClient();
   if (!client) {
-    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    throw new Error('Account sign-in is not configured in this environment.');
   }
 
   const { error } = await client.auth.signUp({
