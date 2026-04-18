@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.10 - 2026-04-18
+
+Patch release focused on faster startup and removing the post-load account dialog for returning users.
+
+Included in this release:
+
+- removed the app-level loading screen so the home menu renders immediately from bundled local content
+- moved initial content refresh and account sync work fully into the background instead of blocking first render
+- removed the returning-user session dialog so existing signed-in users now land directly on the menu
+- shortened the initial auth grace window so persisted sessions resolve faster before the guest prompt is shown
+
 ## v1.3.9 - 2026-04-18
 
 Patch release focused on cleaning user-facing account/source copy on the home and sign-in surfaces.

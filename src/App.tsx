@@ -37,7 +37,7 @@ const HowToPlay = lazy(() => import('./pages/HowToPlay'));
 const SignInPage = lazy(() => import('./pages/SignInPage'));
 const GameHistoryPage = lazy(() => import('./pages/GameHistoryPage'));
 
-const BOOT_TIMEOUT_MS = 2500;
+const BOOT_TIMEOUT_MS = 900;
 
 const withTimeout = <T,>(promise: PromiseLike<T>, fallback: T, timeoutMs = BOOT_TIMEOUT_MS): Promise<T> => {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
@@ -102,9 +102,8 @@ export default function App() {
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [showCompetitionLobby, setShowCompetitionLobby] = useState(false);
   const [showCompetitionIntro, setShowCompetitionIntro] = useState(false);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(true);
-  const [showSessionPrompt, setShowSessionPrompt] = useState(false);
-  const [bootState, setBootState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [bootState, setBootState] = useState<'ready' | 'error'>('ready');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
@@ -254,15 +253,16 @@ export default function App() {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const [, user] = await Promise.all([
-          withTimeout(initializeGameContent(), { source: 'local' as const, bundle: null as never }),
-          withTimeout(getCurrentUser(), null),
-        ]);
+        void withTimeout(
+          initializeGameContent(),
+          { source: 'local' as const, bundle: null as never },
+          BOOT_TIMEOUT_MS,
+        );
+
+        const user = await withTimeout(getCurrentUser(), null, BOOT_TIMEOUT_MS);
 
         setUserProfile(user ? toUserProfile(user, null) : null);
         setShowAuthPrompt(!user);
-        setShowSessionPrompt(Boolean(user));
-        setBootState('ready');
 
         void withTimeout(ensureStarterCustomDeck(), null);
         void withTimeout(
@@ -297,7 +297,6 @@ export default function App() {
       }
 
       setShowAuthPrompt(!profile);
-      setShowSessionPrompt(false);
     });
 
     void bootstrap();
@@ -466,10 +465,6 @@ export default function App() {
 
   const dismissAuthPrompt = () => {
     setShowAuthPrompt(false);
-  };
-
-  const dismissSessionPrompt = () => {
-    setShowSessionPrompt(false);
   };
 
   const handleHomeAuthAction = async () => {
@@ -1833,10 +1828,6 @@ export default function App() {
     }
   };
 
-  if (bootState === 'loading') {
-    return renderLazyScreenFallback('Duel Engine');
-  }
-
   if (bootState === 'error') {
     return (
       <div className="h-dvh md:h-screen box-border bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
@@ -1978,33 +1969,6 @@ export default function App() {
                       setShowAuthPrompt(false);
                       setView('start');
                     }}
-                  />
-                </motion.div>
-              </motion.div>
-            )}
-            {userProfile && showSessionPrompt && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={getSharedTransition(reduced, 'fast')}
-                className="absolute inset-0 z-30 bg-black/90 flex items-center justify-center px-4"
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
-                  transition={getSharedTransition(reduced, 'normal')}
-                  className="w-full max-w-lg"
-                >
-                  <SignInPage
-                    mode="modal"
-                    onBack={dismissSessionPrompt}
-                    onSuccess={() => {
-                      setShowSessionPrompt(false);
-                      setView('start');
-                    }}
-                    onUseCurrentAccount={dismissSessionPrompt}
                   />
                 </motion.div>
               </motion.div>
