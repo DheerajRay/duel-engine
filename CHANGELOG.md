@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.3.11 - 2026-04-18
+
+Patch release focused on preventing the guest prompt from flashing before persisted account restoration completes.
+
+Included in this release:
+
+- added an explicit auth-check-complete gate so the guest sign-in modal cannot render while the saved session is still being restored
+- replaced the guest-modal flash with a short loading-account overlay until the initial account lookup resolves or times out
+- kept the direct signed-in landing behavior so returning users go straight to the menu once the saved session is detected
+
 ## v1.3.10 - 2026-04-18
 
 Patch release focused on faster startup and removing the post-load account dialog for returning users.

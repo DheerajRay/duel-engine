@@ -102,7 +102,8 @@ export default function App() {
   const [showMenuConfirm, setShowMenuConfirm] = useState(false);
   const [showCompetitionLobby, setShowCompetitionLobby] = useState(false);
   const [showCompetitionIntro, setShowCompetitionIntro] = useState(false);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [authPromptDismissed, setAuthPromptDismissed] = useState(false);
   const [bootState, setBootState] = useState<'ready' | 'error'>('ready');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
@@ -115,7 +116,6 @@ export default function App() {
   const prevPlayerPhaseKeyRef = useRef<string | null>(null);
   const duelHistorySavedRef = useRef<string | null>(null);
   const mobileBattlefieldRef = useRef<HTMLDivElement | null>(null);
-  const authBootstrappedRef = useRef(false);
   const currentCompetitionOpponent = competitionStageIndex !== null ? COMPETITION_LADDER[competitionStageIndex] : null;
   const competitionResumeOpponent = COMPETITION_LADDER[competitionResumeStageIndex];
   const competitionSignatureCards = currentCompetitionOpponent?.signatureCardIds.map(buildCompetitionPreviewCard) ?? [];
@@ -131,6 +131,7 @@ export default function App() {
           : null;
   const canPlayerDraw = state.turn === 'player' && state.phase === 'DP';
   const hasActiveDuel = view === 'game' && !pendingCpuModeSelection && gameMode !== null && !state.winner;
+  const showAuthPrompt = view === 'start' && authCheckComplete && !userProfile && !authPromptDismissed;
   const { reduced } = useMotionPreference();
   const { activeAnnouncement, announce, clearAnnouncements } = useAnnouncementQueue(990);
   const playerActivationContext = {
@@ -262,7 +263,8 @@ export default function App() {
         const user = await withTimeout(getCurrentUser(), null, BOOT_TIMEOUT_MS);
 
         setUserProfile(user ? toUserProfile(user, null) : null);
-        setShowAuthPrompt(!user);
+        setAuthCheckComplete(true);
+        setAuthPromptDismissed(false);
 
         void withTimeout(ensureStarterCustomDeck(), null);
         void withTimeout(
@@ -286,17 +288,16 @@ export default function App() {
       } catch {
         setBootState('error');
       } finally {
-        authBootstrappedRef.current = true;
+        // Initial auth gate has resolved or timed out.
       }
     };
 
     const unsubscribe = onAuthStateChange((profile) => {
       setUserProfile(profile);
-      if (!authBootstrappedRef.current) {
-        return;
+      setAuthCheckComplete(true);
+      if (profile) {
+        setAuthPromptDismissed(false);
       }
-
-      setShowAuthPrompt(!profile);
     });
 
     void bootstrap();
@@ -464,7 +465,7 @@ export default function App() {
   };
 
   const dismissAuthPrompt = () => {
-    setShowAuthPrompt(false);
+    setAuthPromptDismissed(true);
   };
 
   const handleHomeAuthAction = async () => {
@@ -475,7 +476,8 @@ export default function App() {
 
     await signOut();
     setUserProfile(null);
-    setShowAuthPrompt(true);
+    setAuthCheckComplete(true);
+    setAuthPromptDismissed(false);
   };
 
   const forfeitToMenu = async () => {
@@ -1946,6 +1948,19 @@ export default function App() {
           </motion.div>
 
           <AnimatePresence>
+            {!authCheckComplete && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-30 bg-black/90 flex items-center justify-center px-4"
+              >
+                <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400 font-mono uppercase tracking-widest">
+                  Loading account
+                </div>
+              </motion.div>
+            )}
             {!userProfile && showAuthPrompt && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -1966,7 +1981,7 @@ export default function App() {
                     onBack={dismissAuthPrompt}
                     onContinueAsGuest={dismissAuthPrompt}
                     onSuccess={() => {
-                      setShowAuthPrompt(false);
+                      setAuthPromptDismissed(true);
                       setView('start');
                     }}
                   />
