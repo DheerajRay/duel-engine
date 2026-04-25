@@ -2091,37 +2091,6 @@ export default function App() {
               transition={getSharedTransition(reduced, 'normal')}
               className="flex w-full max-w-3xl flex-col gap-4"
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="theme-eyebrow text-[10px]">{t('language')}</span>
-                  <select
-                    value={language}
-                    onChange={(event) => setLanguage(event.target.value as typeof language)}
-                    className="theme-input mt-2 w-full px-4 py-3 text-xs font-mono uppercase tracking-[0.16em]"
-                  >
-                    {languageOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="theme-eyebrow text-[10px]">{t('theme')}</span>
-                  <select
-                    value={theme}
-                    onChange={(event) => setTheme(event.target.value as typeof theme)}
-                    className="theme-input mt-2 w-full px-4 py-3 text-xs font-mono uppercase tracking-[0.16em]"
-                  >
-                    {themeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
               <motion.button 
                 onClick={openCpuModeSelection} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}

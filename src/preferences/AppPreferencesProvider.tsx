@@ -1,6 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { APP_LANGUAGES, APP_THEMES, type AppLanguage, type AppPreferences, type AppTheme } from '../types/preferences';
-import { DEFAULT_APP_PREFERENCES } from '../types/preferences';
 import { applyPreferencesToDocument, normalizePreferences, readCachedPreferences, updateProfilePreferences, writeCachedPreferences } from '../services/preferences';
 import { getLanguageLabel, getThemeLabel, translate, type TranslationKey, type TranslationParams } from '../i18n/messages';
 import type { UserProfile } from '../types/cloud';
@@ -23,15 +22,44 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<AppPreferences>(() => normalizePreferences(readCachedPreferences()));
   const [profileId, setProfileId] = useState<string | null>(null);
 
-  const applyAndPersist = (nextPreferences: AppPreferences, nextProfileId = profileId) => {
+  const applyAndPersist = useCallback((nextPreferences: AppPreferences, nextProfileId?: string | null) => {
     setPreferences(nextPreferences);
     writeCachedPreferences(nextPreferences);
     applyPreferencesToDocument(nextPreferences);
 
-    if (nextProfileId) {
-      void updateProfilePreferences(nextProfileId, nextPreferences);
+    const resolvedProfileId = nextProfileId ?? profileId;
+    if (resolvedProfileId) {
+      setProfileId(resolvedProfileId);
+      void updateProfilePreferences(resolvedProfileId, nextPreferences);
+    } else {
+      setProfileId(null);
     }
-  };
+  }, [profileId]);
+
+  const hydrateProfile = useCallback((profile: UserProfile | null) => {
+    if (!profile) {
+      setProfileId(null);
+      return;
+    }
+
+    const nextPreferences = normalizePreferences({
+      language: profile.language,
+      theme: profile.theme,
+    });
+
+    setProfileId(profile.id);
+    setPreferences(nextPreferences);
+    writeCachedPreferences(nextPreferences);
+    applyPreferencesToDocument(nextPreferences);
+  }, []);
+
+  const setLanguage = useCallback((language: AppLanguage) => {
+    applyAndPersist({ ...preferences, language });
+  }, [applyAndPersist, preferences]);
+
+  const setTheme = useCallback((theme: AppTheme) => {
+    applyAndPersist({ ...preferences, theme });
+  }, [applyAndPersist, preferences]);
 
   const value = useMemo<AppPreferencesContextValue>(() => {
     const t = (key: TranslationKey, params?: TranslationParams) => translate(preferences.language, key, params);
@@ -40,26 +68,9 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
       preferences,
       language: preferences.language,
       theme: preferences.theme,
-      setLanguage: (language) => {
-        applyAndPersist({ ...preferences, language });
-      },
-      setTheme: (theme) => {
-        applyAndPersist({ ...preferences, theme });
-      },
-      hydrateProfile: (profile) => {
-        setProfileId(profile?.id ?? null);
-
-        if (!profile) {
-          return;
-        }
-
-        const nextPreferences = normalizePreferences({
-          language: profile.language ?? preferences.language ?? DEFAULT_APP_PREFERENCES.language,
-          theme: profile.theme ?? preferences.theme ?? DEFAULT_APP_PREFERENCES.theme,
-        });
-
-        applyAndPersist(nextPreferences, profile.id);
-      },
+      setLanguage,
+      setTheme,
+      hydrateProfile,
       t,
       languageOptions: APP_LANGUAGES.map((value) => ({
         value,
@@ -70,7 +81,7 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
         label: getThemeLabel(value, preferences.language),
       })),
     };
-  }, [preferences, profileId]);
+  }, [hydrateProfile, preferences, setLanguage, setTheme]);
 
   return <AppPreferencesContext.Provider value={value}>{children}</AppPreferencesContext.Provider>;
 }

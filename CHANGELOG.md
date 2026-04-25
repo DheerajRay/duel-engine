@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.5.1 - 2026-04-25
+
+Patch release focused on stabilizing the new preference UI and restoring the default visual baseline.
+
+Included in this release:
+
+- fixed the preference provider so language and theme changes are no longer overwritten by profile hydration
+- removed the desktop home-page preference selectors that were disrupting the existing launcher layout
+- kept the preference controls on account-focused surfaces where they fit the app flow
+- softened the default obsidian theme helpers so the app keeps its prior spacing, font feel, and control styling more closely
+- tightened the signed-in account page so language and theme selectors render without breaking the mobile layout
+
 ## v1.5.0 - 2026-04-25
 
 Feature release focused on app-wide preferences for theme and language.

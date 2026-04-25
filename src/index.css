@@ -132,7 +132,7 @@ textarea {
   background: var(--app-panel);
   border-color: var(--app-border);
   color: var(--app-text-primary);
-  box-shadow: var(--app-shadow);
+  box-shadow: none;
 }
 
 .theme-elevated {
@@ -148,7 +148,6 @@ textarea {
 .theme-title {
   color: var(--app-text-primary);
   font-family: var(--app-font-heading);
-  letter-spacing: var(--app-heading-tracking);
 }
 
 .theme-eyebrow {
@@ -210,9 +209,9 @@ textarea {
 }
 
 .theme-chip-active {
-  border-color: var(--app-accent);
-  background: var(--app-accent);
-  color: var(--app-accent-contrast);
+  border-color: var(--app-border-strong);
+  background: var(--app-panel-strong);
+  color: var(--app-text-primary);
 }
 
 .theme-danger {

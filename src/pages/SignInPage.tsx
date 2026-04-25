@@ -23,7 +23,7 @@ export default function SignInPage({
   onUseCurrentAccount,
   mode = 'page',
 }: SignInPageProps) {
-  const { t } = useAppPreferences();
+  const { t, language, theme, setLanguage, setTheme, languageOptions, themeOptions } = useAppPreferences();
   const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -113,6 +113,36 @@ export default function SignInPage({
           <div className="theme-elevated px-4 py-4">
             <div className="theme-eyebrow text-[10px]">{t('signedInAs')}</div>
             <div className="mt-2 text-base text-white">{profile.email ?? profile.displayName}</div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="theme-eyebrow text-[10px]">{t('language')}</span>
+              <select
+                value={language}
+                onChange={(event) => setLanguage(event.target.value as typeof language)}
+                className="theme-input mt-2 w-full rounded-none px-4 py-3 text-sm"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="theme-eyebrow text-[10px]">{t('theme')}</span>
+              <select
+                value={theme}
+                onChange={(event) => setTheme(event.target.value as typeof theme)}
+                className="theme-input mt-2 w-full rounded-none px-4 py-3 text-sm"
+              >
+                {themeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           {onUseCurrentAccount ? (
             <div className="grid gap-3">
