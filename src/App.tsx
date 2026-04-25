@@ -242,16 +242,6 @@ export default function App() {
   const renderMobilePlayHome = () => (
     <div className="flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto flex max-w-md flex-col gap-4">
-          <section className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5">
-            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Ready</div>
-            <h1 className="mt-3 text-2xl font-mono uppercase tracking-[0.18em] text-white">
-              Play First
-            </h1>
-            <div className="mt-3 text-sm leading-6 text-zinc-400">
-              {userProfile ? `Signed in as ${userProfile.displayName}.` : 'Guest mode is active on this device.'}
-            </div>
-          </section>
-
           <button
             type="button"
             onClick={openCpuModeSelection}

@@ -11,6 +11,15 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.4.1 - 2026-04-25
+
+Patch release focused on cleaning the mobile home surface and locking the app-shell viewport on phones.
+
+Included in this release:
+
+- removed the redundant `Play First` hero block from the mobile `Play` tab since account identity is already shown in the app bar
+- disabled pinch-zoom through the mobile viewport settings so the phone shell keeps its intended app-like framing
+
 ## v1.4.0 - 2026-04-24
 
 Feature release focused on the mobile-first app shell overhaul and production bundle cleanup.
