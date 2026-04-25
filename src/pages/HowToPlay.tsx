@@ -1,42 +1,47 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Sword, Shield, Zap, Sparkles, Ban, Clock, Skull, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
 
 interface HowToPlayProps {
   onBack: () => void;
+  embeddedInShell?: boolean;
 }
 
-export default function HowToPlay({ onBack }: HowToPlayProps) {
+export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlayProps) {
   const { reduced } = useMotionPreference();
+  const isMobile = useIsMobile();
+  const mobileLayout = embeddedInShell && isMobile;
   const [activeTab, setActiveTab] = useState<'basics' | 'cards' | 'phases'>('basics');
 
   return (
-    <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
-      {/* Header */}
-      <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black z-10 shrink-0">
-        <div className="flex items-center gap-2 md:gap-4">
-          <motion.button 
-            onClick={onBack}
-            whileTap={{ scale: reduced ? 1 : 0.98 }}
-            className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
-          >
-            <ArrowLeft size={14} /> Back
-          </motion.button>
-          <div className="h-4 w-px bg-zinc-800 mx-2"></div>
-          <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest hidden sm:block">How to Play</h1>
+    <div className={`${mobileLayout ? 'flex h-full min-h-0 flex-col bg-black text-white' : 'h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
+      {!mobileLayout && (
+        <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black z-10 shrink-0">
+          <div className="flex items-center gap-2 md:gap-4">
+            <motion.button 
+              onClick={onBack}
+              whileTap={{ scale: reduced ? 1 : 0.98 }}
+              className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
+            >
+              <ArrowLeft size={14} /> Back
+            </motion.button>
+            <div className="h-4 w-px bg-zinc-800 mx-2"></div>
+            <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest hidden sm:block">How to Play</h1>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
-      <div className="flex-1 flex flex-col sm:flex-row overflow-hidden min-h-0">
+      <div className={`flex-1 flex ${mobileLayout ? 'flex-col' : 'flex-col sm:flex-row'} overflow-hidden min-h-0`}>
         
         {/* Navigation Sidebar */}
-        <div className="w-full sm:w-64 bg-black border-b sm:border-b-0 sm:border-r border-zinc-800 flex flex-col shrink-0 overflow-y-auto">
+        <div className={`w-full ${mobileLayout ? '' : 'sm:w-64'} bg-black ${mobileLayout ? 'border-b' : 'border-b sm:border-b-0 sm:border-r'} border-zinc-800 flex flex-col shrink-0 overflow-y-auto`}>
           <div className="p-4 border-b border-zinc-800 flex justify-center items-center shrink-0 hidden sm:flex">
             <h2 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Navigation</h2>
           </div>
-          <div className="p-3 sm:p-4 flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className={`p-3 ${mobileLayout ? '' : 'sm:p-4'} flex flex-row ${mobileLayout ? '' : 'sm:flex-col'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
             {[
               { id: 'basics', label: 'The Basics', icon: <Sword size={14} /> },
               { id: 'cards', label: 'Card Types', icon: <Sparkles size={14} /> },
@@ -60,8 +65,8 @@ export default function HowToPlay({ onBack }: HowToPlayProps) {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 bg-zinc-950 overflow-y-auto p-4 md:p-12 min-h-0">
-          <div className="max-w-3xl mx-auto">
+        <div className={`flex-1 ${mobileLayout ? 'bg-black overflow-y-auto px-4 py-4' : 'bg-zinc-950 overflow-y-auto p-4 md:p-12'} min-h-0`}>
+          <div className={`${mobileLayout ? 'mx-auto max-w-2xl' : 'max-w-3xl mx-auto'}`}>
             <AnimatePresence mode="wait">
               
               {activeTab === 'basics' && (

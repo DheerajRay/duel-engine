@@ -35,6 +35,21 @@ vi.mock('./services/userData', () => ({
     updatedAt: '2026-04-18T00:00:00.000Z',
   }),
   getPrimaryDeckSnapshot: vi.fn().mockResolvedValue(null),
+  getUserDeckState: vi.fn().mockResolvedValue({
+    decks: [
+      {
+        id: 'starter-local',
+        name: 'Starter Deck',
+        mainDeck: Array.from({ length: 40 }, () => 'dark-magician'),
+        extraDeck: [],
+        kind: 'starter',
+        characterId: null,
+        updatedAt: '2026-04-18T00:00:00.000Z',
+      },
+    ],
+    primaryDeckId: 'starter-local',
+    primaryDeckUpdatedAt: '2026-04-18T00:00:00.000Z',
+  }),
   setCompetitionProgress: vi.fn().mockResolvedValue({
     currentStageIndex: 0,
     lastClearedStage: -1,

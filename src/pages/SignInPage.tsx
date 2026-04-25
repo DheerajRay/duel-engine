@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, LoaderCircle, LogOut } from 'lucide-react';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { ensureProfile, getCurrentUser, signInWithPassword, signOut, signUpWithPassword } from '../services/auth';
 import { isSupabaseConfigured } from '../lib/supabase';
 import type { UserProfile } from '../types/cloud';
@@ -21,6 +22,7 @@ export default function SignInPage({
   onUseCurrentAccount,
   mode = 'page',
 }: SignInPageProps) {
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMode, setAuthMode] = useState<AuthMode>('sign-in');
@@ -86,7 +88,7 @@ export default function SignInPage({
 
   const frameClasses = mode === 'modal'
     ? 'w-full max-w-lg border border-zinc-800 bg-zinc-950 p-6 md:p-8'
-    : 'w-full max-w-lg border border-zinc-800 bg-zinc-950 p-6 md:p-8';
+    : `w-full ${isMobile ? 'max-w-none rounded-none border-x-0 border-y border-zinc-800 bg-black p-5' : 'max-w-lg border border-zinc-800 bg-zinc-950 p-6 md:p-8'}`;
 
   const content = (
     <div className={frameClasses}>
@@ -226,7 +228,7 @@ export default function SignInPage({
         <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Sign In</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto flex items-center justify-center px-6 py-10">
+      <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-0 py-0' : 'flex items-center justify-center px-6 py-10'}`}>
         {content}
       </div>
     </div>

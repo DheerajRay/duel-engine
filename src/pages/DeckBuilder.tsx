@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { MobileBottomSheet } from '../components/mobile/MobileBottomSheet';
 import { CARD_DB } from '../constants';
 import { CardView } from '../components/CardView';
 import { Card } from '../types';
-import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, Sparkles } from 'lucide-react';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
 import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
 import { getCardSupportMeta } from '../effects/registry';
@@ -14,7 +15,15 @@ import { getUserDeckState, saveUserDeckState, setPrimaryDeckSelection } from '..
 import type { SavedDeck } from '../types/cloud';
 import type { DeckAssistantResponse } from '../types/assistant';
 
-export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: () => void; announce?: (input: AnnouncementInput) => void }) {
+export default function DeckBuilder({
+  onBack,
+  announce = () => {},
+  embeddedInShell = false,
+}: {
+  onBack: () => void;
+  announce?: (input: AnnouncementInput) => void;
+  embeddedInShell?: boolean;
+}) {
   const { reduced } = useMotionPreference();
   const [decks, setDecks] = useState<SavedDeck[]>([]);
   const [primaryDeckId, setPrimaryDeckId] = useState<string>('');
@@ -27,8 +36,10 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null);
   const [isDeckView, setIsDeckView] = useState(false);
-  const [mobilePanelTab, setMobilePanelTab] = useState<'details' | 'decks' | 'assistant'>('details');
-  const [mobilePanelExpanded, setMobilePanelExpanded] = useState(false);
+  const [mobileCardSheetOpen, setMobileCardSheetOpen] = useState(false);
+  const [mobileDeckSheetOpen, setMobileDeckSheetOpen] = useState(false);
+  const [mobileAssistantSheetOpen, setMobileAssistantSheetOpen] = useState(false);
+  const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [desktopLowerTab, setDesktopLowerTab] = useState<'decks' | 'assistant'>('decks');
   const [syncStatus, setSyncStatus] = useState<'loading' | 'local' | 'syncing' | 'synced' | 'error'>('loading');
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
@@ -98,6 +109,11 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     if (!isDeckView || hoveredCard) return;
     setHoveredCard(deckCards[0] || extraDeckCards[0] || null);
   }, [isDeckView, hoveredCard, deckCards, extraDeckCards]);
+
+  useEffect(() => {
+    if (!embeddedInShell || !hoveredCard) return;
+    setMobileCardSheetOpen(true);
+  }, [embeddedInShell, hoveredCard]);
 
   const isCurrentPredefined = useMemo(() => {
     return decks.find(d => d.id === editingDeckId)?.isPredefined || false;
@@ -324,16 +340,6 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     handleAddCard(hoveredCard.id);
   };
 
-  const handleMobilePanelTabChange = (tab: 'details' | 'decks' | 'assistant') => {
-    if (mobilePanelTab === tab) {
-      setMobilePanelExpanded((prev) => !prev);
-      return;
-    }
-
-    setMobilePanelTab(tab);
-    setMobilePanelExpanded(true);
-  };
-
   const handleAssistantRequest = async () => {
     setAssistantStatus('loading');
     setAssistantError(null);
@@ -369,8 +375,8 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     }
   };
 
-  const renderDeckList = () => (
-    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+  const renderDeckList = (variant: 'desktop' | 'mobile-sheet' = 'desktop') => (
+    <div className={`${variant === 'desktop' ? 'flex-1 overflow-y-auto p-4' : 'max-h-[52vh] overflow-y-auto'} flex flex-col gap-2`}>
       {decks.map((d) => (
         <div
           key={d.id}
@@ -419,8 +425,8 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
     </div>
   );
 
-  const renderAssistantPanel = () => (
-    <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+  const renderAssistantPanel = (variant: 'desktop' | 'mobile-sheet' = 'desktop') => (
+    <div className={`${variant === 'desktop' ? 'flex-1 overflow-y-auto p-4' : 'max-h-[56vh] overflow-y-auto'} flex flex-col gap-4`}>
       <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
         Suggest + explain
       </div>
@@ -452,13 +458,13 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
               <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Strengths</div>
               <div className="space-y-2 text-sm text-zinc-300">
-                {assistantResult.strengths.map((item) => <div key={item}>• {item}</div>)}
+                {assistantResult.strengths.map((item) => <div key={item}>- {item}</div>)}
               </div>
             </div>
             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
               <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Weaknesses</div>
               <div className="space-y-2 text-sm text-zinc-300">
-                {assistantResult.weaknesses.map((item) => <div key={item}>• {item}</div>)}
+                {assistantResult.weaknesses.map((item) => <div key={item}>- {item}</div>)}
               </div>
             </div>
           </div>
@@ -480,15 +486,15 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
         </div>
       ) : (
         <div className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
-          Ask for a direction like “make this deck feel more like Kaiba” or “cut unsupported cards.”
+          Ask for a direction like "make this deck feel more like Kaiba" or "cut unsupported cards."
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
-      {/* Header */}
+    <div className={`${embeddedInShell ? 'flex h-full min-h-0 flex-col overflow-hidden bg-black text-white' : 'h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
+      {!embeddedInShell && (
       <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black z-10 shrink-0 gap-3">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <button 
@@ -501,7 +507,7 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
           <div className="hidden sm:flex flex-col">
             <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Deck Builder</h1>
             <div className="text-[9px] font-mono uppercase tracking-[0.22em] text-zinc-600">
-              {currentUserEmail ? `${syncStatus} · ${currentUserEmail}` : 'local only'}
+              {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'local only'}
             </div>
           </div>
         </div>
@@ -529,6 +535,69 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
           </button>
         </div>
       </div>
+      )}
+
+      {embeddedInShell && (
+        <div className="border-b border-zinc-800 bg-black px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Deck Builder</div>
+              <div className="mt-2 text-base font-mono uppercase tracking-[0.14em] text-white truncate">{deckName}</div>
+              <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+                {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'Local only'}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileDeckSheetOpen(true)}
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+              >
+                Decks
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileAssistantSheetOpen(true)}
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+              >
+                AI
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isCurrentPredefined}
+                className={`rounded-2xl border px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] ${
+                  isCurrentPredefined ? 'border-zinc-800 text-zinc-600' : 'border-zinc-600 text-white'
+                }`}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-[1fr_auto] gap-3">
+            <div className="grid grid-cols-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-1">
+              <button
+                type="button"
+                onClick={() => setIsDeckView(false)}
+                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${!isDeckView ? 'bg-white text-black' : 'text-zinc-500'}`}
+              >
+                Library
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDeckView(true)}
+                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${isDeckView ? 'bg-white text-black' : 'text-zinc-500'}`}
+              >
+                Current Deck
+              </button>
+            </div>
+            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-zinc-800 text-zinc-500'}`}>
+              {deck.length}/60
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden min-h-0">
         {/* Card Pool */}
@@ -838,190 +907,149 @@ export default function DeckBuilder({ onBack, announce = () => {} }: { onBack: (
           </div>
         </div>
 
-        <div className={`md:hidden border-t border-zinc-800 bg-zinc-950 flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobilePanelExpanded ? 'h-[36vh] min-h-[240px]' : 'h-[53px]'}`}>
-          <div className="grid grid-cols-[1fr_1fr_1fr_auto] border-b border-zinc-800 shrink-0">
-            <button
-              onClick={() => handleMobilePanelTabChange('details')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'details' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-            >
-              Card Details
-            </button>
-            <button
-              onClick={() => handleMobilePanelTabChange('decks')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'decks' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-            >
-              Decks
-            </button>
-            <button
-              onClick={() => handleMobilePanelTabChange('assistant')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobilePanelTab === 'assistant' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-            >
-              AI
-            </button>
-            <button
-              onClick={() => setMobilePanelExpanded((prev) => !prev)}
-              className="flex items-center justify-center border-l border-zinc-800 px-3 text-zinc-500 hover:bg-zinc-900 hover:text-white transition-colors"
-              aria-label={mobilePanelExpanded ? 'Collapse mobile deck panel' : 'Expand mobile deck panel'}
-            >
-              {mobilePanelExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
+        {!embeddedInShell && (
+          <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+            Tap a card to inspect it, then use the mobile actions below.
           </div>
-
-          <AnimatePresence initial={false}>
-            {mobilePanelExpanded && (
-              <motion.div
-                key="mobile-deck-panel-body"
-                initial={{ opacity: 0, y: reduced ? 0 : 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: reduced ? 0 : 8 }}
-                transition={getSharedTransition(reduced, 'fast')}
-                className="flex-1 overflow-y-auto"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                {mobilePanelTab === 'details' ? (
-                  <motion.div
-                    key="mobile-details"
-                    initial={{ opacity: 0, x: reduced ? 0 : -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: reduced ? 0 : 8 }}
-                    transition={getSharedTransition(reduced, 'fast')}
-                    className="h-full flex flex-col"
-                  >
-                    <AnimatePresence mode="wait" initial={false}>
-                    {hoveredCard ? (
-                      <motion.div
-                        key={`${hoveredCard.id}-${isDeckView ? 'deck' : 'library'}-mobile`}
-                        initial={{ opacity: 0, y: reduced ? 0 : 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: reduced ? 0 : -8 }}
-                        transition={getSharedTransition(reduced, 'fast')}
-                        className="w-full h-full flex flex-col"
-                      >
-                        <div className="flex-1 overflow-y-auto p-4">
-                          <div className="w-full rounded border border-zinc-800 bg-black">
-                            <div className="border-b border-zinc-800 px-4 py-3">
-                              <div className="text-lg font-sans font-bold leading-tight text-white uppercase tracking-wide">
-                                {hoveredCard.name}
-                              </div>
-                              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
-                                <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
-                                  {hoveredCard.type}
-                                  {hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}
-                                </span>
-                                {hoveredCard.type === 'Monster' && (
-                                  <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
-                                    Lvl {hoveredCard.level}
-                                  </span>
-                                )}
-                                {hoveredCard.type === 'Monster' && (
-                                  <span className="border border-zinc-800 bg-zinc-950 px-2 py-1 text-zinc-500">
-                                    {hoveredCard.level! >= 7 ? '2 Tributes' : hoveredCard.level! >= 5 ? '1 Tribute' : 'No Tribute'}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="px-4 py-3 space-y-3">
-                              {hoveredCard.type === 'Monster' && (
-                                <div className="border-t border-zinc-800 pt-3">
-                                  <div className="flex items-center gap-5 font-mono text-sm uppercase tracking-[0.2em]">
-                                    <span className="text-zinc-500">ATK <span className="text-white tracking-normal">{hoveredCard.atk}</span></span>
-                                    <span className="text-zinc-500">DEF <span className="text-white tracking-normal">{hoveredCard.def}</span></span>
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="text-xs leading-6 text-zinc-300">
-                                {hoveredCard.description}
-                              </div>
-
-                              {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') && (
-                                <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-                                  <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                                    {hoveredSupportMeta.label}
-                                  </div>
-                                  {hoveredSupportMeta.note && (
-                                    <div className="text-[11px] text-zinc-300 leading-5">
-                                      {hoveredSupportMeta.note}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-
-                              {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
-                                <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-                                  <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                                    Fusion Materials
-                                  </div>
-                                  <div className="text-[11px] text-zinc-300 leading-5">
-                                    {hoveredCard.fusionMaterials.join(' + ')}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="shrink-0 border-t border-zinc-800 bg-zinc-950 p-4">
-                        <div className="w-full flex flex-col gap-2">
-                          <button 
-                            onClick={handleHoveredCardAction}
-                            disabled={isCurrentPredefined}
-                            className={`w-full border px-4 py-3 font-mono text-sm transition-colors uppercase tracking-widest flex items-center justify-center gap-2 ${
-                              isCurrentPredefined
-                                ? 'border-zinc-800 text-zinc-600 cursor-not-allowed'
-                                : 'border-zinc-600 hover:bg-white hover:text-black text-white'
-                            }`}
-                          >
-                            {isDeckView ? <X size={16} /> : <Plus size={16} />}
-                            {isDeckView ? `Remove from ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}` : `Add to ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}`}
-                          </button>
-                        </div>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="empty-mobile-card"
-                        initial={{ opacity: 0, y: reduced ? 0 : 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: reduced ? 0 : -6 }}
-                        transition={getSharedTransition(reduced, 'fast')}
-                        className="flex-1 flex items-center justify-center text-zinc-600 text-xs font-mono uppercase tracking-widest text-center px-6"
-                      >
-                        Tap a card for details
-                      </motion.div>
-                    )}
-                    </AnimatePresence>
-                  </motion.div>
-                ) : mobilePanelTab === 'decks' ? (
-                  <motion.div
-                    key="mobile-decks"
-                    initial={{ opacity: 0, x: reduced ? 0 : 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: reduced ? 0 : -8 }}
-                    transition={getSharedTransition(reduced, 'fast')}
-                    className="h-full"
-                  >
-                    {renderDeckList()}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="mobile-assistant"
-                    initial={{ opacity: 0, x: reduced ? 0 : 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: reduced ? 0 : -8 }}
-                    transition={getSharedTransition(reduced, 'fast')}
-                    className="h-full"
-                  >
-                    {renderAssistantPanel()}
-                  </motion.div>
-                )}
-                </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        )}
       </div>
+
+      {embeddedInShell && (
+        <>
+          <MobileBottomSheet
+            open={mobileCardSheetOpen && Boolean(hoveredCard)}
+            onClose={() => setMobileCardSheetOpen(false)}
+            title="Card Details"
+            expandable
+            expanded={mobileSheetExpanded}
+            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[56vh]"
+            maxHeightClassName="max-h-[84vh]"
+          >
+            {hoveredCard ? (
+              <div className="space-y-4 pb-2">
+                <div className="rounded-2xl border border-zinc-800 bg-black">
+                  <div className="border-b border-zinc-800 px-4 py-4">
+                    <div className="text-xl font-sans font-bold leading-tight text-white uppercase tracking-wide">
+                      {hoveredCard.name}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+                      <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5">
+                        {hoveredCard.type}
+                        {hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}
+                      </span>
+                      {hoveredCard.type === 'Monster' ? (
+                        <>
+                          <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5">
+                            Lvl {hoveredCard.level}
+                          </span>
+                          <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-zinc-500">
+                            {hoveredCard.level! >= 7 ? '2 Tributes' : hoveredCard.level! >= 5 ? '1 Tribute' : 'No Tribute'}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-4 space-y-4">
+                    {hoveredCard.type === 'Monster' ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3">
+                          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">ATK</div>
+                          <div className="mt-2 text-base font-mono text-white">{hoveredCard.atk}</div>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3">
+                          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">DEF</div>
+                          <div className="mt-2 text-base font-mono text-white">{hoveredCard.def}</div>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="text-sm leading-7 text-zinc-300">
+                      {hoveredCard.description}
+                    </div>
+
+                    {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') ? (
+                      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+                        <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-2">
+                          {hoveredSupportMeta.label}
+                        </div>
+                        {hoveredSupportMeta.note ? (
+                          <div className="text-[11px] leading-5 text-zinc-300">{hoveredSupportMeta.note}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {hoveredCard.isFusion && hoveredCard.fusionMaterials ? (
+                      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+                        <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-2">
+                          Fusion Materials
+                        </div>
+                        <div className="text-[11px] leading-5 text-zinc-300">
+                          {hoveredCard.fusionMaterials.join(' + ')}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="sticky bottom-0 space-y-2 border-t border-zinc-800 bg-zinc-950 pt-4">
+                  <button 
+                    onClick={handleHoveredCardAction}
+                    disabled={isCurrentPredefined}
+                    className={`w-full rounded-2xl border px-4 py-3 font-mono text-sm transition-colors uppercase tracking-[0.18em] flex items-center justify-center gap-2 ${
+                      isCurrentPredefined ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-600 text-white'
+                    }`}
+                  >
+                    {isDeckView ? <X size={16} /> : <Plus size={16} />}
+                    {isDeckView ? `Remove from ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}` : `Add to ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}`}
+                  </button>
+                  <div className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+                    In {hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}: {hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length} / 3
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={mobileDeckSheetOpen}
+            onClose={() => setMobileDeckSheetOpen(false)}
+            title="Decks"
+            expandable
+            expanded={mobileSheetExpanded}
+            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[56vh]"
+            maxHeightClassName="max-h-[84vh]"
+          >
+            <div className="space-y-4 pb-2">
+              <button
+                type="button"
+                onClick={handleCreateDeck}
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+              >
+                Create Deck
+              </button>
+              {renderDeckList('mobile-sheet')}
+            </div>
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={mobileAssistantSheetOpen}
+            onClose={() => setMobileAssistantSheetOpen(false)}
+            title="AI Assist"
+            expandable
+            expanded={mobileSheetExpanded}
+            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[56vh]"
+            maxHeightClassName="max-h-[84vh]"
+          >
+            <div className="pb-2">
+              {renderAssistantPanel('mobile-sheet')}
+            </div>
+          </MobileBottomSheet>
+        </>
+      )}
     </div>
   );
 }

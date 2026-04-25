@@ -11,6 +11,20 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.4.0 - 2026-04-24
+
+Feature release focused on the mobile-first app shell overhaul and production bundle cleanup.
+
+Included in this release:
+
+- replaced the old mobile launcher-first flow with a true mobile app shell built around `Play`, `Decks`, `History`, and `Help`
+- added shared mobile chrome and sheet patterns for the app bar, bottom tab bar, and bottom-sheet secondary surfaces
+- rebuilt mobile Deck Builder around a library-first flow with sheet-based card details, deck management, and AI assist
+- converted mobile History and Help into app-like page layouts that fit the new shell instead of desktop stacks squeezed into phone width
+- kept desktop behavior intact while preserving the immersive duel screen outside the mobile tab shell
+- added mobile regression coverage for shell navigation
+- split heavy local game-content and duel-engine modules into separate Rollup chunks so the main entry bundle no longer trips Vite's 500 kB warning
+
 ## v1.3.12 - 2026-04-18
 
 Patch release focused on removing the guest sign-in flash during saved-session restoration.

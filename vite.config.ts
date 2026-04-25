@@ -64,18 +64,46 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
+          const normalizedId = id.replace(/\\/g, '/');
+
+          if (normalizedId.includes('/src/resource/')) {
+            return 'card-catalog';
+          }
+
+          if (
+            normalizedId.includes('/src/utils/cardParser.ts') ||
+            normalizedId.includes('/src/services/gameContentStore.ts') ||
+            normalizedId.includes('/src/constants.ts')
+          ) {
+            return 'card-catalog';
+          }
+
+          if (
+            normalizedId.includes('/src/engine/') ||
+            normalizedId.includes('/src/effects/')
+          ) {
+            return 'duel-engine';
+          }
+
+          if (
+            normalizedId.includes('/src/utils/competitionMode.ts') ||
+            normalizedId.includes('/src/utils/characterDecks.ts')
+          ) {
+            return 'competition-content';
+          }
+
+          if (normalizedId.includes('node_modules')) {
             if (
-              id.includes('react') ||
-              id.includes('scheduler') ||
-              id.includes('react-router-dom')
+              normalizedId.includes('react') ||
+              normalizedId.includes('scheduler') ||
+              normalizedId.includes('react-router-dom')
             ) {
               return 'react-vendor';
             }
 
             if (
-              id.includes('motion') ||
-              id.includes('lucide-react')
+              normalizedId.includes('motion') ||
+              normalizedId.includes('lucide-react')
             ) {
               return 'ui-vendor';
             }

@@ -2,10 +2,14 @@ import React, { Suspense, lazy, useReducer, useEffect, useState, useRef } from '
 import { gameReducer, initialState, type Action } from './engine/reducer';
 import { AnnouncementOverlay } from './components/AnnouncementOverlay';
 import { CardView } from './components/CardView';
+import { MobileAppBar } from './components/mobile/MobileAppBar';
+import { MobileBottomSheet } from './components/mobile/MobileBottomSheet';
+import { MobileTabBar } from './components/mobile/MobileTabBar';
+import { useIsMobile } from './hooks/useIsMobile';
 import { AnnouncementInput, useAnnouncementQueue } from './hooks/useAnnouncementQueue';
 import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Layers3, Settings, Shield, Swords, Trophy, UserCircle2 } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
 import {
@@ -28,6 +32,7 @@ import {
   ensureStarterCustomDeck,
   getCompetitionProgress,
   getPrimaryDeckSnapshot,
+  getUserDeckState,
   setCompetitionProgress,
 } from './services/userData';
 import type { DuelHistoryEntry, UserProfile } from './types/cloud';
@@ -96,6 +101,7 @@ type UIState =
 
 export default function App() {
   const [view, setView] = useState<'start' | 'game' | 'deck-builder' | 'how-to-play' | 'sign-in' | 'history'>('start');
+  const [mobileTab, setMobileTab] = useState<'play' | 'decks' | 'history' | 'help'>('play');
   const [gameMode, setGameMode] = useState<'random' | 'custom' | 'competition' | null>(null);
   const [competitionStageIndex, setCompetitionStageIndex] = useState<number | null>(null);
   const [competitionResumeStageIndex, setCompetitionResumeStageIndex] = useState(0);
@@ -107,6 +113,9 @@ export default function App() {
   const [authPromptDismissed, setAuthPromptDismissed] = useState(false);
   const [bootState, setBootState] = useState<'ready' | 'error'>('ready');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showMobileAccountSheet, setShowMobileAccountSheet] = useState(false);
+  const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
+  const [primaryDeckSummary, setPrimaryDeckSummary] = useState<{ name: string; mainCount: number; extraCount: number; valid: boolean } | null>(null);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -132,6 +141,7 @@ export default function App() {
           ? 'CPU Mode'
           : null;
   const canPlayerDraw = state.turn === 'player' && state.phase === 'DP';
+  const isMobile = useIsMobile();
   const hasActiveDuel = view === 'game' && !pendingCpuModeSelection && gameMode !== null && !state.winner;
   const showAuthPrompt = view === 'start' && authCheckComplete && !userProfile && !authPromptDismissed;
   const { reduced } = useMotionPreference();
@@ -221,11 +231,125 @@ export default function App() {
     };
   };
 
-  const renderLazyScreenFallback = (label: string) => (
-    <div className="h-dvh md:h-screen box-border bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
+  const renderLazyScreenFallback = (label: string, embedded = false) => (
+    <div className={`${embedded ? 'h-full' : 'h-dvh md:h-screen box-border pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'} bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest`}>
       <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400">
         Loading {label}
       </div>
+    </div>
+  );
+
+  const renderMobilePlayHome = () => (
+    <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="mx-auto flex max-w-md flex-col gap-4">
+          <section className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Ready</div>
+            <h1 className="mt-3 text-2xl font-mono uppercase tracking-[0.18em] text-white">
+              Play First
+            </h1>
+            <div className="mt-3 text-sm leading-6 text-zinc-400">
+              {userProfile ? `Signed in as ${userProfile.displayName}.` : 'Guest mode is active on this device.'}
+            </div>
+          </section>
+
+          <button
+            type="button"
+            onClick={openCpuModeSelection}
+            className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5 text-left transition-colors hover:border-zinc-600"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Quick Duel</div>
+                <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">CPU Mode</div>
+                <div className="mt-2 text-sm leading-6 text-zinc-400">
+                  Open a fast duel and choose random or custom deck play.
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 p-3 text-zinc-300">
+                <Swords size={18} />
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={startCompetitionMode}
+            className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5 text-left transition-colors hover:border-zinc-600"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Ladder</div>
+                <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">Competition</div>
+                <div className="mt-2 text-sm leading-6 text-zinc-400">
+                  {competitionResumeOpponent
+                    ? `Current stage ${competitionResumeStageIndex + 1}. Next opponent: ${competitionResumeOpponent.name}.`
+                    : 'Climb the ladder with your primary deck.'}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-zinc-800 p-3 text-zinc-300">
+                <Trophy size={18} />
+              </div>
+            </div>
+          </button>
+
+          <section className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => handleMobileTabChange('decks')}
+              className="rounded-[22px] border border-zinc-800 bg-zinc-950 px-4 py-4 text-left transition-colors hover:border-zinc-600"
+            >
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Primary Deck</div>
+              <div className="mt-3 text-sm font-mono uppercase tracking-[0.12em] text-white">
+                {primaryDeckSummary?.name ?? 'Starter Deck'}
+              </div>
+              <div className="mt-2 text-xs text-zinc-400">
+                {primaryDeckSummary
+                  ? `${primaryDeckSummary.mainCount}/60 main | ${primaryDeckSummary.extraCount}/15 extra`
+                  : 'Loading deck status'}
+              </div>
+              <div className={`mt-2 text-[10px] font-mono uppercase tracking-[0.2em] ${primaryDeckSummary?.valid ?? true ? 'text-zinc-500' : 'text-red-400'}`}>
+                {primaryDeckSummary?.valid ?? true ? 'Ready to duel' : 'Needs 40 cards'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleMobileTabChange('history')}
+              className="rounded-[22px] border border-zinc-800 bg-zinc-950 px-4 py-4 text-left transition-colors hover:border-zinc-600"
+            >
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Progress</div>
+              <div className="mt-3 text-sm font-mono uppercase tracking-[0.12em] text-white">
+                Stage {competitionResumeStageIndex + 1}
+              </div>
+              <div className="mt-2 text-xs text-zinc-400">
+                {competitionResumeOpponent ? competitionResumeOpponent.name : 'No ladder data'}
+              </div>
+              <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+                View duel history
+              </div>
+            </button>
+          </section>
+
+          <section className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-4">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Shortcuts</div>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleMobileTabChange('decks')}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+              >
+                Deck Builder
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMobileTabChange('help')}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+              >
+                How To Play
+              </button>
+            </div>
+          </section>
+        </div>
     </div>
   );
 
@@ -288,6 +412,19 @@ export default function App() {
           setCompetitionResumeStageIndex(progress.currentStageIndex);
         });
 
+        void withTimeout(getUserDeckState(), null).then((deckState) => {
+          if (!deckState) return;
+          const activeDeck = deckState.decks.find((deck) => deck.id === deckState.primaryDeckId) ?? deckState.decks[0];
+          if (!activeDeck) return;
+
+          setPrimaryDeckSummary({
+            name: activeDeck.name,
+            mainCount: activeDeck.mainDeck.length,
+            extraCount: activeDeck.extraDeck.length,
+            valid: activeDeck.mainDeck.length >= 40 && activeDeck.mainDeck.length <= 60,
+          });
+        });
+
         if (user) {
           void withTimeout(ensureProfile(user), null).then((profile) => {
             if (profile) {
@@ -320,6 +457,13 @@ export default function App() {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (view === 'start') setMobileTab('play');
+    if (view === 'deck-builder') setMobileTab('decks');
+    if (view === 'history') setMobileTab('history');
+    if (view === 'how-to-play') setMobileTab('help');
+  }, [view]);
 
   useEffect(() => {
     if (gameMode !== 'competition' || competitionStageIndex === null) return;
@@ -452,6 +596,8 @@ export default function App() {
     setGameMode(mode);
     setCompetitionStageIndex(stageIndex);
     setPendingCpuModeSelection(false);
+    setShowMobileAccountSheet(false);
+    setMobileSheetExpanded(false);
     if (mode !== 'competition') {
       setShowCompetitionIntro(false);
     }
@@ -467,6 +613,7 @@ export default function App() {
 
   const returnToMenu = () => {
     setView('start');
+    setMobileTab('play');
     setGameMode(null);
     setCompetitionStageIndex(null);
     setPendingCpuModeSelection(false);
@@ -482,6 +629,16 @@ export default function App() {
     setAuthPromptDismissed(true);
   };
 
+  const handleMobileTabChange = (tab: 'play' | 'decks' | 'history' | 'help') => {
+    setMobileTab(tab);
+    setShowMobileAccountSheet(false);
+
+    if (tab === 'play') setView('start');
+    if (tab === 'decks') setView('deck-builder');
+    if (tab === 'history') setView('history');
+    if (tab === 'help') setView('how-to-play');
+  };
+
   const handleHomeAuthAction = async () => {
     if (!userProfile) {
       setView('sign-in');
@@ -492,6 +649,7 @@ export default function App() {
     setUserProfile(null);
     setAuthCheckComplete(true);
     setAuthPromptDismissed(false);
+    setShowMobileAccountSheet(false);
   };
 
   const forfeitToMenu = async () => {
@@ -580,6 +738,12 @@ export default function App() {
   };
 
   const openCpuModeSelection = () => {
+    if (isMobile) {
+      setPendingCpuModeSelection(true);
+      setView('start');
+      return;
+    }
+
     prevLogLengthRef.current = state.log.length;
     prevPlayerPhaseKeyRef.current = null;
     clearAnnouncements();
@@ -1854,9 +2018,11 @@ export default function App() {
     );
   }
 
+  const showMobileShell = isMobile && view !== 'game' && view !== 'sign-in';
+
   return (
     <>
-      {view === 'start' && (
+      {view === 'start' && !showMobileShell && (
         <div className="h-dvh md:h-screen box-border bg-black flex flex-col items-center justify-center text-white font-sans relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
           <div className="absolute inset-x-6 bottom-6 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent md:inset-x-12 md:bottom-10"></div>
           
@@ -2084,12 +2250,210 @@ export default function App() {
           </AnimatePresence>
         </div>
       )}
-      {view === 'deck-builder' && (
+
+      {showMobileShell && (
+        <div className="flex h-dvh box-border flex-col overflow-hidden bg-black text-white pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+          <MobileAppBar
+            title="Duel Engine"
+            rightSlot={(
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMobileAccountSheet(true);
+                  setMobileSheetExpanded(false);
+                }}
+                className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-300"
+              >
+                <UserCircle2 size={14} />
+                <span>{userProfile ? userProfile.displayName : 'Guest'}</span>
+              </button>
+            )}
+          />
+
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {mobileTab === 'play' && view === 'start' ? renderMobilePlayHome() : null}
+            {mobileTab === 'decks' && view === 'deck-builder' ? (
+              <Suspense fallback={renderLazyScreenFallback('Deck Builder', true)}>
+                <DeckBuilder onBack={() => handleMobileTabChange('play')} announce={showAnnouncement} embeddedInShell />
+              </Suspense>
+            ) : null}
+            {mobileTab === 'history' && view === 'history' ? (
+              <Suspense fallback={renderLazyScreenFallback('Game History', true)}>
+                <GameHistoryPage onBack={() => handleMobileTabChange('play')} embeddedInShell />
+              </Suspense>
+            ) : null}
+            {mobileTab === 'help' && view === 'how-to-play' ? (
+              <Suspense fallback={renderLazyScreenFallback('How To Play', true)}>
+                <HowToPlay onBack={() => handleMobileTabChange('play')} embeddedInShell />
+              </Suspense>
+            ) : null}
+          </div>
+
+          <AnimatePresence>
+            {!authCheckComplete && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={getSharedTransition(reduced, 'fast')}
+                className="absolute inset-0 z-40 bg-black/90 flex items-center justify-center px-4"
+              >
+                <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400 font-mono uppercase tracking-widest">
+                  Loading account
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <MobileBottomSheet
+            open={showMobileAccountSheet}
+            onClose={() => setShowMobileAccountSheet(false)}
+            title="Account"
+            expandable
+            expanded={mobileSheetExpanded}
+            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[38vh]"
+            maxHeightClassName="max-h-[72vh]"
+          >
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-4">
+                <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+                  {userProfile ? 'Signed In As' : 'Guest Mode'}
+                </div>
+                <div className="mt-3 text-base text-white">
+                  {userProfile?.email ?? userProfile?.displayName ?? 'Local guest play'}
+                </div>
+              </div>
+              {userProfile ? (
+                <div className="grid gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileAccountSheet(false);
+                      setView('sign-in');
+                    }}
+                    className="w-full rounded-2xl border border-zinc-800 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-zinc-300"
+                  >
+                    Switch Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleHomeAuthAction()}
+                    className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileAccountSheet(false);
+                    setView('sign-in');
+                  }}
+                  className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={pendingCpuModeSelection}
+            onClose={() => setPendingCpuModeSelection(false)}
+            title="CPU Mode"
+            compactHeightClassName="max-h-[34vh]"
+            maxHeightClassName="max-h-[34vh]"
+          >
+            <div className="grid gap-3 pb-2">
+              <button
+                type="button"
+                onClick={startRandomGame}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-4 text-left"
+              >
+                <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-500">Curated Duel</div>
+                <div className="mt-2 text-base font-mono uppercase tracking-[0.12em] text-white">Random Deck</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => void startCustomGame()}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-4 text-left"
+              >
+                <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-500">Primary Deck</div>
+                <div className="mt-2 text-base font-mono uppercase tracking-[0.12em] text-white">Custom Deck</div>
+              </button>
+            </div>
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={showCompetitionLobby}
+            onClose={() => setShowCompetitionLobby(false)}
+            title="Competition"
+            expandable
+            expanded={mobileSheetExpanded}
+            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[46vh]"
+            maxHeightClassName="max-h-[78vh]"
+          >
+            {competitionResumeOpponent ? (
+              <div className="space-y-4 pb-2">
+                <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-4">
+                  <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Current Stage</div>
+                  <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">
+                    {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
+                  </div>
+                  <div className="mt-2 text-sm leading-6 text-zinc-400">
+                    Next opponent: {competitionResumeOpponent.name}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {competitionResumeOpponent.signatureCardIds.map((cardId) => (
+                    <div key={cardId} className="rounded-2xl border border-zinc-800 bg-black px-3 py-3 text-center">
+                      <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Signature</div>
+                      <div className="mt-2 text-[11px] font-mono uppercase tracking-[0.12em] text-white">
+                        {buildCompetitionPreviewCard(cardId).name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void startCompetitionDuel(competitionResumeStageIndex)}
+                    className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                  >
+                    {competitionResumeStageIndex > 0 ? 'Resume Ladder' : 'Begin Ladder'}
+                  </button>
+                  {competitionResumeStageIndex > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void clearCompetitionProgress().then(() => {
+                          setCompetitionResumeStageIndex(0);
+                          void startCompetitionDuel(0);
+                        });
+                      }}
+                      className="w-full rounded-2xl border border-zinc-800 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-zinc-400"
+                    >
+                      Restart Stage 1
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </MobileBottomSheet>
+
+          <MobileTabBar activeTab={mobileTab} onTabChange={handleMobileTabChange} />
+        </div>
+      )}
+
+      {view === 'deck-builder' && !showMobileShell && (
         <Suspense fallback={renderLazyScreenFallback('Deck Builder')}>
           <DeckBuilder onBack={() => setView('start')} announce={showAnnouncement} />
         </Suspense>
       )}
-      {view === 'how-to-play' && (
+      {view === 'how-to-play' && !showMobileShell && (
         <Suspense fallback={renderLazyScreenFallback('How To Play')}>
           <HowToPlay onBack={() => setView('start')} />
         </Suspense>
@@ -2102,7 +2466,7 @@ export default function App() {
           />
         </Suspense>
       )}
-      {view === 'history' && (
+      {view === 'history' && !showMobileShell && (
         <Suspense fallback={renderLazyScreenFallback('Game History')}>
           <GameHistoryPage onBack={() => setView('start')} />
         </Suspense>
@@ -3116,7 +3480,14 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`md:hidden bg-zinc-950 border-t border-zinc-800 flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[34vh] min-h-[220px]' : 'h-[53px]'}`}>
+        <div className={`md:hidden bg-zinc-950 border-t border-zinc-800 rounded-t-[20px] shadow-[0_-14px_32px_rgba(0,0,0,0.32)] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[240px]' : 'h-[48px]'}`}>
+          <div className="flex items-center justify-center border-b border-zinc-800 py-2 shrink-0">
+            <button
+              onClick={() => setMobileInfoExpanded((prev) => !prev)}
+              className="h-1.5 w-10 rounded-full bg-zinc-700"
+              aria-label={mobileInfoExpanded ? 'Collapse mobile info panel' : 'Expand mobile info panel'}
+            />
+          </div>
           <div className="grid grid-cols-[1fr_1fr_auto] border-b border-zinc-800 shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
