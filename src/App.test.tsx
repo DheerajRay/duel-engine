@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { AppPreferencesProvider } from './preferences/AppPreferencesProvider';
 
 vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => null,
@@ -19,7 +20,11 @@ describe('App', () => {
   };
 
   it('starts a cpu random duel from the battlefield picker and shows the centered mode heading', async () => {
-    const { container } = render(<App />);
+    const { container } = render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument());
@@ -46,7 +51,11 @@ describe('App', () => {
   }, 15000);
 
   it('starts a cpu custom duel for a new user by seeding the starter deck as the saved custom deck', async () => {
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument());
@@ -61,13 +70,17 @@ describe('App', () => {
   }, 15000);
 
   it('opens the competition lobby and starts stage one for a new user with the starter deck', async () => {
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /competition mode/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /competition mode/i }));
 
-    expect(screen.getByText(/Ladder Progress/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Ladder$/i)).toBeInTheDocument();
     expect(screen.getByText(/Current Stage: 1 \/ 5/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /begin ladder/i })).toBeInTheDocument();
 
@@ -87,7 +100,11 @@ describe('App', () => {
   it('resumes competition from saved stage progress and confirms forfeits with character-specific copy', async () => {
     window.localStorage.setItem('ygo_competition_stage_index', '2');
 
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     await continueAsGuest();
     await waitFor(() => expect(screen.getByRole('button', { name: /competition mode/i })).toBeInTheDocument());
@@ -122,7 +139,11 @@ describe('App', () => {
   }, 15000);
 
   it('shows the auth prompt on app open for guests', async () => {
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     expect(await screen.findByText(/^account$/i)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^sign in$/i }).length).toBeGreaterThan(0);

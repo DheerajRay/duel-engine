@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../lib/supabase';
 import type { CloudProfileRow, UserProfile } from '../types/cloud';
+import { DEFAULT_APP_PREFERENCES } from '../types/preferences';
 
 const AUTH_TIMEOUT_MS = 5000;
 
@@ -40,6 +41,8 @@ export const toUserProfile = (user: User, profileRow?: CloudProfileRow | null): 
   id: user.id,
   email: user.email ?? null,
   displayName: profileRow?.display_name || user.email?.split('@')[0] || 'Duelist',
+  language: profileRow?.language ?? DEFAULT_APP_PREFERENCES.language,
+  theme: profileRow?.theme ?? DEFAULT_APP_PREFERENCES.theme,
 });
 
 export const ensureProfile = async (user: User): Promise<UserProfile> => {
@@ -53,6 +56,8 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
     id: user.id,
     email: user.email ?? null,
     display_name: fallbackName,
+    language: DEFAULT_APP_PREFERENCES.language,
+    theme: DEFAULT_APP_PREFERENCES.theme,
   };
 
   try {
@@ -61,7 +66,7 @@ export const ensureProfile = async (user: User): Promise<UserProfile> => {
     const { data } = await withTimeout(
       client
         .from('profiles')
-        .select('id, email, display_name')
+        .select('id, email, display_name, language, theme')
         .eq('id', user.id)
         .single(),
     );

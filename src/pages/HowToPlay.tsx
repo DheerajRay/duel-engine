@@ -3,6 +3,7 @@ import { ArrowLeft, Sword, Shield, Zap, Sparkles, Ban, Clock, Skull, Heart } fro
 import { motion, AnimatePresence } from 'motion/react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
+import { useAppPreferences } from '../preferences/AppPreferencesProvider';
 
 interface HowToPlayProps {
   onBack: () => void;
@@ -11,24 +12,25 @@ interface HowToPlayProps {
 
 export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlayProps) {
   const { reduced } = useMotionPreference();
+  const { t } = useAppPreferences();
   const isMobile = useIsMobile();
   const mobileLayout = embeddedInShell && isMobile;
   const [activeTab, setActiveTab] = useState<'basics' | 'cards' | 'phases'>('basics');
 
   return (
-    <div className={`${mobileLayout ? 'flex h-full min-h-0 flex-col bg-black text-white' : 'h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
+    <div className={`${mobileLayout ? 'theme-screen flex h-full min-h-0 flex-col' : 'theme-screen h-dvh md:h-screen box-border overflow-hidden font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
       {!mobileLayout && (
-        <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black z-10 shrink-0">
+        <div className="theme-screen theme-divider h-14 md:h-12 border-b flex items-center justify-between px-3 md:px-6 z-10 shrink-0">
           <div className="flex items-center gap-2 md:gap-4">
             <motion.button 
               onClick={onBack}
               whileTap={{ scale: reduced ? 1 : 0.98 }}
-              className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
+              className="theme-subtle hover:text-[var(--app-text-primary)] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
             >
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={14} /> {t('back')}
             </motion.button>
-            <div className="h-4 w-px bg-zinc-800 mx-2"></div>
-            <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest hidden sm:block">How to Play</h1>
+            <div className="theme-divider mx-2 h-4 w-px"></div>
+            <h1 className="theme-eyebrow hidden sm:block text-xs">{t('howToPlay')}</h1>
           </div>
         </div>
       )}
@@ -37,15 +39,15 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
       <div className={`flex-1 flex ${mobileLayout ? 'flex-col' : 'flex-col sm:flex-row'} overflow-hidden min-h-0`}>
         
         {/* Navigation Sidebar */}
-        <div className={`w-full ${mobileLayout ? '' : 'sm:w-64'} bg-black ${mobileLayout ? 'border-b' : 'border-b sm:border-b-0 sm:border-r'} border-zinc-800 flex flex-col shrink-0 overflow-y-auto`}>
-          <div className="p-4 border-b border-zinc-800 flex justify-center items-center shrink-0 hidden sm:flex">
-            <h2 className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Navigation</h2>
+        <div className={`theme-screen theme-divider w-full ${mobileLayout ? '' : 'sm:w-64'} ${mobileLayout ? 'border-b' : 'border-b sm:border-b-0 sm:border-r'} flex flex-col shrink-0 overflow-y-auto`}>
+          <div className="theme-divider p-4 border-b flex justify-center items-center shrink-0 hidden sm:flex">
+            <h2 className="theme-eyebrow text-[10px]">{t('helpNavigation')}</h2>
           </div>
           <div className={`p-3 ${mobileLayout ? '' : 'sm:p-4'} flex flex-row ${mobileLayout ? '' : 'sm:flex-col'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
             {[
-              { id: 'basics', label: 'The Basics', icon: <Sword size={14} /> },
-              { id: 'cards', label: 'Card Types', icon: <Sparkles size={14} /> },
-              { id: 'phases', label: 'Turn Phases', icon: <Clock size={14} /> },
+              { id: 'basics', label: t('basics'), icon: <Sword size={14} /> },
+              { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={14} /> },
+              { id: 'phases', label: t('turnPhases'), icon: <Clock size={14} /> },
             ].map((tab) => (
               <motion.button
                 key={tab.id}
@@ -53,8 +55,8 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
                 className={`flex items-center justify-center sm:justify-start gap-3 px-4 py-3 text-[10px] sm:text-xs font-mono uppercase tracking-widest transition-colors border border-transparent whitespace-nowrap ${
                   activeTab === tab.id 
-                    ? 'bg-zinc-900 text-white border-zinc-700' 
-                    : 'text-zinc-500 hover:bg-zinc-900/50 hover:text-zinc-300 hover:border-zinc-800'
+                    ? 'theme-chip-active' 
+                    : 'theme-chip'
                 }`}
               >
                 {tab.icon}
@@ -65,7 +67,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
         </div>
 
         {/* Main Content Area */}
-        <div className={`flex-1 ${mobileLayout ? 'bg-black overflow-y-auto px-4 py-4' : 'bg-zinc-950 overflow-y-auto p-4 md:p-12'} min-h-0`}>
+        <div className={`theme-screen flex-1 ${mobileLayout ? 'overflow-y-auto px-4 py-4' : 'overflow-y-auto p-4 md:p-12'} min-h-0`}>
           <div className={`${mobileLayout ? 'mx-auto max-w-2xl' : 'max-w-3xl mx-auto'}`}>
             <AnimatePresence mode="wait">
               
@@ -79,59 +81,59 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                   className="space-y-12"
                 >
                 <section>
-                  <h2 className="text-xs font-mono uppercase tracking-widest mb-6 text-zinc-400 border-b border-zinc-800 pb-2">The Objective</h2>
+                  <h2 className="theme-eyebrow theme-divider mb-6 border-b pb-2 text-xs">{t('objective')}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-black border border-zinc-800 p-6 flex flex-col items-center text-center gap-4">
-                      <div className="w-10 h-10 border border-zinc-700 flex items-center justify-center text-white">
+                    <div className="theme-elevated p-6 flex flex-col items-center text-center gap-4">
+                      <div className="theme-button-subtle w-10 h-10 flex items-center justify-center">
                         <Heart size={16} />
                       </div>
-                      <h3 className="text-xs font-mono uppercase tracking-widest text-white">Life Points (LP)</h3>
-                      <p className="text-zinc-500 text-xs leading-relaxed">
-                        Both players start with <strong className="text-white">8000 LP</strong>. The first player to reduce their opponent's LP to 0 wins the duel.
+                      <h3 className="theme-title text-xs uppercase tracking-widest">{t('lifePoints')}</h3>
+                      <p className="theme-muted text-xs leading-relaxed">
+                        {t('helpObjectiveLifePointsBody')}
                       </p>
                     </div>
-                    <div className="bg-black border border-zinc-800 p-6 flex flex-col items-center text-center gap-4">
-                      <div className="w-10 h-10 border border-zinc-700 flex items-center justify-center text-white">
+                    <div className="theme-elevated p-6 flex flex-col items-center text-center gap-4">
+                      <div className="theme-button-subtle w-10 h-10 flex items-center justify-center">
                         <Skull size={16} />
                       </div>
-                      <h3 className="text-xs font-mono uppercase tracking-widest text-white">Deck Out</h3>
-                      <p className="text-zinc-500 text-xs leading-relaxed">
-                        If a player must draw a card but has <strong className="text-white">0 cards</strong> left in their deck, they instantly lose the duel.
+                      <h3 className="theme-title text-xs uppercase tracking-widest">{t('deckOut')}</h3>
+                      <p className="theme-muted text-xs leading-relaxed">
+                        {t('helpObjectiveDeckOutBody')}
                       </p>
                     </div>
                   </div>
                 </section>
 
                 <section>
-                  <h2 className="text-xs font-mono uppercase tracking-widest mb-6 text-zinc-400 border-b border-zinc-800 pb-2">Core Rules</h2>
+                  <h2 className="theme-eyebrow theme-divider mb-6 border-b pb-2 text-xs">{t('helpCoreRules')}</h2>
                   <ul className="space-y-4">
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">1</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Summoning Limits:</strong> You can only perform <strong className="text-white">one Normal Summon or Set</strong> per turn. High-level monsters (Level 5+) require you to Tribute monsters you already control.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleSummonLimits')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">2</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Field Limits:</strong> You can have a maximum of <strong className="text-white">5 Monsters</strong> and <strong className="text-white">5 Spells/Traps</strong> on the field at once.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleFieldLimits')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">3</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Battling (Attack vs Attack):</strong> When attacking an Attack Position monster, compare ATK values. The monster with lower ATK is destroyed, and its controller loses LP equal to the difference.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleBattleAttackAttack')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">4</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Battling (Attack vs Defense):</strong> When attacking a Defense Position monster, compare your ATK to their DEF. If your ATK is higher, it's destroyed, but the opponent takes <strong className="text-white">no LP damage</strong>.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleBattleAttackDefense')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">5</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Direct Attacks:</strong> If your opponent controls no monsters, your monsters can attack directly, dealing their full ATK as damage to the opponent's LP.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleDirectAttacks')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">6</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">First Turn Restrictions:</strong> The player who goes first cannot declare an attack on their very first turn.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleFirstTurn')}</p>
                     </li>
-                    <li className="flex gap-4 items-start bg-black p-4 border border-zinc-800">
+                    <li className="theme-elevated flex gap-4 items-start p-4">
                       <div className="mt-0.5 w-5 h-5 bg-white text-black flex items-center justify-center font-mono font-bold text-[10px] shrink-0">7</div>
-                      <p className="text-zinc-500 text-xs leading-relaxed"><strong className="text-white">Fusion Summoning:</strong> You can Fusion Summon a monster from your Extra Deck by activating a Fusion Spell Card (like Polymerization) and sending the listed Fusion Materials from your hand or field to the Graveyard.</p>
+                      <p className="theme-muted text-xs leading-relaxed">{t('helpRuleFusion')}</p>
                     </li>
                   </ul>
                 </section>
@@ -148,52 +150,52 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 className="space-y-8"
               >
                 {/* Monster Cards */}
-                <div className="border border-zinc-800 bg-black">
-                  <div className="border-b border-zinc-800 p-4 flex items-center gap-3 bg-zinc-950">
+                <div className="theme-panel border">
+                  <div className="theme-divider p-4 flex items-center gap-3 border-b">
                     <Sword size={14} className="text-white" />
-                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-widest">Monster Cards</h2>
+                    <h2 className="theme-title text-xs font-bold uppercase tracking-widest">{t('helpMonsterCards')}</h2>
                   </div>
                   <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4 text-zinc-500 text-xs leading-relaxed">
-                      <p>Used to attack your opponent and defend your Life Points. They have Attack (ATK) and Defense (DEF) stats.</p>
+                    <div className="theme-muted space-y-4 text-xs leading-relaxed">
+                      <p>{t('helpMonsterBody')}</p>
                       
-                      <div className="bg-zinc-950 p-4 border border-zinc-800 space-y-3">
-                        <h3 className="font-bold text-white uppercase text-[10px] tracking-widest font-mono">Effect Types</h3>
+                      <div className="theme-elevated p-4 space-y-3">
+                        <h3 className="theme-title font-bold uppercase text-[10px] tracking-widest">{t('helpEffectTypes')}</h3>
                         <ul className="space-y-2">
-                          <li><strong className="text-white">Normal:</strong> Monsters with no special abilities.</li>
-                          <li><strong className="text-white">Effect:</strong> Monsters with special abilities that can trigger or be activated.</li>
-                          <li><strong className="text-white">Fusion:</strong> Powerful monsters stored in your Extra Deck. They require specific materials and a Fusion Spell (like Polymerization) to summon.</li>
+                          <li>{t('helpEffectNormal')}</li>
+                          <li>{t('helpEffectEffect')}</li>
+                          <li>{t('helpEffectFusion')}</li>
                         </ul>
                       </div>
 
-                      <div className="bg-zinc-950 p-4 border border-zinc-800 space-y-3">
-                        <h3 className="font-bold text-white uppercase text-[10px] tracking-widest font-mono">Positions</h3>
+                      <div className="theme-elevated p-4 space-y-3">
+                        <h3 className="theme-title font-bold uppercase text-[10px] tracking-widest">{t('helpPositions')}</h3>
                         <div className="flex items-center gap-3">
                           <div className="w-4 h-6 bg-zinc-800 border border-zinc-600 shrink-0"></div>
-                          <span><strong className="text-white">Attack:</strong> Face-up vertical. Uses ATK stat. Can declare attacks.</span>
+                          <span>{t('helpPositionAttack')}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="w-6 h-4 bg-zinc-800 border border-zinc-600 shrink-0"></div>
-                          <span><strong className="text-white">Defense:</strong> Face-down horizontal. Uses DEF stat. Cannot attack.</span>
+                          <span>{t('helpPositionDefense')}</span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="bg-zinc-950 p-4 border border-zinc-800 space-y-3 h-fit">
-                      <h3 className="font-bold text-white uppercase text-[10px] tracking-widest font-mono">Tribute Summoning</h3>
-                      <p className="text-xs text-zinc-500">High-level monsters require you to send monsters from your field to the Graveyard to summon them.</p>
-                      <ul className="text-xs space-y-2 text-zinc-500 mt-4 font-mono">
+                    <div className="theme-elevated h-fit p-4 space-y-3">
+                      <h3 className="theme-title font-bold uppercase text-[10px] tracking-widest">{t('helpTributeSummoning')}</h3>
+                      <p className="theme-muted text-xs">{t('helpTributeBody')}</p>
+                      <ul className="theme-muted text-xs space-y-2 mt-4 font-mono">
                         <li className="flex justify-between border-b border-zinc-800 pb-2">
-                          <span>Level 1-4</span>
-                          <span className="text-white">No Tributes</span>
+                          <span>{t('helpLevel14')}</span>
+                          <span className="text-white">{t('helpNoTributes')}</span>
                         </li>
                         <li className="flex justify-between border-b border-zinc-800 pb-2">
-                          <span>Level 5-6</span>
-                          <span className="text-white">1 Tribute</span>
+                          <span>{t('helpLevel56')}</span>
+                          <span className="text-white">{t('helpOneTribute')}</span>
                         </li>
                         <li className="flex justify-between pb-1">
-                          <span>Level 7+</span>
-                          <span className="text-white">2 Tributes</span>
+                          <span>{t('helpLevel7plus')}</span>
+                          <span className="text-white">{t('helpTwoTributes')}</span>
                         </li>
                       </ul>
                     </div>
@@ -201,53 +203,53 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 </div>
 
                 {/* Spell Cards */}
-                <div className="border border-zinc-800 bg-black">
-                  <div className="border-b border-zinc-800 p-4 flex items-center gap-3 bg-zinc-950">
+                <div className="theme-panel border">
+                  <div className="theme-divider p-4 flex items-center gap-3 border-b">
                     <Sparkles size={14} className="text-white" />
-                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-widest">Spell Cards</h2>
+                    <h2 className="theme-title text-xs font-bold uppercase tracking-widest">{t('helpSpellCards')}</h2>
                   </div>
-                  <div className="p-6 text-zinc-500 text-xs leading-relaxed space-y-6">
-                    <p>Powerful magic cards that can be played directly from your hand during your Main Phase.</p>
+                  <div className="theme-muted p-6 text-xs leading-relaxed space-y-6">
+                    <p>{t('helpSpellBody')}</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-zinc-950 p-4 border border-zinc-800">
-                        <strong className="text-white block mb-1 font-mono text-[10px] tracking-widest uppercase">Activate</strong>
-                        Play face-up to trigger its effect immediately.
+                      <div className="theme-elevated p-4">
+                        <strong className="theme-title block mb-1 font-mono text-[10px] tracking-widest uppercase">{t('helpActivate')}</strong>
+                        {t('helpActivateBody')}
                       </div>
-                      <div className="bg-zinc-950 p-4 border border-zinc-800">
-                        <strong className="text-white block mb-1 font-mono text-[10px] tracking-widest uppercase">Set</strong>
-                        Place face-down on the field to use later.
+                      <div className="theme-elevated p-4">
+                        <strong className="theme-title block mb-1 font-mono text-[10px] tracking-widest uppercase">{t('helpSet')}</strong>
+                        {t('helpSetBody')}
                       </div>
                     </div>
 
-                    <div className="bg-zinc-950 p-4 border border-zinc-800 space-y-3">
-                      <h3 className="font-bold text-white uppercase text-[10px] tracking-widest font-mono">Spell Types</h3>
+                    <div className="theme-elevated p-4 space-y-3">
+                      <h3 className="theme-title font-bold uppercase text-[10px] tracking-widest">{t('helpSpellTypes')}</h3>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                        <li><strong className="text-white">Normal:</strong> One-time use, goes to Graveyard.</li>
-                        <li><strong className="text-white">Equip:</strong> Attaches to a monster to boost it.</li>
-                        <li><strong className="text-white">Continuous:</strong> Stays on the field indefinitely.</li>
-                        <li><strong className="text-white">Field:</strong> Affects the whole board, placed in Field Zone.</li>
-                        <li><strong className="text-white">Quick-Play:</strong> Can be played during opponent's turn if set.</li>
+                        <li>{t('helpSpellNormal')}</li>
+                        <li>{t('helpSpellEquip')}</li>
+                        <li>{t('helpSpellContinuous')}</li>
+                        <li>{t('helpSpellField')}</li>
+                        <li>{t('helpSpellQuickPlay')}</li>
                       </ul>
                     </div>
                   </div>
                 </div>
 
                 {/* Trap Cards */}
-                <div className="border border-zinc-800 bg-black">
-                  <div className="border-b border-zinc-800 p-4 flex items-center gap-3 bg-zinc-950">
+                <div className="theme-panel border">
+                  <div className="theme-divider p-4 flex items-center gap-3 border-b">
                     <Ban size={14} className="text-white" />
-                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-widest">Trap Cards</h2>
+                    <h2 className="theme-title text-xs font-bold uppercase tracking-widest">{t('helpTrapCards')}</h2>
                   </div>
-                  <div className="p-6 text-zinc-500 text-xs leading-relaxed space-y-6">
-                    <p>Surprise cards used to disrupt your opponent. They <strong className="text-white">must be Set (face-down) first</strong> and cannot be activated on the turn they are set.</p>
+                  <div className="theme-muted p-6 text-xs leading-relaxed space-y-6">
+                    <p>{t('helpTrapBody')}</p>
                     
-                    <div className="bg-zinc-950 p-4 border border-zinc-800 space-y-3">
-                      <h3 className="font-bold text-white uppercase text-[10px] tracking-widest font-mono">Trap Types</h3>
+                    <div className="theme-elevated p-4 space-y-3">
+                      <h3 className="theme-title font-bold uppercase text-[10px] tracking-widest">{t('helpTrapTypes')}</h3>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                        <li><strong className="text-white">Normal:</strong> One-time use, goes to Graveyard.</li>
-                        <li><strong className="text-white">Continuous:</strong> Stays on the field indefinitely.</li>
-                        <li><strong className="text-white">Counter:</strong> Fastest speed, used to negate other actions.</li>
+                        <li>{t('helpTrapNormal')}</li>
+                        <li>{t('helpTrapContinuous')}</li>
+                        <li>{t('helpTrapCounter')}</li>
                       </ul>
                     </div>
                   </div>
@@ -265,26 +267,27 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 transition={getSharedTransition(reduced, 'normal')}
                 className="space-y-6"
               >
-                <h2 className="text-xs font-mono uppercase tracking-widest mb-6 text-zinc-400 border-b border-zinc-800 pb-2">Turn Structure</h2>
+                <h2 className="theme-eyebrow theme-divider mb-6 border-b pb-2 text-xs">{t('turnPhases')}</h2>
+                <p className="theme-muted mb-6 text-xs leading-relaxed">{t('helpPhasesBody')}</p>
                 
                 <div className="space-y-0">
                   {[
-                    { id: 'DP', name: 'Draw Phase', desc: 'The turn player automatically draws 1 card from their deck.' },
-                    { id: 'M1', name: 'Main Phase 1', desc: 'Summon/Set monsters, activate Spells, and Set Traps. You can change monster battle positions here.' },
-                    { id: 'BP', name: 'Battle Phase', desc: 'Declare attacks with your Attack Position monsters. Each monster can attack once.' },
-                    { id: 'M2', name: 'Main Phase 2', desc: 'Second chance to Summon/Set or play Spells/Traps if you haven\'t already used your limits.' },
-                    { id: 'EP', name: 'End Phase', desc: 'The turn ends and passes to the opponent.' },
+                    { id: t('phaseDP'), name: t('phaseDraw'), desc: t('helpPhaseDrawBody') },
+                    { id: t('phaseM1'), name: t('phaseMain1'), desc: t('helpPhaseM1Body') },
+                    { id: t('phaseBP'), name: t('phaseBattle'), desc: t('helpPhaseBattleBody') },
+                    { id: t('phaseM2'), name: t('phaseMain2'), desc: t('helpPhaseM2Body') },
+                    { id: t('phaseEP'), name: t('phaseEnd'), desc: t('helpPhaseEndBody') },
                   ].map((phase, i) => (
                     <div key={phase.id} className="flex gap-6 group">
                       <div className="flex flex-col items-center">
-                        <div className="w-10 h-10 bg-black border border-zinc-800 flex items-center justify-center font-mono font-bold text-white group-hover:bg-white group-hover:text-black transition-colors shrink-0 text-[10px] tracking-widest">
+                        <div className="theme-elevated group-hover:bg-[var(--app-accent)] group-hover:text-[var(--app-accent-contrast)] flex h-10 w-10 items-center justify-center font-mono font-bold transition-colors shrink-0 text-[10px] tracking-widest">
                           {phase.id}
                         </div>
-                        {i < 4 && <div className="w-px h-8 bg-zinc-800 my-2"></div>}
+                        {i < 4 && <div className="theme-divider my-2 h-8 w-px"></div>}
                       </div>
                       <div className="pb-8 pt-2">
-                        <h3 className="text-[10px] font-mono uppercase tracking-widest text-white mb-2">{phase.name}</h3>
-                        <p className="text-zinc-500 text-xs leading-relaxed">{phase.desc}</p>
+                        <h3 className="theme-title mb-2 text-[10px] uppercase tracking-widest">{phase.name}</h3>
+                        <p className="theme-muted text-xs leading-relaxed">{phase.desc}</p>
                       </div>
                     </div>
                   ))}

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import DeckBuilder from './DeckBuilder';
+import { AppPreferencesProvider } from '../preferences/AppPreferencesProvider';
 
 describe('DeckBuilder', () => {
   afterEach(() => {
@@ -11,7 +12,11 @@ describe('DeckBuilder', () => {
     window.localStorage.setItem('ygo_custom_deck', JSON.stringify(Array.from({ length: 40 }, () => 'battle-ox')));
     window.localStorage.setItem('ygo_custom_extra_deck', JSON.stringify(['flame-swordsman']));
 
-    render(<DeckBuilder onBack={() => {}} />);
+    render(
+      <AppPreferencesProvider>
+        <DeckBuilder onBack={() => {}} />
+      </AppPreferencesProvider>,
+    );
 
     expect(screen.getByPlaceholderText(/search cards/i)).toBeInTheDocument();
     expect(screen.queryByText(/current deck/i)).not.toBeInTheDocument();
@@ -41,7 +46,11 @@ describe('DeckBuilder', () => {
     ]));
     window.localStorage.setItem('ygo_primary_deck_id', 'starter-local');
 
-    render(<DeckBuilder onBack={() => {}} announce={announce} />);
+    render(
+      <AppPreferencesProvider>
+        <DeckBuilder onBack={() => {}} announce={announce} />
+      </AppPreferencesProvider>,
+    );
 
     await waitFor(() => expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /save/i }));

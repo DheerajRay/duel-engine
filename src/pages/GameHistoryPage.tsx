@@ -4,6 +4,7 @@ import { MobileBottomSheet } from '../components/mobile/MobileBottomSheet';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { getDuelHistory } from '../services/history';
 import type { DuelHistoryEntry } from '../types/cloud';
+import { useAppPreferences } from '../preferences/AppPreferencesProvider';
 
 type HistoryFilter = {
   mode: 'all' | DuelHistoryEntry['mode'];
@@ -21,6 +22,7 @@ export default function GameHistoryPage({
   onBack: () => void;
   embeddedInShell?: boolean;
 }) {
+  const { t } = useAppPreferences();
   const isMobile = useIsMobile();
   const mobileLayout = embeddedInShell && isMobile;
   const [history, setHistory] = useState<DuelHistoryEntry[]>([]);
@@ -47,19 +49,19 @@ export default function GameHistoryPage({
     <div className="space-y-4">
       <div className={`grid gap-3 ${mobileLayout ? 'grid-cols-2' : 'md:grid-cols-4'}`}>
         <div className="border border-zinc-800 bg-black px-3 py-3">
-          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Turns</div>
+          <div className="theme-eyebrow text-[9px]">{t('turns')}</div>
           <div className="mt-2 text-sm font-mono text-white">{entry.turnCount}</div>
         </div>
         <div className="border border-zinc-800 bg-black px-3 py-3">
-          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">LP</div>
+          <div className="theme-eyebrow text-[9px]">{t('lp')}</div>
           <div className="mt-2 text-sm font-mono text-white">{entry.lpRemaining}</div>
         </div>
         <div className="border border-zinc-800 bg-black px-3 py-3">
-          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Finish</div>
+          <div className="theme-eyebrow text-[9px]">{t('finish')}</div>
           <div className="mt-2 text-sm font-mono text-white">{entry.finishingCard ?? 'N/A'}</div>
         </div>
         <div className="border border-zinc-800 bg-black px-3 py-3">
-          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Date</div>
+          <div className="theme-eyebrow text-[9px]">{t('date')}</div>
           <div className="mt-2 text-sm font-mono text-white">
             {new Date(entry.createdAt).toLocaleDateString()}
           </div>
@@ -67,13 +69,13 @@ export default function GameHistoryPage({
       </div>
 
       <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-4">
-        <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Notable Play</div>
+        <div className="theme-eyebrow text-[10px]">{t('notablePlay')}</div>
         <div className="mt-2 text-sm leading-6 text-zinc-300">{entry.notablePlay}</div>
       </div>
 
       <div className="rounded-2xl border border-zinc-800 bg-black">
-        <div className="border-b border-zinc-800 px-4 py-3 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
-          Duel Log
+        <div className="theme-divider theme-eyebrow border-b px-4 py-3 text-[10px]">
+          {t('duelLog')}
         </div>
         <div className="max-h-64 overflow-y-auto">
           {entry.logs.map((log) => (
@@ -91,16 +93,16 @@ export default function GameHistoryPage({
     : 'h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0';
 
   return (
-    <div className={rootClasses}>
+    <div className={`${rootClasses} theme-screen`}>
       {!mobileLayout && (
-        <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black shrink-0">
+        <div className="theme-screen theme-divider h-14 md:h-12 border-b flex items-center justify-between px-3 md:px-6 shrink-0">
           <button
             onClick={onBack}
-            className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
+            className="theme-subtle hover:text-[var(--app-text-primary)] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
           >
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t('back')}
           </button>
-          <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Game History</h1>
+          <h1 className="theme-eyebrow text-xs">{t('gameHistory')}</h1>
         </div>
       )}
 
@@ -108,7 +110,7 @@ export default function GameHistoryPage({
         {mobileLayout ? (
           <div className="space-y-4">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Mode</div>
+              <div className="theme-eyebrow text-[10px]">{t('mode')}</div>
               <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {MODE_OPTIONS.map((option) => (
                   <button
@@ -116,17 +118,23 @@ export default function GameHistoryPage({
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, mode: option }))}
                     className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] ${
-                      filter.mode === option ? 'border-white bg-white text-black' : 'border-zinc-800 text-zinc-500'
+                      filter.mode === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
-                    {option === 'all' ? 'All' : option.replace('_', ' ')}
+                    {option === 'all'
+                      ? t('all')
+                      : option === 'cpu_random'
+                        ? t('cpuRandom')
+                        : option === 'cpu_custom'
+                          ? t('cpuCustom')
+                          : t('competitionMode')}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Result</div>
+              <div className="theme-eyebrow text-[10px]">{t('result')}</div>
               <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {RESULT_OPTIONS.map((option) => (
                   <button
@@ -134,10 +142,10 @@ export default function GameHistoryPage({
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, result: option }))}
                     className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] ${
-                      filter.result === option ? 'border-white bg-white text-black' : 'border-zinc-800 text-zinc-500'
+                      filter.result === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
-                    {option}
+                    {option === 'all' ? t('all') : option === 'win' ? t('wins') : option === 'loss' ? t('losses') : t('forfeit')}
                   </button>
                 ))}
               </div>
@@ -146,8 +154,8 @@ export default function GameHistoryPage({
             <input
               value={filter.opponent}
               onChange={(event) => setFilter((previous) => ({ ...previous, opponent: event.target.value }))}
-              placeholder="Search opponent"
-              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-xs font-mono uppercase tracking-[0.18em] text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+              placeholder={t('searchOpponent')}
+              className="theme-input w-full rounded-2xl px-4 py-3 text-xs font-mono uppercase tracking-[0.18em]"
             />
           </div>
         ) : (
@@ -155,35 +163,35 @@ export default function GameHistoryPage({
             <select
               value={filter.mode}
               onChange={(event) => setFilter((previous) => ({ ...previous, mode: event.target.value as HistoryFilter['mode'] }))}
-              className="bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs font-mono text-white focus:outline-none focus:border-zinc-500 uppercase tracking-widest"
+              className="theme-input rounded-none px-4 py-3 text-xs font-mono uppercase tracking-widest"
             >
-              <option value="all">All Modes</option>
-              <option value="cpu_random">CPU Random</option>
-              <option value="cpu_custom">CPU Custom</option>
-              <option value="competition">Competition</option>
+              <option value="all">{t('mode')} - {t('resultsAll')}</option>
+              <option value="cpu_random">{t('cpuRandom')}</option>
+              <option value="cpu_custom">{t('cpuCustom')}</option>
+              <option value="competition">{t('competitionMode')}</option>
             </select>
             <select
               value={filter.result}
               onChange={(event) => setFilter((previous) => ({ ...previous, result: event.target.value as HistoryFilter['result'] }))}
-              className="bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs font-mono text-white focus:outline-none focus:border-zinc-500 uppercase tracking-widest"
+              className="theme-input rounded-none px-4 py-3 text-xs font-mono uppercase tracking-widest"
             >
-              <option value="all">All Results</option>
-              <option value="win">Wins</option>
-              <option value="loss">Losses</option>
-              <option value="forfeit">Forfeits</option>
+              <option value="all">{t('resultsAll')}</option>
+              <option value="win">{t('wins')}</option>
+              <option value="loss">{t('losses')}</option>
+              <option value="forfeit">{t('forfeits')}</option>
             </select>
             <input
               value={filter.opponent}
               onChange={(event) => setFilter((previous) => ({ ...previous, opponent: event.target.value }))}
-              placeholder="Filter by opponent"
-              className="bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 uppercase tracking-widest"
+              placeholder={t('filterByOpponent')}
+              className="theme-input rounded-none px-4 py-3 text-xs font-mono uppercase tracking-widest"
             />
           </div>
         )}
 
         {filteredHistory.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-zinc-600 text-xs font-mono uppercase tracking-widest text-center">
-            No duel history yet.
+          <div className="theme-subtle flex-1 flex items-center justify-center text-xs font-mono uppercase tracking-widest text-center">
+            {t('noDuelHistoryYet')}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -252,7 +260,7 @@ export default function GameHistoryPage({
         <MobileBottomSheet
           open={Boolean(expandedEntry)}
           onClose={() => setExpandedId(null)}
-          title="Duel Summary"
+                      title={t('duelSummary')}
           expandable
           expanded={sheetExpanded}
           onToggleExpanded={() => setSheetExpanded((previous) => !previous)}

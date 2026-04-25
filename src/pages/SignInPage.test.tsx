@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import SignInPage from './SignInPage';
+import { AppPreferencesProvider } from '../preferences/AppPreferencesProvider';
 
 const mockGetCurrentUser = vi.fn();
 const mockEnsureProfile = vi.fn();
@@ -38,11 +39,13 @@ describe('SignInPage', () => {
     const handleUseCurrentAccount = vi.fn();
 
     render(
-      <SignInPage
-        mode="modal"
-        onBack={() => undefined}
-        onUseCurrentAccount={handleUseCurrentAccount}
-      />,
+      <AppPreferencesProvider>
+        <SignInPage
+          mode="modal"
+          onBack={() => undefined}
+          onUseCurrentAccount={handleUseCurrentAccount}
+        />
+      </AppPreferencesProvider>,
     );
 
     expect(await screen.findByText(/account connected/i)).toBeInTheDocument();

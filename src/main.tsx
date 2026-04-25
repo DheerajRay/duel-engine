@@ -3,6 +3,10 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
+import { AppPreferencesProvider } from './preferences/AppPreferencesProvider.tsx';
+import { applyPreferencesToDocument, readCachedPreferences } from './services/preferences.ts';
+
+applyPreferencesToDocument(readCachedPreferences());
 
 const shouldRegisterServiceWorker =
   import.meta.env.PROD &&
@@ -23,6 +27,8 @@ if (shouldRegisterServiceWorker) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppPreferencesProvider>
+      <App />
+    </AppPreferencesProvider>
   </StrictMode>,
 );

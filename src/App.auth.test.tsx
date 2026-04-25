@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { AppPreferencesProvider } from './preferences/AppPreferencesProvider';
 
 const mockGetCurrentUser = vi.fn();
 const mockEnsureProfile = vi.fn();
@@ -97,7 +98,11 @@ describe('App auth bootstrap', () => {
       return () => undefined;
     });
 
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
     expect(screen.getByText(/loading account/i)).toBeInTheDocument();
     expect(screen.queryByText(/^account$/i)).not.toBeInTheDocument();

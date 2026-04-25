@@ -11,6 +11,25 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.5.0 - 2026-04-25
+
+Feature release focused on app-wide preferences for theme and language.
+
+Included in this release:
+
+- added a shared app preference layer for `language` and `theme` with local guest persistence and signed-in profile sync
+- extended `profiles` in Supabase with `language` and `theme` fields and applied the remote migration
+- added a typed translation layer and translated the main UI chrome across the shell, auth, history, help, deck-builder chrome, and key duel surfaces
+- added four global themes:
+  - `obsidian`
+  - `ivory-ledger`
+  - `terminal-signal`
+  - `pharaoh-gold`
+- moved shared app styling toward semantic theme tokens applied through the root `data-theme`
+- added desktop and mobile preference selectors to the account controls
+- applied cached preferences before React mount so returning users do not see a theme/language flash on startup
+- added regression coverage for preference persistence and updated existing app/component tests for the shared preferences provider
+
 ## v1.4.1 - 2026-04-25
 
 Patch release focused on cleaning the mobile home surface and locking the app-shell viewport on phones.

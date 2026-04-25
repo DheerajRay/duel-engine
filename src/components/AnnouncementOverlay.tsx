@@ -19,11 +19,11 @@ export function AnnouncementOverlay({
       transition={getSharedTransition(reduced, 'normal')}
       className={className}
     >
-      <div className="max-w-xl border border-zinc-700 bg-black/95 px-5 py-4 text-center shadow-2xl backdrop-blur-sm">
-        <div className="text-[11px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-2">
+      <div className="theme-panel max-w-xl px-5 py-4 text-center backdrop-blur-sm">
+        <div className="theme-eyebrow mb-2 text-[11px]">
           {announcement.title}
         </div>
-        <div className="text-sm sm:text-base font-mono leading-relaxed text-white">
+        <div className="theme-title text-sm sm:text-base leading-relaxed">
           {announcement.message}
         </div>
       </div>

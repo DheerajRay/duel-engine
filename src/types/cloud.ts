@@ -1,5 +1,6 @@
 import type { Card, CardSourceType, CardTextSource, CardVerificationStatus } from '../types';
 import type { CompetitionAiProfile, CompetitionSummaryLines, EffectSupportStatus } from '../effects/types';
+import type { AppLanguage, AppTheme } from './preferences';
 
 export interface SavedDeck {
   id: string;
@@ -68,6 +69,8 @@ export interface UserProfile {
   id: string;
   email: string | null;
   displayName: string;
+  language: AppLanguage;
+  theme: AppTheme;
 }
 
 export interface CompetitionProgressRecord {
@@ -101,6 +104,8 @@ export interface CloudProfileRow {
   id: string;
   email?: string | null;
   display_name: string | null;
+  language?: AppLanguage | null;
+  theme?: AppTheme | null;
   created_at?: string;
   updated_at?: string;
 }

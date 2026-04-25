@@ -4,6 +4,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { ensureProfile, getCurrentUser, signInWithPassword, signOut, signUpWithPassword } from '../services/auth';
 import { isSupabaseConfigured } from '../lib/supabase';
 import type { UserProfile } from '../types/cloud';
+import { useAppPreferences } from '../preferences/AppPreferencesProvider';
 
 type AuthMode = 'sign-in' | 'create-account';
 
@@ -22,6 +23,7 @@ export default function SignInPage({
   onUseCurrentAccount,
   mode = 'page',
 }: SignInPageProps) {
+  const { t } = useAppPreferences();
   const isMobile = useIsMobile();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,54 +89,54 @@ export default function SignInPage({
   };
 
   const frameClasses = mode === 'modal'
-    ? 'w-full max-w-lg border border-zinc-800 bg-zinc-950 p-6 md:p-8'
-    : `w-full ${isMobile ? 'max-w-none rounded-none border-x-0 border-y border-zinc-800 bg-black p-5' : 'max-w-lg border border-zinc-800 bg-zinc-950 p-6 md:p-8'}`;
+    ? 'theme-panel w-full max-w-lg p-6 md:p-8'
+    : `w-full ${isMobile ? 'theme-screen max-w-none rounded-none border-x-0 border-y p-5' : 'theme-panel max-w-lg p-6 md:p-8'}`;
 
   const content = (
     <div className={frameClasses}>
-      <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-3">Account</div>
-      <h2 className="text-2xl font-mono uppercase tracking-[0.18em] text-white mb-3">
-        {profile ? 'Account Connected' : 'Sign In'}
+      <div className="theme-eyebrow mb-3 text-[10px]">{t('account')}</div>
+      <h2 className="theme-title mb-3 text-2xl uppercase">
+        {profile ? t('accountConnected') : t('signIn')}
       </h2>
-      <p className="text-sm text-zinc-400 leading-6 mb-6">
-        Use email and password to keep your decks, competition progress, and duel history tied to this account.
+      <p className="theme-muted mb-6 text-sm leading-6">
+        {t('accountIntro')}
       </p>
 
       {!accountSyncReady && (
-        <div className="mb-4 border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400">
-          Account sign-in is not available in this environment. You can continue as a guest.
+        <div className="theme-elevated theme-muted mb-4 px-4 py-3 text-sm">
+          {t('accountUnavailable')}
         </div>
       )}
 
       {profile ? (
         <div className="space-y-5">
-          <div className="border border-zinc-800 bg-black px-4 py-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Signed In As</div>
+          <div className="theme-elevated px-4 py-4">
+            <div className="theme-eyebrow text-[10px]">{t('signedInAs')}</div>
             <div className="mt-2 text-base text-white">{profile.email ?? profile.displayName}</div>
           </div>
           {onUseCurrentAccount ? (
             <div className="grid gap-3">
               <button
                 onClick={onUseCurrentAccount}
-                className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                className="theme-button w-full px-4 py-3 font-mono text-sm uppercase tracking-widest"
               >
-                Use This Account
+                {t('useThisAccount')}
               </button>
               <button
                 onClick={() => void handleSignOut()}
-                className="w-full border border-zinc-800 hover:border-zinc-600 hover:text-white text-zinc-500 px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                className="theme-button-subtle w-full px-4 py-3 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-2"
               >
                 <LogOut size={16} />
-                Sign In Different Account
+                {t('signInDifferentAccount')}
               </button>
             </div>
           ) : (
             <button
               onClick={() => void handleSignOut()}
-              className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+              className="theme-button w-full px-4 py-3 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-2"
             >
               <LogOut size={16} />
-              Sign Out
+              {t('signOut')}
             </button>
           )}
         </div>
@@ -146,65 +148,65 @@ export default function SignInPage({
                 setAuthMode('sign-in');
                 resetFeedback();
               }}
-              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'sign-in' ? 'border-white bg-white text-black' : 'border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'}`}
+              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'sign-in' ? 'theme-chip-active' : 'theme-chip'}`}
             >
-              Sign In
+              {t('signIn')}
             </button>
             <button
               onClick={() => {
                 setAuthMode('create-account');
                 resetFeedback();
               }}
-              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'create-account' ? 'border-white bg-white text-black' : 'border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white'}`}
+              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'create-account' ? 'theme-chip-active' : 'theme-chip'}`}
             >
-              Create Account
+              {t('createAccount')}
             </button>
           </div>
 
           <label className="block">
-            <span className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Email</span>
+            <span className="theme-eyebrow text-[10px]">{t('email')}</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@example.com"
-              className="mt-2 w-full bg-black border border-zinc-800 rounded-none px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="theme-input mt-2 w-full rounded-none px-4 py-3 text-sm transition-colors"
             />
           </label>
 
           <label className="block">
-            <span className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Password</span>
+            <span className="theme-eyebrow text-[10px]">{t('password')}</span>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter password"
-              className="mt-2 w-full bg-black border border-zinc-800 rounded-none px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+              placeholder={t('enterPassword')}
+              className="theme-input mt-2 w-full rounded-none px-4 py-3 text-sm transition-colors"
             />
           </label>
 
           {error && <div className="text-sm text-red-400">{error}</div>}
           {status === 'success' && (
             <div className="text-sm text-zinc-300">
-              {authMode === 'create-account' ? 'Account created and signed in.' : 'Signed in successfully.'}
+              {authMode === 'create-account' ? t('accountConnected') : t('signInSuccess')}
             </div>
           )}
 
           <button
             onClick={() => void handleAuth()}
             disabled={!accountSyncReady || !email || !password || status === 'submitting'}
-            className="w-full border border-zinc-600 hover:bg-white hover:text-black text-white disabled:border-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+            className="theme-button w-full disabled:border-[var(--app-border)] disabled:text-[var(--app-text-dim)] disabled:cursor-not-allowed px-4 py-3 font-mono text-sm uppercase tracking-widest flex items-center justify-center gap-2"
           >
             {status === 'submitting' ? <LoaderCircle size={16} className="animate-spin" /> : null}
-            {authMode === 'create-account' ? 'Create Account' : 'Sign In'}
+            {authMode === 'create-account' ? t('createAccount') : t('signIn')}
           </button>
 
           {mode === 'modal' && onContinueAsGuest && (
             <button
               onClick={onContinueAsGuest}
-              className="w-full text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+              className="theme-subtle w-full text-xs font-mono uppercase tracking-widest transition-colors"
             >
-              Continue As Guest
+              {t('continueAsGuest')}
             </button>
           )}
         </div>
@@ -217,15 +219,15 @@ export default function SignInPage({
   }
 
   return (
-    <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
-      <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black shrink-0">
+    <div className="theme-screen h-dvh md:h-screen box-border overflow-hidden font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
+      <div className="theme-screen theme-divider h-14 md:h-12 border-b flex items-center justify-between px-3 md:px-6 shrink-0">
         <button
           onClick={onBack}
-          className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
+          className="theme-subtle hover:text-[var(--app-text-primary)] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
         >
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={14} /> {t('back')}
         </button>
-        <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Sign In</h1>
+        <h1 className="theme-eyebrow text-xs">{t('signIn')}</h1>
       </div>
 
       <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-0 py-0' : 'flex items-center justify-center px-6 py-10'}`}>

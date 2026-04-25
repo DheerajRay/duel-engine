@@ -14,6 +14,7 @@ import { requestDeckAssistant } from '../services/deckAssistant';
 import { getUserDeckState, saveUserDeckState, setPrimaryDeckSelection } from '../services/userData';
 import type { SavedDeck } from '../types/cloud';
 import type { DeckAssistantResponse } from '../types/assistant';
+import { useAppPreferences } from '../preferences/AppPreferencesProvider';
 
 export default function DeckBuilder({
   onBack,
@@ -24,6 +25,7 @@ export default function DeckBuilder({
   announce?: (input: AnnouncementInput) => void;
   embeddedInShell?: boolean;
 }) {
+  const { t } = useAppPreferences();
   const { reduced } = useMotionPreference();
   const [decks, setDecks] = useState<SavedDeck[]>([]);
   const [primaryDeckId, setPrimaryDeckId] = useState<string>('');
@@ -288,14 +290,14 @@ export default function DeckBuilder({
       await setPrimaryDeckSelection(id);
       setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
       const selectedDeck = [...updatedUserDecks, ...CHARACTER_DECKS].find((entry) => entry.id === id);
-      announce({ title: 'Deck Builder', message: `${selectedDeck?.name || 'Deck'} set as primary deck.` });
+      announce({ title: t('deckBuilder'), message: `${selectedDeck?.name || t('decks')} set as primary deck.` });
       setSyncStatus(currentUserEmail ? 'synced' : 'local');
     };
 
     setSyncStatus(currentUserEmail ? 'syncing' : 'local');
     void persist().catch(() => {
       setSyncStatus('error');
-      announce({ title: 'Deck Builder', message: 'Could not update the primary deck.' });
+      announce({ title: t('deckBuilder'), message: 'Could not update the primary deck.' });
     });
   };
   
@@ -427,20 +429,20 @@ export default function DeckBuilder({
 
   const renderAssistantPanel = (variant: 'desktop' | 'mobile-sheet' = 'desktop') => (
     <div className={`${variant === 'desktop' ? 'flex-1 overflow-y-auto p-4' : 'max-h-[56vh] overflow-y-auto'} flex flex-col gap-4`}>
-      <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
+      <div className="theme-eyebrow text-[10px]">
         Suggest + explain
       </div>
       <textarea
         value={assistantPrompt}
         onChange={(event) => setAssistantPrompt(event.target.value)}
         rows={4}
-        className="w-full bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+        className="theme-input w-full rounded-none px-4 py-3 text-xs"
         placeholder="Make this deck more aggressive. Reduce unsupported cards."
       />
       <button
         onClick={() => void handleAssistantRequest()}
         disabled={assistantStatus === 'loading' || deck.length === 0}
-        className="border border-zinc-600 hover:bg-white hover:text-black text-white disabled:border-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+        className="theme-button disabled:border-[var(--app-border)] disabled:text-[var(--app-text-dim)] disabled:cursor-not-allowed px-4 py-3 font-mono text-xs uppercase tracking-widest flex items-center justify-center gap-2"
       >
         <Sparkles size={14} />
         {assistantStatus === 'loading' ? 'Analyzing...' : 'Analyze Deck'}
@@ -493,20 +495,20 @@ export default function DeckBuilder({
   );
 
   return (
-    <div className={`${embeddedInShell ? 'flex h-full min-h-0 flex-col overflow-hidden bg-black text-white' : 'h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
+    <div className={`${embeddedInShell ? 'theme-screen flex h-full min-h-0 flex-col overflow-hidden' : 'theme-screen h-dvh md:h-screen box-border overflow-hidden font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
       {!embeddedInShell && (
-      <div className="h-14 md:h-12 border-b border-zinc-800 flex items-center justify-between px-3 md:px-6 bg-black z-10 shrink-0 gap-3">
+      <div className="theme-screen theme-divider h-14 md:h-12 border-b flex items-center justify-between px-3 md:px-6 z-10 shrink-0 gap-3">
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
           <button 
             onClick={onBack}
-            className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
+            className="theme-subtle hover:text-[var(--app-text-primary)] transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest"
           >
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t('back')}
           </button>
-          <div className="h-4 w-px bg-zinc-800 mx-2"></div>
+          <div className="theme-divider h-4 w-px mx-2"></div>
           <div className="hidden sm:flex flex-col">
-            <h1 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Deck Builder</h1>
-            <div className="text-[9px] font-mono uppercase tracking-[0.22em] text-zinc-600">
+            <h1 className="theme-eyebrow text-xs">{t('deckBuilder')}</h1>
+            <div className="theme-subtle text-[9px] font-mono uppercase tracking-[0.22em]">
               {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'local only'}
             </div>
           </div>
@@ -514,7 +516,7 @@ export default function DeckBuilder({
         <div className="flex items-center gap-2 md:gap-4 shrink-0">
           <button 
             onClick={handleToggleDeckView}
-            className="flex items-center gap-2 border border-zinc-600 hover:bg-white hover:text-black text-white px-3 md:px-4 py-2 text-[10px] md:text-xs font-mono uppercase tracking-widest transition-colors"
+            className="theme-button flex items-center gap-2 px-3 md:px-4 py-2 text-[10px] md:text-xs font-mono uppercase tracking-widest"
           >
             <Layers size={14} /> 
             <span className="hidden sm:inline">{isDeckView ? 'Card View' : 'Deck View'}</span>
@@ -527,23 +529,23 @@ export default function DeckBuilder({
             disabled={isCurrentPredefined}
             className={`flex items-center gap-2 border px-3 md:px-4 py-2 text-[10px] md:text-xs font-mono uppercase tracking-widest transition-colors ${
               isCurrentPredefined 
-                ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' 
-                : 'border-zinc-600 hover:bg-white hover:text-black text-white'
+                ? 'border-[var(--app-border)] text-[var(--app-text-dim)] cursor-not-allowed' 
+                : 'theme-button'
             }`}
           >
-            <Save size={14} /> <span className="hidden sm:inline">Save</span>
+            <Save size={14} /> <span className="hidden sm:inline">{t('save')}</span>
           </button>
         </div>
       </div>
       )}
 
       {embeddedInShell && (
-        <div className="border-b border-zinc-800 bg-black px-4 py-4">
+        <div className="theme-screen theme-divider border-b px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Deck Builder</div>
-              <div className="mt-2 text-base font-mono uppercase tracking-[0.14em] text-white truncate">{deckName}</div>
-              <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
+              <div className="theme-eyebrow text-[10px]">{t('deckBuilder')}</div>
+              <div className="theme-title mt-2 text-base uppercase tracking-[0.14em] truncate">{deckName}</div>
+              <div className="theme-subtle mt-2 text-[10px] font-mono uppercase tracking-[0.2em]">
                 {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'Local only'}
               </div>
             </div>
@@ -551,14 +553,14 @@ export default function DeckBuilder({
               <button
                 type="button"
                 onClick={() => setMobileDeckSheetOpen(true)}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+                className="theme-elevated rounded-2xl px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
               >
-                Decks
+                {t('decks')}
               </button>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+                className="theme-elevated rounded-2xl px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
               >
                 AI
               </button>
@@ -567,32 +569,32 @@ export default function DeckBuilder({
                 onClick={handleSave}
                 disabled={isCurrentPredefined}
                 className={`rounded-2xl border px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] ${
-                  isCurrentPredefined ? 'border-zinc-800 text-zinc-600' : 'border-zinc-600 text-white'
+                  isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
                 }`}
               >
-                Save
+                {t('save')}
               </button>
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-[1fr_auto] gap-3">
-            <div className="grid grid-cols-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-1">
+            <div className="theme-elevated grid grid-cols-2 rounded-2xl p-1">
               <button
                 type="button"
                 onClick={() => setIsDeckView(false)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${!isDeckView ? 'bg-white text-black' : 'text-zinc-500'}`}
+                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 Library
               </button>
               <button
                 type="button"
                 onClick={() => setIsDeckView(true)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${isDeckView ? 'bg-white text-black' : 'text-zinc-500'}`}
+                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 Current Deck
               </button>
             </div>
-            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-zinc-800 text-zinc-500'}`}>
+            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
               {deck.length}/60
             </div>
           </div>
@@ -601,30 +603,30 @@ export default function DeckBuilder({
 
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden min-h-0">
         {/* Card Pool */}
-        <div className="flex-1 flex flex-col border-r border-zinc-800 bg-zinc-950 overflow-hidden">
+        <div className="theme-screen theme-divider flex-1 flex flex-col border-r overflow-hidden">
           {isDeckView ? (
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-black shrink-0">
+            <div className="theme-screen theme-divider p-4 border-b flex items-center justify-between shrink-0">
               <div>
-                <div className="text-xs font-mono uppercase tracking-widest text-white">Current Deck</div>
-                <div className="text-[10px] font-mono text-zinc-500 mt-1">
+                <div className="theme-title text-xs uppercase tracking-widest">Current Deck</div>
+                <div className="theme-subtle text-[10px] font-mono mt-1">
                   Main: {deck.length} / 60
                   {extraDeck.length > 0 && <span className="ml-3">Extra: {extraDeck.length} / 15</span>}
                 </div>
               </div>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">
+              <div className="theme-subtle text-[10px] font-mono uppercase tracking-widest">
                 Click cards for details
               </div>
             </div>
           ) : (
-            <div className="p-4 border-b border-zinc-800 flex flex-wrap gap-4 bg-black shrink-0">
+            <div className="theme-screen theme-divider p-4 border-b flex flex-wrap gap-4 shrink-0">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
+                <Search className="theme-subtle absolute left-3 top-1/2 -translate-y-1/2" size={14} />
                 <input 
                   type="text" 
                   placeholder="Search cards..." 
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-none pl-9 pr-4 py-2 text-xs font-mono text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-xs font-mono transition-colors"
                 />
               </div>
               <select 
@@ -633,7 +635,7 @@ export default function DeckBuilder({
                   setFilterType(e.target.value as any);
                   setSortBy('name-asc');
                 }}
-                className="bg-zinc-950 border border-zinc-800 rounded-none px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-zinc-500 transition-colors uppercase tracking-widest"
+                className="theme-input rounded-none px-4 py-2 text-xs font-mono transition-colors uppercase tracking-widest"
               >
                 <option value="All">All Types</option>
                 <option value="Monster">Monsters</option>
@@ -644,7 +646,7 @@ export default function DeckBuilder({
               <select 
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="bg-zinc-950 border border-zinc-800 rounded-none px-4 py-2 text-xs font-mono text-white focus:outline-none focus:border-zinc-500 transition-colors uppercase tracking-widest"
+                className="theme-input rounded-none px-4 py-2 text-xs font-mono transition-colors uppercase tracking-widest"
               >
                 <option value="name-asc">Name (A-Z)</option>
                 <option value="name-desc">Name (Z-A)</option>

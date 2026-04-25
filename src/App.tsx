@@ -36,6 +36,7 @@ import {
   setCompetitionProgress,
 } from './services/userData';
 import type { DuelHistoryEntry, UserProfile } from './types/cloud';
+import { useAppPreferences } from './preferences/AppPreferencesProvider';
 
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder'));
 const HowToPlay = lazy(() => import('./pages/HowToPlay'));
@@ -100,6 +101,7 @@ type UIState =
     };
 
 export default function App() {
+  const { t, hydrateProfile, language, theme, setLanguage, setTheme, languageOptions, themeOptions } = useAppPreferences();
   const [view, setView] = useState<'start' | 'game' | 'deck-builder' | 'how-to-play' | 'sign-in' | 'history'>('start');
   const [mobileTab, setMobileTab] = useState<'play' | 'decks' | 'history' | 'help'>('play');
   const [gameMode, setGameMode] = useState<'random' | 'custom' | 'competition' | null>(null);
@@ -134,11 +136,11 @@ export default function App() {
   const opponentShortLabel = currentCompetitionOpponent?.name.split(' ')[0] ?? 'Opponent';
   const cpuModeHeading =
     gameMode === 'random'
-      ? 'CPU Mode: Random Deck'
+      ? t('cpuModeRandomDeck')
       : gameMode === 'custom'
-        ? 'CPU Mode: Custom Deck'
+        ? t('cpuModeCustomDeck')
         : pendingCpuModeSelection
-          ? 'CPU Mode'
+          ? t('cpuMode')
           : null;
   const canPlayerDraw = state.turn === 'player' && state.phase === 'DP';
   const isMobile = useIsMobile();
@@ -154,20 +156,20 @@ export default function App() {
   };
 
   const showAnnouncement = (input: AnnouncementInput) => announce(input);
-  const showNotice = (message: string, title = 'Notice') => announce({ title, message });
+  const showNotice = (message: string, title = t('notice')) => announce({ title, message });
 
   const getPhaseAnnouncement = (phase: Phase) => {
     switch (phase) {
       case 'DP':
-        return 'Draw Phase';
+        return t('phaseDraw');
       case 'M1':
-        return 'Main Phase 1';
+        return t('phaseMain1');
       case 'BP':
-        return 'Battle Phase';
+        return t('phaseBattle');
       case 'M2':
-        return 'Main Phase 2';
+        return t('phaseMain2');
       case 'EP':
-        return 'End Phase';
+        return t('phaseEnd');
       default:
         return phase;
     }
@@ -177,15 +179,15 @@ export default function App() {
     if (turn !== 'player') {
       switch (phase) {
         case 'DP':
-          return 'Opponent draws to begin their turn.';
+          return t('phaseOpponentDp');
         case 'M1':
-          return 'Opponent can summon, set, or activate cards.';
+          return t('phaseOpponentM1');
         case 'BP':
-          return 'Opponent can declare attacks from here.';
+          return t('phaseOpponentBp');
         case 'M2':
-          return 'Opponent can make one more round of plays.';
+          return t('phaseOpponentM2');
         case 'EP':
-          return 'Opponent finishes the turn and control returns to you.';
+          return t('phaseOpponentEp');
         default:
           return '';
       }
@@ -193,17 +195,34 @@ export default function App() {
 
     switch (phase) {
       case 'DP':
-        return 'Draw by tapping your deck during DP.';
+        return t('phasePlayerDp');
       case 'M1':
-        return 'Summon, set, change position, or activate cards.';
+        return t('phasePlayerM1');
       case 'BP':
-        return 'Attack with your monsters or press Next to continue.';
+        return t('phasePlayerBp');
       case 'M2':
-        return 'Make any final plays before ending your turn.';
+        return t('phasePlayerM2');
       case 'EP':
-        return 'Press Next to end your turn and pass to the opponent.';
+        return t('phasePlayerEp');
       default:
         return '';
+    }
+  };
+
+  const getPhaseShortLabel = (phase: Phase) => {
+    switch (phase) {
+      case 'DP':
+        return t('phaseDP');
+      case 'M1':
+        return t('phaseM1');
+      case 'BP':
+        return t('phaseBP');
+      case 'M2':
+        return t('phaseM2');
+      case 'EP':
+        return t('phaseEP');
+      default:
+        return phase;
     }
   };
 
@@ -232,9 +251,9 @@ export default function App() {
   };
 
   const renderLazyScreenFallback = (label: string, embedded = false) => (
-    <div className={`${embedded ? 'h-full' : 'h-dvh md:h-screen box-border pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'} bg-black flex items-center justify-center text-white font-mono uppercase tracking-widest`}>
-      <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400">
-        Loading {label}
+    <div className={`${embedded ? 'h-full' : 'h-dvh md:h-screen box-border pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'} theme-screen flex items-center justify-center font-mono uppercase tracking-widest`}>
+      <div className="theme-panel px-6 py-4 text-sm theme-muted">
+        {t('loading', { label })}
       </div>
     </div>
   );
@@ -245,17 +264,17 @@ export default function App() {
           <button
             type="button"
             onClick={openCpuModeSelection}
-            className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5 text-left transition-colors hover:border-zinc-600"
+            className="theme-panel rounded-[24px] px-5 py-5 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Quick Duel</div>
-                <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">CPU Mode</div>
-                <div className="mt-2 text-sm leading-6 text-zinc-400">
-                  Open a fast duel and choose random or custom deck play.
+                <div className="theme-eyebrow text-[10px]">{t('playHomeQuickDuel')}</div>
+                <div className="theme-title mt-3 text-lg uppercase">{t('cpuMode')}</div>
+                <div className="theme-muted mt-2 text-sm leading-6">
+                  {t('playHomeCpuDescription')}
                 </div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 p-3 text-zinc-300">
+              <div className="theme-chip rounded-2xl p-3">
                 <Swords size={18} />
               </div>
             </div>
@@ -264,19 +283,22 @@ export default function App() {
           <button
             type="button"
             onClick={startCompetitionMode}
-            className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-5 text-left transition-colors hover:border-zinc-600"
+            className="theme-panel rounded-[24px] px-5 py-5 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-[0.28em] text-zinc-500">Ladder</div>
-                <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">Competition</div>
-                <div className="mt-2 text-sm leading-6 text-zinc-400">
+                <div className="theme-eyebrow text-[10px]">{t('playHomeLadder')}</div>
+                <div className="theme-title mt-3 text-lg uppercase">{t('competition')}</div>
+                <div className="theme-muted mt-2 text-sm leading-6">
                   {competitionResumeOpponent
-                    ? `Current stage ${competitionResumeStageIndex + 1}. Next opponent: ${competitionResumeOpponent.name}.`
-                    : 'Climb the ladder with your primary deck.'}
+                    ? t('playHomeCompetitionDescription', {
+                        stage: competitionResumeStageIndex + 1,
+                        name: competitionResumeOpponent.name,
+                      })
+                    : t('playHomeCompetitionFallback')}
                 </div>
               </div>
-              <div className="rounded-2xl border border-zinc-800 p-3 text-zinc-300">
+              <div className="theme-chip rounded-2xl p-3">
                 <Trophy size={18} />
               </div>
             </div>
@@ -286,56 +308,56 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleMobileTabChange('decks')}
-              className="rounded-[22px] border border-zinc-800 bg-zinc-950 px-4 py-4 text-left transition-colors hover:border-zinc-600"
+              className="theme-panel rounded-[22px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
-              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Primary Deck</div>
-              <div className="mt-3 text-sm font-mono uppercase tracking-[0.12em] text-white">
-                {primaryDeckSummary?.name ?? 'Starter Deck'}
+              <div className="theme-eyebrow text-[10px]">{t('playHomePrimaryDeck')}</div>
+              <div className="theme-title mt-3 text-sm uppercase">
+                {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
               </div>
-              <div className="mt-2 text-xs text-zinc-400">
+              <div className="theme-muted mt-2 text-xs">
                 {primaryDeckSummary
                   ? `${primaryDeckSummary.mainCount}/60 main | ${primaryDeckSummary.extraCount}/15 extra`
-                  : 'Loading deck status'}
+                  : t('loadingDeckStatus')}
               </div>
-              <div className={`mt-2 text-[10px] font-mono uppercase tracking-[0.2em] ${primaryDeckSummary?.valid ?? true ? 'text-zinc-500' : 'text-red-400'}`}>
-                {primaryDeckSummary?.valid ?? true ? 'Ready to duel' : 'Needs 40 cards'}
+              <div className={`mt-2 text-[10px] font-mono uppercase tracking-[0.2em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
+                {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => handleMobileTabChange('history')}
-              className="rounded-[22px] border border-zinc-800 bg-zinc-950 px-4 py-4 text-left transition-colors hover:border-zinc-600"
+              className="theme-panel rounded-[22px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
-              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Progress</div>
-              <div className="mt-3 text-sm font-mono uppercase tracking-[0.12em] text-white">
-                Stage {competitionResumeStageIndex + 1}
+              <div className="theme-eyebrow text-[10px]">{t('playHomeProgress')}</div>
+              <div className="theme-title mt-3 text-sm uppercase">
+                {t('currentStage')} {competitionResumeStageIndex + 1}
               </div>
-              <div className="mt-2 text-xs text-zinc-400">
-                {competitionResumeOpponent ? competitionResumeOpponent.name : 'No ladder data'}
+              <div className="theme-muted mt-2 text-xs">
+                {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
               </div>
-              <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-                View duel history
+              <div className="theme-subtle mt-2 text-[10px] font-mono uppercase tracking-[0.2em]">
+                {t('viewDuelHistory')}
               </div>
             </button>
           </section>
 
-          <section className="rounded-[24px] border border-zinc-800 bg-zinc-950 px-5 py-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Shortcuts</div>
+          <section className="theme-panel rounded-[24px] px-5 py-4">
+            <div className="theme-eyebrow text-[10px]">{t('playHomeShortcuts')}</div>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('decks')}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+                className="theme-elevated rounded-2xl px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
               >
-                Deck Builder
+                {t('deckBuilder')}
               </button>
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('help')}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
+                className="theme-elevated rounded-2xl px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
               >
-                How To Play
+                {t('howToPlay')}
               </button>
             </div>
           </section>
@@ -360,12 +382,16 @@ export default function App() {
     if (state.log.length > prevLogLengthRef.current) {
       const newLogs = state.log.slice(prevLogLengthRef.current);
       announce(newLogs.map((entry) => ({
-        title: 'Duel Event',
+        title: t('duelEvent'),
         message: getDisplayLogMessage(entry),
       })));
       prevLogLengthRef.current = state.log.length;
     }
-  }, [state.log, gameMode, currentCompetitionOpponent, announce]);
+  }, [state.log, gameMode, currentCompetitionOpponent, announce, t]);
+
+  useEffect(() => {
+    hydrateProfile(userProfile);
+  }, [userProfile, hydrateProfile]);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -2038,14 +2064,14 @@ export default function App() {
               transition={getSharedTransition(reduced, 'normal')}
               className="flex flex-col items-center"
             >
-              <div className="text-center text-sm sm:text-base font-mono uppercase tracking-[0.35em] text-zinc-400">
-                Duel Engine
+              <div className="theme-eyebrow text-center text-sm sm:text-base">
+                {t('appTitle')}
               </div>
-              <h1 className="mt-5 text-center text-3xl sm:text-5xl font-mono uppercase tracking-[0.32em] text-white">
-                Ready For A Duel
+              <h1 className="theme-title mt-5 text-center text-3xl sm:text-5xl uppercase tracking-[0.32em]">
+                {t('readyForDuel')}
               </h1>
-              <div className="mt-4 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
-                {userProfile ? `Signed in as ${userProfile.displayName}` : 'Guest Mode'}
+              <div className="theme-subtle mt-4 text-[10px] font-mono uppercase tracking-[0.24em]">
+                {userProfile ? `${t('signedInAs')} ${userProfile.displayName}` : t('guestMode')}
               </div>
             </motion.div>
             <motion.p
@@ -2065,54 +2091,85 @@ export default function App() {
               transition={getSharedTransition(reduced, 'normal')}
               className="flex w-full max-w-3xl flex-col gap-4"
             >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="theme-eyebrow text-[10px]">{t('language')}</span>
+                  <select
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value as typeof language)}
+                    className="theme-input mt-2 w-full px-4 py-3 text-xs font-mono uppercase tracking-[0.16em]"
+                  >
+                    {languageOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="theme-eyebrow text-[10px]">{t('theme')}</span>
+                  <select
+                    value={theme}
+                    onChange={(event) => setTheme(event.target.value as typeof theme)}
+                    className="theme-input mt-2 w-full px-4 py-3 text-xs font-mono uppercase tracking-[0.16em]"
+                  >
+                    {themeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <motion.button 
                 onClick={openCpuModeSelection} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                CPU Mode
+                {t('cpuMode')}
               </motion.button>
 
               <motion.button 
                 onClick={startCompetitionMode} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                Competition Mode
+                {t('competitionMode')}
               </motion.button>
               
-              <div className="h-px w-full bg-zinc-800 my-3"></div>
+              <div className="theme-divider my-3 h-px w-full"></div>
               
               <motion.button 
                 onClick={() => setView('deck-builder')} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                Deck Builder
+                {t('deckBuilder')}
               </motion.button>
 
               <motion.button 
                 onClick={() => setView('how-to-play')} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                How to Play
+                {t('howToPlay')}
               </motion.button>
 
               <motion.button 
                 onClick={() => setView('history')} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                Game History
+                {t('gameHistory')}
               </motion.button>
 
               <motion.button 
                 onClick={() => void handleHomeAuthAction()} 
                 whileTap={{ scale: reduced ? 1 : 0.99 }}
-                className="border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white hover:border-zinc-600 px-6 py-4 font-mono text-sm uppercase tracking-[0.25em] transition-colors"
+                className="theme-button-subtle px-6 py-4 font-mono text-sm uppercase tracking-[0.25em]"
               >
-                {userProfile ? 'Logout' : 'Sign In'}
+                {userProfile ? t('logout') : t('signIn')}
               </motion.button>
             </motion.div>
           </motion.div>
@@ -2126,8 +2183,8 @@ export default function App() {
                 transition={getSharedTransition(reduced, 'fast')}
                 className="absolute inset-0 z-30 bg-black/90 flex items-center justify-center px-4"
               >
-                <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400 font-mono uppercase tracking-widest">
-                  Loading account
+                <div className="theme-panel px-6 py-4 text-sm font-mono uppercase tracking-widest theme-muted">
+                  {t('loadingAccount')}
                 </div>
               </motion.div>
             )}
@@ -2172,36 +2229,36 @@ export default function App() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
                   transition={getSharedTransition(reduced, 'normal')}
-                  className="w-full max-w-xl border border-zinc-700 bg-black p-6 flex flex-col gap-5"
+                  className="theme-panel w-full max-w-xl p-6 flex flex-col gap-5"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="text-center">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
-                      Competition Mode
+                    <div className="theme-eyebrow text-[10px]">
+                      {t('competitionMode')}
                     </div>
-                    <h2 className="mt-3 text-2xl font-mono uppercase tracking-[0.18em] text-white">
-                      Ladder Progress
+                    <h2 className="theme-title mt-3 text-2xl uppercase">
+                      {t('playHomeLadder')}
                     </h2>
-                    <p className="mt-2 text-xs font-mono uppercase tracking-[0.18em] text-zinc-500">
-                      Current Stage: {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
+                    <p className="theme-subtle mt-2 text-xs font-mono uppercase tracking-[0.18em]">
+                      {t('currentStage')}: {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
                     </p>
                   </div>
-                  <div className="border border-zinc-800 bg-zinc-950/70 px-4 py-4">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">
-                      Next Opponent
+                  <div className="theme-elevated px-4 py-4">
+                    <div className="theme-eyebrow text-[10px]">
+                      {t('nextOpponent')}
                     </div>
-                    <div className="mt-2 text-lg font-mono uppercase tracking-[0.15em] text-white">
+                    <div className="theme-title mt-2 text-lg uppercase tracking-[0.15em]">
                       {competitionResumeOpponent.name}
                     </div>
-                    <div className="mt-3 text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
-                      Cleared: {Math.max(0, competitionResumeOpponent.stage - 1)} / {competitionResumeOpponent.totalStages}
+                    <div className="theme-subtle mt-3 text-xs font-mono uppercase tracking-[0.2em]">
+                      {t('cleared')}: {Math.max(0, competitionResumeOpponent.stage - 1)} / {competitionResumeOpponent.totalStages}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     {competitionResumeOpponent.signatureCardIds.map((cardId) => (
-                      <div key={cardId} className="border border-zinc-800 bg-zinc-950 px-3 py-3 text-center">
-                        <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Signature</div>
-                        <div className="mt-2 text-[11px] font-mono uppercase tracking-[0.12em] text-white">
+                      <div key={cardId} className="theme-elevated px-3 py-3 text-center">
+                        <div className="theme-eyebrow text-[9px]">{t('signature')}</div>
+                        <div className="theme-title mt-2 text-[11px] uppercase tracking-[0.12em]">
                           {buildCompetitionPreviewCard(cardId).name}
                         </div>
                       </div>
@@ -2210,9 +2267,9 @@ export default function App() {
                   <div className="grid gap-3">
                     <button
                       onClick={() => void startCompetitionDuel(competitionResumeStageIndex)}
-                      className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                      className="theme-button px-4 py-3 font-mono text-sm uppercase tracking-widest"
                     >
-                      {competitionResumeStageIndex > 0 ? 'Resume Ladder' : 'Begin Ladder'}
+                      {competitionResumeStageIndex > 0 ? t('resumeLadder') : t('beginLadder')}
                     </button>
                     {competitionResumeStageIndex > 0 && (
                       <button
@@ -2222,16 +2279,16 @@ export default function App() {
                             void startCompetitionDuel(0);
                           });
                         }}
-                        className="border border-zinc-800 hover:border-zinc-600 hover:text-white text-zinc-500 px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
+                        className="theme-button-subtle px-4 py-3 font-mono text-sm uppercase tracking-widest"
                       >
                         Restart From Stage 1
                       </button>
                     )}
                     <button
                       onClick={() => setShowCompetitionLobby(false)}
-                      className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white"
+                      className="theme-subtle text-xs font-mono uppercase tracking-widest"
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                   </div>
                 </motion.div>
@@ -2242,9 +2299,9 @@ export default function App() {
       )}
 
       {showMobileShell && (
-        <div className="flex h-dvh box-border flex-col overflow-hidden bg-black text-white pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+        <div className="theme-screen flex h-dvh box-border flex-col overflow-hidden pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           <MobileAppBar
-            title="Duel Engine"
+            title={t('appTitle')}
             rightSlot={(
               <button
                 type="button"
@@ -2252,10 +2309,10 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-300"
+                className="theme-chip flex items-center gap-2 rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em]"
               >
                 <UserCircle2 size={14} />
-                <span>{userProfile ? userProfile.displayName : 'Guest'}</span>
+                <span>{userProfile ? userProfile.displayName : t('guestMode')}</span>
               </button>
             )}
           />
@@ -2288,8 +2345,8 @@ export default function App() {
                 transition={getSharedTransition(reduced, 'fast')}
                 className="absolute inset-0 z-40 bg-black/90 flex items-center justify-center px-4"
               >
-                <div className="border border-zinc-800 bg-zinc-950 px-6 py-4 text-sm text-zinc-400 font-mono uppercase tracking-widest">
-                  Loading account
+                <div className="theme-panel px-6 py-4 text-sm font-mono uppercase tracking-widest theme-muted">
+                  {t('loadingAccount')}
                 </div>
               </motion.div>
             )}
@@ -2298,7 +2355,7 @@ export default function App() {
           <MobileBottomSheet
             open={showMobileAccountSheet}
             onClose={() => setShowMobileAccountSheet(false)}
-            title="Account"
+            title={t('account')}
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
@@ -2306,13 +2363,43 @@ export default function App() {
             maxHeightClassName="max-h-[72vh]"
           >
             <div className="space-y-4">
-              <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-4">
-                <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
-                  {userProfile ? 'Signed In As' : 'Guest Mode'}
+              <div className="theme-elevated rounded-2xl px-4 py-4">
+                <div className="theme-eyebrow text-[10px]">
+                  {userProfile ? t('signedInAs') : t('guestMode')}
                 </div>
-                <div className="mt-3 text-base text-white">
-                  {userProfile?.email ?? userProfile?.displayName ?? 'Local guest play'}
+                <div className="mt-3 text-base">
+                  {userProfile?.email ?? userProfile?.displayName ?? t('guestMode')}
                 </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="theme-eyebrow text-[10px]">{t('language')}</span>
+                  <select
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value as typeof language)}
+                    className="theme-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
+                  >
+                    {languageOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="theme-eyebrow text-[10px]">{t('theme')}</span>
+                  <select
+                    value={theme}
+                    onChange={(event) => setTheme(event.target.value as typeof theme)}
+                    className="theme-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
+                  >
+                    {themeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
               {userProfile ? (
                 <div className="grid gap-3">
@@ -2322,16 +2409,16 @@ export default function App() {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="w-full rounded-2xl border border-zinc-800 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-zinc-300"
+                    className="theme-button-subtle w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
                   >
-                    Switch Account
+                    {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                    className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
                   >
-                    Sign Out
+                    {t('signOut')}
                   </button>
                 </div>
               ) : (
@@ -2341,9 +2428,9 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                  className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
                 >
-                  Sign In
+                  {t('signIn')}
                 </button>
               )}
             </div>
@@ -2352,7 +2439,7 @@ export default function App() {
           <MobileBottomSheet
             open={pendingCpuModeSelection}
             onClose={() => setPendingCpuModeSelection(false)}
-            title="CPU Mode"
+            title={t('cpuMode')}
             compactHeightClassName="max-h-[34vh]"
             maxHeightClassName="max-h-[34vh]"
           >
@@ -2360,18 +2447,18 @@ export default function App() {
               <button
                 type="button"
                 onClick={startRandomGame}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-4 text-left"
+                className="theme-elevated rounded-2xl px-4 py-4 text-left"
               >
-                <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-500">Curated Duel</div>
-                <div className="mt-2 text-base font-mono uppercase tracking-[0.12em] text-white">Random Deck</div>
+                <div className="theme-eyebrow text-[10px]">{t('playHomeQuickDuel')}</div>
+                <div className="theme-title mt-2 text-base uppercase tracking-[0.12em]">{t('randomDeck')}</div>
               </button>
               <button
                 type="button"
                 onClick={() => void startCustomGame()}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-4 text-left"
+                className="theme-elevated rounded-2xl px-4 py-4 text-left"
               >
-                <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-zinc-500">Primary Deck</div>
-                <div className="mt-2 text-base font-mono uppercase tracking-[0.12em] text-white">Custom Deck</div>
+                <div className="theme-eyebrow text-[10px]">{t('playHomePrimaryDeck')}</div>
+                <div className="theme-title mt-2 text-base uppercase tracking-[0.12em]">{t('customDeck')}</div>
               </button>
             </div>
           </MobileBottomSheet>
@@ -2379,7 +2466,7 @@ export default function App() {
           <MobileBottomSheet
             open={showCompetitionLobby}
             onClose={() => setShowCompetitionLobby(false)}
-            title="Competition"
+            title={t('competition')}
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
@@ -2388,20 +2475,20 @@ export default function App() {
           >
             {competitionResumeOpponent ? (
               <div className="space-y-4 pb-2">
-                <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-4">
-                  <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">Current Stage</div>
-                  <div className="mt-3 text-lg font-mono uppercase tracking-[0.14em] text-white">
+                <div className="theme-elevated rounded-2xl px-4 py-4">
+                  <div className="theme-eyebrow text-[10px]">{t('currentStage')}</div>
+                  <div className="theme-title mt-3 text-lg uppercase tracking-[0.14em]">
                     {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
                   </div>
-                  <div className="mt-2 text-sm leading-6 text-zinc-400">
-                    Next opponent: {competitionResumeOpponent.name}
+                  <div className="theme-muted mt-2 text-sm leading-6">
+                    {t('nextOpponent')}: {competitionResumeOpponent.name}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {competitionResumeOpponent.signatureCardIds.map((cardId) => (
-                    <div key={cardId} className="rounded-2xl border border-zinc-800 bg-black px-3 py-3 text-center">
-                      <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Signature</div>
-                      <div className="mt-2 text-[11px] font-mono uppercase tracking-[0.12em] text-white">
+                    <div key={cardId} className="theme-elevated rounded-2xl px-3 py-3 text-center">
+                      <div className="theme-eyebrow text-[9px]">{t('signature')}</div>
+                      <div className="theme-title mt-2 text-[11px] uppercase tracking-[0.12em]">
                         {buildCompetitionPreviewCard(cardId).name}
                       </div>
                     </div>
@@ -2411,9 +2498,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => void startCompetitionDuel(competitionResumeStageIndex)}
-                    className="w-full rounded-2xl border border-zinc-600 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-white"
+                    className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
                   >
-                    {competitionResumeStageIndex > 0 ? 'Resume Ladder' : 'Begin Ladder'}
+                    {competitionResumeStageIndex > 0 ? t('resumeLadder') : t('beginLadder')}
                   </button>
                   {competitionResumeStageIndex > 0 ? (
                     <button
@@ -2807,22 +2894,22 @@ export default function App() {
                     {state.opponent.graveyard.length > 0 ? (
                       <CardView card={state.opponent.graveyard[state.opponent.graveyard.length - 1]} className="border-none w-full h-full" />
                     ) : (
-                      <div className="text-zinc-700 font-mono text-[9px] tracking-widest">GY</div>
+                      <div className="theme-subtle font-mono text-[9px] tracking-widest">GY</div>
                     )}
                   </div>
                   <div className="h-16 rounded border border-zinc-800 bg-zinc-900 flex items-center justify-center" title="Main Deck">
-                    <div className="text-zinc-600 font-mono text-[9px] tracking-widest text-center">DECK<br/>({state.opponent.deck.length})</div>
+                    <div className="theme-subtle font-mono text-[9px] tracking-widest text-center">DECK<br/>({state.opponent.deck.length})</div>
                   </div>
                   <div className="h-16 rounded border border-zinc-800 bg-zinc-900 flex items-center justify-center" title="Extra Deck">
-                    <div className="text-zinc-600 font-mono text-[9px] tracking-widest text-center">EXTRA<br/>({state.opponent.extraDeck.length})</div>
+                    <div className="theme-subtle font-mono text-[9px] tracking-widest text-center">EXTRA<br/>({state.opponent.extraDeck.length})</div>
                   </div>
                 </div>
               </div>
 
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Opponent Hand</span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">{state.opponent.hand.length} Cards</span>
+                  <span className="theme-eyebrow text-[10px]">{t('opponentHand')}</span>
+                  <span className="theme-subtle text-[10px] font-mono uppercase tracking-widest">{state.opponent.hand.length} {t('cards')}</span>
                 </div>
                 <div className="overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <div className="flex gap-2 w-max">
@@ -2834,7 +2921,7 @@ export default function App() {
               </div>
 
               <div className="space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Opponent Field</div>
+                <div className="theme-eyebrow text-[10px]">{t('opponentField')}</div>
                 <div className="grid grid-cols-5 gap-1.5 justify-items-center">
                   {state.opponent.monsterZone.map((card, i) => (
                     <CardView
@@ -2874,23 +2961,23 @@ export default function App() {
 
             <section className="rounded border border-zinc-800 bg-zinc-950/70 p-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Current Phase</div>
-                <div className="text-sm font-mono text-white mt-1">{state.phase}</div>
-                <div className="text-[10px] font-mono text-zinc-600 mt-1">{getPhaseInstruction(state.phase, state.turn)}</div>
+                <div className="theme-eyebrow text-[10px]">{t('currentPhase')}</div>
+                <div className="theme-title text-sm mt-1">{getPhaseShortLabel(state.phase)}</div>
+                <div className="theme-subtle text-[10px] font-mono mt-1">{getPhaseInstruction(state.phase, state.turn)}</div>
               </div>
               <button
                 onClick={handleNextPhase}
                 disabled={state.turn !== 'player' || state.phase === 'DP'}
-                className="shrink-0 border border-zinc-700 px-4 py-3 font-mono text-xs uppercase tracking-widest text-white disabled:text-zinc-600 disabled:border-zinc-800 hover:bg-white hover:text-black transition-colors flex items-center gap-2"
+                className="theme-button shrink-0 px-4 py-3 font-mono text-xs uppercase tracking-widest disabled:text-[var(--app-text-dim)] disabled:border-[var(--app-border)] flex items-center gap-2"
               >
-                Next
+                {t('next')}
                 <ArrowRight size={16} />
               </button>
             </section>
 
             <section className="rounded border border-zinc-800 bg-zinc-950/70 p-3 space-y-3">
               <div className="space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Your Field</div>
+                <div className="theme-eyebrow text-[10px]">{t('yourField')}</div>
                 <div className="grid grid-cols-5 gap-1.5 justify-items-center">
                   {state.player.spellTrapZone.map((card, i) => (
                     <CardView
@@ -2940,8 +3027,8 @@ export default function App() {
 
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Your Hand</span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">{state.player.hand.length} Cards</span>
+                  <span className="theme-eyebrow text-[10px]">{t('yourHand')}</span>
+                  <span className="theme-subtle text-[10px] font-mono uppercase tracking-widest">{state.player.hand.length} {t('cards')}</span>
                 </div>
                 <div className="overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                   <div className="flex gap-2 w-max">
@@ -2998,7 +3085,7 @@ export default function App() {
                     {state.player.graveyard.length > 0 ? (
                       <CardView card={state.player.graveyard[state.player.graveyard.length - 1]} className="border-none w-full h-full" />
                     ) : (
-                      <div className="text-zinc-700 font-mono text-[9px] tracking-widest">GY</div>
+                      <div className="theme-subtle font-mono text-[9px] tracking-widest">GY</div>
                     )}
                   </div>
                 </div>
@@ -3464,36 +3551,36 @@ export default function App() {
           </div>
 
           <div className="h-1/2 p-4 flex flex-col shrink-0">
-            <h3 className="text-zinc-500 font-mono uppercase tracking-widest text-[10px] mb-4">Duel Log</h3>
+            <h3 className="theme-eyebrow mb-4 text-[10px]">{t('duelLog')}</h3>
             {renderDuelLogPanel()}
           </div>
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`md:hidden bg-zinc-950 border-t border-zinc-800 rounded-t-[20px] shadow-[0_-14px_32px_rgba(0,0,0,0.32)] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[240px]' : 'h-[48px]'}`}>
-          <div className="flex items-center justify-center border-b border-zinc-800 py-2 shrink-0">
+        <div className={`theme-panel md:hidden rounded-t-[20px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[240px]' : 'h-[48px]'}`}>
+          <div className="theme-divider flex items-center justify-center border-b py-2 shrink-0">
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="h-1.5 w-10 rounded-full bg-zinc-700"
+              className="h-1.5 w-10 rounded-full bg-[var(--app-border-strong)]"
               aria-label={mobileInfoExpanded ? 'Collapse mobile info panel' : 'Expand mobile info panel'}
             />
           </div>
-          <div className="grid grid-cols-[1fr_1fr_auto] border-b border-zinc-800 shrink-0">
+          <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'details' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
+              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
-              Card Info
+              {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'log' ? 'bg-black text-white' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
+              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
-              Duel Log
+              {t('duelLog')}
             </button>
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="flex items-center justify-center border-l border-zinc-800 px-3 text-zinc-500 hover:bg-zinc-900 hover:text-white transition-colors"
+              className="theme-subtle theme-divider flex items-center justify-center border-l px-3 transition-colors"
               aria-label={mobileInfoExpanded ? 'Collapse mobile info panel' : 'Expand mobile info panel'}
             >
               {mobileInfoExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}

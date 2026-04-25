@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { AppPreferencesProvider } from './preferences/AppPreferencesProvider';
 
 vi.mock('./lib/supabase', () => ({
   getSupabaseClient: () => null,
@@ -52,9 +53,13 @@ describe('App mobile shell', () => {
   });
 
   it('opens into the play home and navigates between mobile tabs', async () => {
-    render(<App />);
+    render(
+      <AppPreferencesProvider>
+        <App />
+      </AppPreferencesProvider>,
+    );
 
-    await waitFor(() => expect(screen.getByText(/play first/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument());
     expect(screen.getByRole('button', { name: /cpu mode/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /competition/i })).toBeInTheDocument();
 
