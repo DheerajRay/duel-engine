@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.2 - 2026-04-26
+
+Patch release focused on bringing the mobile deck-builder shell back in line with the approved mockup.
+
+Included in this release:
+
+- changed the embedded mobile deck builder to open in `Deck Mode` by default instead of dropping users into `Card Library`
+- replaced the top-right mode-switch icons with explicit page tabs for `Current Deck` and `Card Library`
+- kept the `Deck Library` row and accordion behavior in deck mode so saved decks remain inline as shown in the mockup
+- rebuilt the mobile filter area into a single search/type/sort/AI row so the control structure matches the mockup more closely
+- restored the AI assistant entry point in the mobile search/filter band
+
 ## v1.7.1 - 2026-04-26
 
 Patch release focused on correcting the mobile play-home structure to match the mockup more closely.

@@ -44,7 +44,7 @@ export default function DeckBuilder({
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null);
   const [isDeckView, setIsDeckView] = useState(false);
-  const [mobileBuilderMode, setMobileBuilderMode] = useState<'library' | 'deck'>('library');
+  const [mobileBuilderMode, setMobileBuilderMode] = useState<'library' | 'deck'>('deck');
   const [mobileDeckLibraryExpanded, setMobileDeckLibraryExpanded] = useState(false);
   const [mobileCardSheetOpen, setMobileCardSheetOpen] = useState(false);
   const [mobileAssistantSheetOpen, setMobileAssistantSheetOpen] = useState(false);
@@ -586,51 +586,51 @@ export default function DeckBuilder({
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {mobileBuilderMode === 'library' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setMobileBuilderMode('deck')}
-                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                      aria-label={t('currentDeck')}
-                    >
-                      <Layers size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileBuilderMode('deck');
-                        setMobileDeckLibraryExpanded((previous) => !previous);
-                      }}
-                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                      aria-label={t('decks')}
-                    >
-                      {mobileDeckLibraryExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileBuilderMode('deck');
+                      setMobileDeckLibraryExpanded(true);
+                    }}
+                    className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                    aria-label={t('decks')}
+                  >
+                    <Layers size={13} />
+                  </button>
                 ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setMobileBuilderMode('library')}
-                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                      aria-label={t('library')}
-                    >
-                      <ArrowLeft size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={isCurrentPredefined}
-                      className={`flex h-8 w-8 items-center justify-center rounded-[6px] border p-0 ${
-                        isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
-                      }`}
-                      aria-label={t('save')}
-                    >
-                      <Save size={13} />
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isCurrentPredefined}
+                    className={`flex h-8 w-8 items-center justify-center rounded-[6px] border p-0 ${
+                      isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
+                    }`}
+                    aria-label={t('save')}
+                  >
+                    <Save size={13} />
+                  </button>
                 )}
               </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileBuilderMode('deck')}
+                className={`px-3 py-2 text-[8px] font-mono uppercase tracking-[0.12em] transition-colors ${
+                  mobileBuilderMode === 'deck' ? 'theme-button' : 'theme-button-subtle'
+                }`}
+              >
+                {t('currentDeck')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileBuilderMode('library')}
+                className={`px-3 py-2 text-[8px] font-mono uppercase tracking-[0.12em] transition-colors ${
+                  mobileBuilderMode === 'library' ? 'theme-button' : 'theme-button-subtle'
+                }`}
+              >
+                {t('cardLibrary')}
+              </button>
             </div>
           </div>
 
@@ -671,7 +671,7 @@ export default function DeckBuilder({
           ) : null}
 
           <div className="theme-screen theme-divider border-b px-3 py-2.5">
-            <div className="grid grid-cols-[minmax(0,1fr)_108px] gap-2">
+            <div className="grid grid-cols-[minmax(0,1.4fr)_84px_84px_32px] gap-2">
               <div className="relative">
                 <Search className="theme-subtle absolute left-2.5 top-1/2 -translate-y-1/2" size={12} />
                 <input
@@ -682,36 +682,24 @@ export default function DeckBuilder({
                   className="theme-input w-full rounded-[6px] pl-7 pr-2.5 py-1.5 text-[9px] font-mono transition-colors"
                 />
               </div>
-              <div className="grid grid-cols-[1fr_28px] gap-2">
-                <select
-                  value={filterType}
-                  onChange={(e) => {
-                    setFilterType(e.target.value as any);
-                    setSortBy('name-asc');
-                  }}
-                  className="theme-input rounded-[6px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
-                >
-                  <option value="All">{t('allTypes')}</option>
-                  <option value="Monster">{t('cardTypeMonster')}</option>
-                  <option value="Spell">{t('cardTypeSpell')}</option>
-                  <option value="Trap">{t('cardTypeTrap')}</option>
-                  <option value="Fusion">{t('fusionType')}</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setMobileAssistantSheetOpen(true)}
-                  className="theme-button-subtle flex h-full items-center justify-center rounded-[6px] p-0"
-                  aria-label={t('aiAssist')}
-                >
-                  <Sparkles size={12} />
-                </button>
-              </div>
-            </div>
-            <div className="mt-2">
+              <select
+                value={filterType}
+                onChange={(e) => {
+                  setFilterType(e.target.value as any);
+                  setSortBy('name-asc');
+                }}
+                className="theme-input rounded-[6px] px-2 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
+              >
+                <option value="All">{t('allTypes')}</option>
+                <option value="Monster">{t('cardTypeMonster')}</option>
+                <option value="Spell">{t('cardTypeSpell')}</option>
+                <option value="Trap">{t('cardTypeTrap')}</option>
+                <option value="Fusion">{t('fusionType')}</option>
+              </select>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="theme-input w-full rounded-[6px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
+                className="theme-input rounded-[6px] px-2 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
               >
                 <option value="name-asc">{t('nameSortAsc')}</option>
                 <option value="name-desc">{t('nameSortDesc')}</option>
@@ -727,6 +715,14 @@ export default function DeckBuilder({
                   <option value="type">{t('sortCardType')}</option>
                 )}
               </select>
+              <button
+                type="button"
+                onClick={() => setMobileAssistantSheetOpen(true)}
+                className="theme-button-subtle flex h-full items-center justify-center rounded-[6px] p-0"
+                aria-label={t('aiAssist')}
+              >
+                <Sparkles size={12} />
+              </button>
             </div>
           </div>
 
