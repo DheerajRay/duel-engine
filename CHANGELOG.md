@@ -11,6 +11,16 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.1 - 2026-04-26
+
+Patch release focused on correcting the mobile play-home structure to match the mockup more closely.
+
+Included in this release:
+
+- fixed the mobile top-right username treatment so it uses the same compact heading language as the `Duel Engine` title instead of the broken oversized utility styling
+- removed the extra `Primary Deck` section from the mobile `Play` home because it was not part of the approved mockup
+- removed the extra bottom `Deck Builder` and `Duel Rules` cards from the mobile `Play` home so the page now keeps the intended three-block structure: `CPU Mode`, `Competition`, and `Duel History`
+
 ## v1.7.0 - 2026-04-26
 
 Mobile shell redesign release aligned to the new Balsamiq mockups and mobile-first information architecture.

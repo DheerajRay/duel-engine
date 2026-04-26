@@ -355,29 +355,6 @@ export default function App() {
 
         <button
           type="button"
-          onClick={() => handleMobileTabChange('deck-builder')}
-          className="theme-panel rounded-[8px] border px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="theme-eyebrow text-[8px]">{t('playHomePrimaryDeck')}</div>
-              <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em]">
-                {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
-              </div>
-              <div className="theme-muted mt-1 text-[10px] leading-4.5">
-                {primaryDeckSummary
-                  ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
-                  : t('loadingDeckStatus')}
-              </div>
-            </div>
-            <div className={`text-[8px] font-mono uppercase tracking-[0.12em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
-              {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
           onClick={() => setMobileHistoryExpanded((previous) => !previous)}
           className="theme-panel rounded-[8px] border px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
         >
@@ -432,28 +409,6 @@ export default function App() {
             </div>
           ) : null}
         </button>
-
-        <section className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => handleMobileTabChange('deck-builder')}
-            className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
-          >
-            <div className="theme-eyebrow text-[8px]">{t('deckBuilder')}</div>
-            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">{t('cardLibrary')}</div>
-            <div className="theme-muted mt-1 text-[9px] leading-4.5">{t('decks')}</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleMobileTabChange('rules')}
-            className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
-          >
-            <div className="theme-eyebrow text-[8px]">{t('duelRules')}</div>
-            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">{t('gameplayRules')}</div>
-            <div className="theme-muted mt-1 text-[9px] leading-4.5">{t('howToPlay')}</div>
-          </button>
-        </section>
       </div>
     </div>
   );
@@ -2402,10 +2357,10 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="flex max-w-[144px] items-center gap-1.5 text-right text-[9px] font-mono uppercase tracking-[0.14em] text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text-primary)]"
+                className="ui-eyebrow flex max-w-[148px] items-center gap-1.5 text-right transition-colors hover:text-[var(--app-text-primary)]"
               >
-                <UserRound size={11} />
-                {userProfile ? userProfile.displayName : t('guestMode')}
+                <span className="truncate">{userProfile ? userProfile.displayName : t('guestMode')}</span>
+                <UserRound size={10} />
               </button>
             )}
           />
