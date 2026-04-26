@@ -50,7 +50,7 @@ export function MobileBottomSheet({
               type="button"
               aria-label={t('closeMobileSheet')}
               onClick={onClose}
-              className="absolute inset-0 bg-black/70"
+              className="ui-overlay absolute inset-0"
             />
           )}
           <motion.div

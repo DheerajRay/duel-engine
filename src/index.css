@@ -428,18 +428,128 @@ textarea {
   color: var(--app-positive);
 }
 
+/* Legacy utility compatibility while remaining surfaces are migrated */
+.bg-black {
+  background-color: var(--app-bg) !important;
+}
+
+.bg-black\/95 {
+  background-color: color-mix(in srgb, var(--app-bg) 95%, transparent) !important;
+}
+
+.bg-black\/90 {
+  background-color: color-mix(in srgb, var(--app-bg) 90%, transparent) !important;
+}
+
+.bg-black\/85 {
+  background-color: color-mix(in srgb, var(--app-bg) 85%, transparent) !important;
+}
+
+.bg-black\/80 {
+  background-color: color-mix(in srgb, var(--app-bg) 80%, transparent) !important;
+}
+
+.bg-black\/70 {
+  background-color: color-mix(in srgb, var(--app-bg) 70%, transparent) !important;
+}
+
+.bg-zinc-950 {
+  background-color: var(--app-elevated) !important;
+}
+
+.bg-zinc-950\/70 {
+  background-color: color-mix(in srgb, var(--app-elevated) 72%, transparent) !important;
+}
+
+.bg-zinc-900 {
+  background-color: var(--app-panel-strong) !important;
+}
+
+.bg-zinc-800 {
+  background-color: var(--app-muted-fill) !important;
+}
+
+.bg-white {
+  background-color: var(--app-accent) !important;
+}
+
+.text-white {
+  color: var(--app-text-primary) !important;
+}
+
+.text-black {
+  color: var(--app-accent-contrast) !important;
+}
+
+.text-zinc-200,
+.text-zinc-300,
+.text-zinc-400 {
+  color: var(--app-text-secondary) !important;
+}
+
+.text-zinc-500 {
+  color: var(--app-text-muted) !important;
+}
+
+.text-zinc-600,
+.text-zinc-700 {
+  color: var(--app-text-dim) !important;
+}
+
+.border-white {
+  border-color: var(--app-border-strong) !important;
+}
+
+.border-zinc-900 {
+  border-color: color-mix(in srgb, var(--app-border) 65%, var(--app-bg)) !important;
+}
+
+.border-zinc-800,
+.border-zinc-700,
+.border-zinc-600,
+.border-zinc-500 {
+  border-color: var(--app-border) !important;
+}
+
+.ring-white {
+  --tw-ring-color: var(--app-border-strong) !important;
+}
+
+.hover\:bg-white:hover {
+  background-color: var(--app-accent) !important;
+}
+
+.hover\:text-black:hover {
+  color: var(--app-accent-contrast) !important;
+}
+
+.hover\:text-white:hover {
+  color: var(--app-text-primary) !important;
+}
+
+.hover\:border-white:hover,
+.hover\:border-zinc-600:hover {
+  border-color: var(--app-border-strong) !important;
+}
+
+.hover\:bg-zinc-900:hover {
+  background-color: var(--app-panel-strong) !important;
+}
+
 @media (max-width: 767px) {
   :root {
     --ui-display-size: 1.7rem;
-    --ui-section-title-size: 0.95rem;
-    --ui-card-title-size: 0.875rem;
-    --ui-body-md-size: 0.875rem;
-    --ui-body-sm-size: 0.75rem;
-    --ui-app-bar-height: 2.875rem;
+    --ui-section-title-size: 0.875rem;
+    --ui-card-title-size: 0.8125rem;
+    --ui-eyebrow-size: 0.5625rem;
+    --ui-body-md-size: 0.8125rem;
+    --ui-body-sm-size: 0.71875rem;
+    --ui-mono-label-size: 0.625rem;
+    --ui-app-bar-height: 2.75rem;
     --ui-tab-height: 2.5rem;
-    --ui-chip-height: 2.125rem;
-    --ui-button-height: 2.625rem;
-    --ui-input-height: 2.625rem;
+    --ui-chip-height: 2rem;
+    --ui-button-height: 2.5rem;
+    --ui-input-height: 2.5rem;
     --ui-sheet-header-height: 2.625rem;
   }
 }

@@ -112,13 +112,13 @@ export default function GameHistoryPage({
           <div className="space-y-3">
             <div>
               <div className="theme-eyebrow text-[9px]">{t('mode')}</div>
-              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {MODE_OPTIONS.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, mode: option }))}
-                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.16em] ${
+                    className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em] ${
                       filter.mode === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -136,13 +136,13 @@ export default function GameHistoryPage({
 
             <div>
               <div className="theme-eyebrow text-[9px]">{t('result')}</div>
-              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="mt-2 flex flex-wrap gap-1.5">
                 {RESULT_OPTIONS.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, result: option }))}
-                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.16em] ${
+                    className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em] ${
                       filter.result === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -156,7 +156,7 @@ export default function GameHistoryPage({
               value={filter.opponent}
               onChange={(event) => setFilter((previous) => ({ ...previous, opponent: event.target.value }))}
               placeholder={t('searchOpponent')}
-              className="theme-input w-full rounded-[16px] px-3 py-2.5 text-[11px] font-mono uppercase tracking-[0.14em]"
+              className="theme-input w-full rounded-[16px] px-3 py-2.5 text-[10px] font-mono uppercase tracking-[0.1em]"
             />
           </div>
         ) : (

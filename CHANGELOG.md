@@ -11,6 +11,19 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.1 - 2026-04-26
+
+Patch release focused on stabilizing the post-theme-foundation UI so active themes apply consistently across the full app.
+
+Included in this release:
+
+- tightened the mobile shell density further across `Play`, `Deck Builder`, `History`, `Help`, and the duel info drawer
+- fixed the mobile help tab row and history filters so they no longer overflow horizontally on phone layouts
+- added a compatibility layer that maps remaining legacy `black / zinc / white` utility surfaces onto the active design-system theme tokens
+- fixed themed sheets and overlays so popups, drawers, and page transitions no longer visibly fall back to the default black surface
+- aligned duel chrome, modal backdrops, card-detail drawers, and other shared surfaces more closely with the active theme
+- removed the phase-tracker motion warning by keeping color theme-driven and animating only position emphasis
+
 ## v1.6.0 - 2026-04-26
 
 Foundation release focused on turning theme, typography, and localization into first-class app systems instead of partial UI patches.

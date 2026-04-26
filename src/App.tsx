@@ -281,13 +281,13 @@ export default function App() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="theme-eyebrow text-[9px]">{t('playHomeQuickDuel')}</div>
-                <div className="theme-title mt-2.5 text-base uppercase">{t('cpuMode')}</div>
-                <div className="theme-muted mt-2 text-[13px] leading-6">
+                <div className="theme-title mt-2 text-[15px] uppercase tracking-[0.08em]">{t('cpuMode')}</div>
+                <div className="theme-muted mt-2 text-[12px] leading-5">
                   {t('playHomeCpuDescription')}
                 </div>
               </div>
-              <div className="theme-chip rounded-xl p-2.5">
-                <Swords size={16} />
+              <div className="theme-chip rounded-xl p-2">
+                <Swords size={14} />
               </div>
             </div>
           </button>
@@ -300,8 +300,8 @@ export default function App() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="theme-eyebrow text-[9px]">{t('playHomeLadder')}</div>
-                <div className="theme-title mt-2.5 text-base uppercase">{t('competition')}</div>
-                <div className="theme-muted mt-2 text-[13px] leading-6">
+                <div className="theme-title mt-2 text-[15px] uppercase tracking-[0.08em]">{t('competition')}</div>
+                <div className="theme-muted mt-2 text-[12px] leading-5">
                   {competitionResumeOpponent
                     ? t('playHomeCompetitionDescription', {
                         stage: competitionResumeStageIndex + 1,
@@ -310,8 +310,8 @@ export default function App() {
                     : t('playHomeCompetitionFallback')}
                 </div>
               </div>
-              <div className="theme-chip rounded-xl p-2.5">
-                <Trophy size={16} />
+              <div className="theme-chip rounded-xl p-2">
+                <Trophy size={14} />
               </div>
             </div>
           </button>
@@ -323,15 +323,15 @@ export default function App() {
               className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
               <div className="theme-eyebrow text-[9px]">{t('playHomePrimaryDeck')}</div>
-              <div className="theme-title mt-2.5 text-[13px] uppercase">
+              <div className="theme-title mt-2 text-[12px] uppercase tracking-[0.08em]">
                 {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
               </div>
-                <div className="theme-muted mt-2 text-[11px] leading-5">
+                <div className="theme-muted mt-1.5 text-[10px] leading-5">
                   {primaryDeckSummary
                     ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
                     : t('loadingDeckStatus')}
                 </div>
-              <div className={`mt-2 text-[9px] font-mono uppercase tracking-[0.16em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
+              <div className={`mt-2 text-[8px] font-mono uppercase tracking-[0.12em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
                 {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
               </div>
             </button>
@@ -342,13 +342,13 @@ export default function App() {
               className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
               <div className="theme-eyebrow text-[9px]">{t('playHomeProgress')}</div>
-              <div className="theme-title mt-2.5 text-[13px] uppercase">
+              <div className="theme-title mt-2 text-[12px] uppercase tracking-[0.08em]">
                 {t('currentStage')} {competitionResumeStageIndex + 1}
               </div>
-              <div className="theme-muted mt-2 text-[11px] leading-5">
+              <div className="theme-muted mt-1.5 text-[10px] leading-5">
                 {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
               </div>
-              <div className="theme-subtle mt-2 text-[9px] font-mono uppercase tracking-[0.16em]">
+              <div className="theme-subtle mt-2 text-[8px] font-mono uppercase tracking-[0.12em]">
                 {t('viewDuelHistory')}
               </div>
             </button>
@@ -360,14 +360,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('decks')}
-                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[9px] font-mono uppercase tracking-[0.16em]"
+                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[8px] font-mono uppercase tracking-[0.12em]"
               >
                 {t('deckBuilder')}
               </button>
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('help')}
-                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[9px] font-mono uppercase tracking-[0.16em]"
+                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[8px] font-mono uppercase tracking-[0.12em]"
               >
                 {t('howToPlay')}
               </button>
@@ -851,11 +851,10 @@ export default function App() {
         <motion.span
           key={p}
           animate={{
-            color: state.phase === p ? '#ffffff' : '#52525b',
             y: state.phase === p && !reduced ? -1 : 0,
           }}
           transition={getSharedTransition(reduced, 'fast')}
-          className={state.phase === p ? 'font-bold' : ''}
+          className={state.phase === p ? 'font-bold text-[var(--app-text-primary)]' : 'text-[var(--app-text-dim)]'}
         >
           {p}
         </motion.span>
@@ -936,7 +935,7 @@ export default function App() {
           initial={{ opacity: 0, y: reduced ? 0 : 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={getSharedTransition(reduced, 'fast')}
-          className="text-zinc-600 text-[10px] font-mono uppercase tracking-[0.18em] text-center px-4"
+          className="text-zinc-600 text-[9px] font-mono uppercase tracking-[0.14em] leading-5 text-center px-3"
         >
           {emptyMessage}
         </motion.div>
@@ -953,11 +952,11 @@ export default function App() {
         transition={getSharedTransition(reduced, 'fast')}
         className="w-full rounded border border-zinc-800 bg-black"
       >
-        <div className="border-b border-zinc-800 px-4 py-3">
-          <div className="text-lg font-sans font-bold leading-tight text-white uppercase tracking-[0.06em]">
+        <div className="border-b border-zinc-800 px-3 py-3">
+          <div className="text-[15px] font-sans font-bold leading-tight text-white uppercase tracking-[0.04em]">
             {localizedCard.name}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-400">
             <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
               {localizedCard.typeLabel}
               {localizedCard.subtypeLabel ? ` / ${localizedCard.subtypeLabel}` : ''}
@@ -975,27 +974,31 @@ export default function App() {
           </div>
         </div>
 
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-3 py-3 space-y-3">
           {showCardDetail.type === 'Monster' && (
-            <div className="border-t border-zinc-800 pt-3">
-              <div className="flex items-center gap-4 font-mono text-xs uppercase tracking-[0.16em]">
-                <span className="text-zinc-500">ATK <span className="text-white tracking-normal">{showCardDetail.atk}</span></span>
-                <span className="text-zinc-500">DEF <span className="text-white tracking-normal">{showCardDetail.def}</span></span>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
+                <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500">ATK</div>
+                <div className="mt-1 text-[12px] font-mono text-white">{showCardDetail.atk}</div>
+              </div>
+              <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
+                <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500">DEF</div>
+                <div className="mt-1 text-[12px] font-mono text-white">{showCardDetail.def}</div>
               </div>
             </div>
           )}
 
-          <div className="text-[13px] leading-6 text-zinc-300">
+          <div className="text-[12px] leading-5 text-zinc-300">
             {localizedCard.description}
           </div>
 
           {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
+              <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500 mb-1.5">
                 {t(getLocalizedSupportStatusKey(supportMeta.status))}
               </div>
               {supportMeta.note && (
-                <div className="text-[11px] text-zinc-300 leading-5">
+                <div className="text-[10px] text-zinc-300 leading-5">
                   {supportMeta.note}
                 </div>
               )}
@@ -1004,10 +1007,10 @@ export default function App() {
 
           {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
+              <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500 mb-1.5">
                 {t('fusionMaterials')}
               </div>
-              <div className="text-[11px] text-zinc-300 leading-5">
+              <div className="text-[10px] text-zinc-300 leading-5">
                 {showCardDetail.fusionMaterials.join(' + ')}
               </div>
             </div>
@@ -1017,8 +1020,8 @@ export default function App() {
     );
   };
 
-  const renderDuelLogPanel = () => (
-    <div className="flex-grow overflow-y-auto flex flex-col gap-2 text-[11px] font-mono text-zinc-400">
+  const renderDuelLogPanel = (compact = false) => (
+    <div className={`flex-grow overflow-y-auto flex flex-col ${compact ? 'gap-1.5 text-[10px]' : 'gap-2 text-[11px]'} font-mono text-zinc-400`}>
       {[...state.log].reverse().map((entry, i) => {
         const isPlayer = entry.data?.player === 'player' || entry.data?.nextTurn === 'player';
         const isOpponent = entry.data?.player === 'opponent' || entry.data?.nextTurn === 'opponent';
@@ -1046,7 +1049,7 @@ export default function App() {
         }
 
         return (
-          <div key={entry.id || i} className={`pb-2 border-b border-zinc-900 ${textColor}`}>
+          <div key={entry.id || i} className={`border-b border-zinc-900 ${compact ? 'pb-1.5 leading-5' : 'pb-2'} ${textColor}`}>
             {prefix && <span className="opacity-50 mr-1">{prefix}</span>}
             {displayMessage}
           </div>
@@ -2315,9 +2318,9 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="theme-chip flex max-w-[168px] items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[9px] font-mono tracking-[0.14em]"
+                className="theme-chip flex max-w-[148px] items-center gap-1.5 rounded-full px-2 py-1 text-[8px] font-mono tracking-[0.08em]"
               >
-                <UserCircle2 size={13} />
+                <UserCircle2 size={12} />
                 <span className="truncate">{userProfile ? userProfile.displayName : t('guestMode')}</span>
               </button>
             )}
@@ -3566,8 +3569,8 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`theme-panel md:hidden rounded-t-[18px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[34vh] min-h-[220px]' : 'h-[42px]'}`}>
-          <div className="theme-divider flex items-center justify-center border-b py-1.5 shrink-0">
+        <div className={`theme-panel md:hidden sticky bottom-0 z-20 rounded-t-[18px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[250px]' : 'h-[42px]'}`}>
+          <div className="theme-divider flex items-center justify-center border-b py-1 shrink-0">
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
               className="h-1 w-8 rounded-full bg-[var(--app-border-strong)]"
@@ -3577,13 +3580,13 @@ export default function App() {
           <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-3 py-2 text-[9px] font-mono uppercase tracking-[0.2em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2.5 py-2 text-[8px] font-mono uppercase tracking-[0.14em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-3 py-2 text-[9px] font-mono uppercase tracking-[0.2em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2.5 py-2 text-[8px] font-mono uppercase tracking-[0.14em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('duelLog')}
             </button>
@@ -3604,7 +3607,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: reduced ? 0 : 8 }}
                 transition={getSharedTransition(reduced, 'fast')}
-                className="flex-1 overflow-y-auto p-3"
+                className="flex-1 overflow-y-auto p-2.5"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {mobileInfoTab === 'details' ? (
@@ -3627,7 +3630,7 @@ export default function App() {
                       transition={getSharedTransition(reduced, 'fast')}
                       className="flex flex-col min-h-full"
                     >
-                      {renderDuelLogPanel()}
+                      {renderDuelLogPanel(true)}
                     </motion.div>
                   )}
                 </AnimatePresence>

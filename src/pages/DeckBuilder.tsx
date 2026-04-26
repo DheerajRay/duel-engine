@@ -560,34 +560,34 @@ export default function DeckBuilder({
 
       {embeddedInShell && (
         <div className="theme-screen theme-divider border-b px-3 py-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2.5">
             <div className="min-w-0">
               <div className="theme-eyebrow text-[9px]">{t('deckBuilder')}</div>
-              <div className="theme-title mt-1.5 text-sm uppercase tracking-[0.08em] truncate">{deckName}</div>
-              <div className="theme-subtle mt-1.5 text-[9px] font-mono uppercase tracking-[0.16em]">
+              <div className="theme-title mt-1 text-[13px] uppercase tracking-[0.05em] truncate">{deckName}</div>
+              <div className="theme-subtle mt-1 text-[8px] font-mono uppercase tracking-[0.12em]">
                 {currentUserEmail ? `${syncStatusLabel} | ${currentUserEmail}` : t('localOnly')}
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setMobileDeckSheetOpen(true)}
-                className="theme-elevated rounded-[14px] px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em]"
+                className="theme-elevated rounded-[14px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
               >
                 {t('decks')}
               </button>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
-                className="theme-elevated rounded-[14px] px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em]"
+                className="theme-elevated rounded-[14px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
               >
-                {t('aiAssist')}
+                AI
               </button>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={isCurrentPredefined}
-                className={`rounded-[14px] border px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${
+                className={`rounded-[14px] border px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em] ${
                   isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
                 }`}
               >
@@ -601,19 +601,19 @@ export default function DeckBuilder({
               <button
                 type="button"
                 onClick={() => setIsDeckView(false)}
-                className={`rounded-[12px] px-2 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[12px] px-2 py-2 text-[8px] font-mono uppercase tracking-[0.1em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('library')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsDeckView(true)}
-                className={`rounded-[12px] px-2 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[12px] px-2 py-2 text-[8px] font-mono uppercase tracking-[0.1em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('currentDeck')}
               </button>
             </div>
-            <div className={`rounded-[16px] border px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
+            <div className={`rounded-[16px] border px-2.5 py-2 text-[8px] font-mono uppercase tracking-[0.12em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
               {deck.length}/60
             </div>
           </div>
@@ -637,7 +637,7 @@ export default function DeckBuilder({
               </div>
             </div>
           ) : (
-            <div className="theme-screen theme-divider p-3 border-b flex flex-wrap gap-3 shrink-0">
+            <div className="theme-screen theme-divider p-3 border-b flex flex-wrap gap-2.5 shrink-0">
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="theme-subtle absolute left-3 top-1/2 -translate-y-1/2" size={14} />
                 <input 
@@ -645,7 +645,7 @@ export default function DeckBuilder({
                   placeholder={t('searchCards')} 
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-[11px] font-mono transition-colors"
+                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-[10px] font-mono transition-colors"
                 />
               </div>
               <select 
@@ -654,7 +654,7 @@ export default function DeckBuilder({
                   setFilterType(e.target.value as any);
                   setSortBy('name-asc');
                 }}
-                className="theme-input rounded-none px-4 py-2 text-[11px] font-mono transition-colors uppercase tracking-[0.16em]"
+                className="theme-input rounded-none px-4 py-2 text-[10px] font-mono transition-colors uppercase tracking-[0.1em]"
               >
                 <option value="All">{t('allTypes')}</option>
                 <option value="Monster">{t('cardTypeMonster')}</option>
@@ -665,7 +665,7 @@ export default function DeckBuilder({
               <select 
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="theme-input rounded-none px-4 py-2 text-[11px] font-mono transition-colors uppercase tracking-[0.16em]"
+                className="theme-input rounded-none px-4 py-2 text-[10px] font-mono transition-colors uppercase tracking-[0.1em]"
               >
                 <option value="name-asc">{t('nameSortAsc')}</option>
                 <option value="name-desc">{t('nameSortDesc')}</option>

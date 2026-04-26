@@ -43,7 +43,9 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
           <div className="theme-divider p-4 border-b flex justify-center items-center shrink-0 hidden sm:flex">
             <h2 className="theme-eyebrow text-[10px]">{t('helpNavigation')}</h2>
           </div>
-          <div className={`p-2 ${mobileLayout ? '' : 'sm:p-4'} flex flex-row ${mobileLayout ? '' : 'sm:flex-col'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
+          <div
+            className={`p-2 ${mobileLayout ? 'grid grid-cols-3' : 'flex flex-row sm:flex-col sm:p-4'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
+          >
             {[
               { id: 'basics', label: t('basics'), icon: <Sword size={14} /> },
               { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={14} /> },
@@ -53,14 +55,14 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex items-center justify-center sm:justify-start gap-2.5 px-3 py-2.5 text-[10px] sm:text-xs font-mono uppercase tracking-[0.16em] transition-colors border border-transparent whitespace-nowrap ${
+                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 px-2 py-2.5 text-[9px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.1]' : 'whitespace-nowrap'} ${
                   activeTab === tab.id 
                     ? 'theme-chip-active' 
                     : 'theme-chip'
                 }`}
               >
                 {tab.icon}
-                {tab.label}
+                <span className={mobileLayout ? 'min-w-0 whitespace-normal break-words' : ''}>{tab.label}</span>
               </motion.button>
             ))}
           </div>
