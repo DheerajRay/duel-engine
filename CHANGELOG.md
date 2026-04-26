@@ -11,6 +11,20 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.0 - 2026-04-26
+
+Mobile shell redesign release aligned to the new Balsamiq mockups and mobile-first information architecture.
+
+Included in this release:
+
+- replaced the mobile bottom-tab model with `Play / Deck Builder / Rules`, removing `History` as a standalone mobile destination
+- rebuilt the mobile `Play` home into three mockup-driven sections for `CPU Mode`, `Competition`, and expandable inline `Duel History`
+- moved mobile duel-history browsing into the `Play` page while keeping shared history detail rendering reusable for desktop and sheets
+- rebuilt the mobile deck builder around explicit `Card Library` and `Deck Mode` states with inline deck-library expansion instead of the old segmented shell
+- replaced the mobile help chip row with a compact `Duel Rules / Gameplay / Rules` header and icon-driven section switching
+- refreshed the mobile account and app-bar treatment to fit the flatter, more structured mockup language
+- added the shared `DuelHistoryShared` components and updated mobile-shell regression coverage to match the new tab model
+
 ## v1.6.5 - 2026-04-26
 
 Patch release focused on the remaining oversized mobile account, filter, and help controls.

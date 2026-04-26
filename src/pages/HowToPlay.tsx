@@ -16,6 +16,11 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
   const isMobile = useIsMobile();
   const mobileLayout = embeddedInShell && isMobile;
   const [activeTab, setActiveTab] = useState<'basics' | 'cards' | 'phases'>('basics');
+  const sectionTabs = [
+    { id: 'basics', label: t('basics'), icon: <Sword size={11} /> },
+    { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={11} /> },
+    { id: 'phases', label: t('turnPhases'), icon: <Clock size={11} /> },
+  ] as const;
 
   return (
     <div className={`${mobileLayout ? 'theme-screen flex h-full min-h-0 flex-col' : 'theme-screen h-dvh md:h-screen box-border overflow-hidden font-sans flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0'}`}>
@@ -43,33 +48,49 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
           <div className="theme-divider p-4 border-b flex justify-center items-center shrink-0 hidden sm:flex">
             <h2 className="theme-eyebrow text-[10px]">{t('helpNavigation')}</h2>
           </div>
+          {mobileLayout ? (
+            <div className="border-b border-[var(--app-border)] px-3 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="theme-eyebrow text-[8px]">{t('duelRules')}</div>
+                  <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em]">{t('gameplayRules')}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {sectionTabs.map((tab) => (
+                    <motion.button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      whileTap={{ scale: reduced ? 1 : 0.985 }}
+                      className={`flex h-8 w-8 items-center justify-center border transition-colors ${
+                        activeTab === tab.id ? 'theme-button' : 'theme-button-subtle'
+                      }`}
+                      aria-label={tab.label}
+                    >
+                      {tab.icon}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
           <div
-            className={`p-2 ${mobileLayout ? 'grid grid-cols-3 border-b border-[var(--app-border)]' : 'flex flex-row sm:flex-col sm:p-4'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
+            className="flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-visible p-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
-            {[
-              { id: 'basics', label: t('basics'), icon: <Sword size={12} /> },
-              { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={12} /> },
-              { id: 'phases', label: t('turnPhases'), icon: <Clock size={12} /> },
-            ].map((tab) => (
+            {sectionTabs.map((tab) => (
               <motion.button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 text-[6px] sm:text-xs font-mono uppercase tracking-[0.06em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'border-b-2 rounded-none bg-transparent text-center leading-[1.05]' : 'whitespace-nowrap'} ${
-                  activeTab === tab.id
-                    ? mobileLayout
-                      ? 'border-b-[var(--app-border-strong)] text-[var(--app-text-primary)]'
-                      : 'theme-chip-active'
-                    : mobileLayout
-                      ? 'border-b-transparent text-[var(--app-text-muted)]'
-                      : 'theme-chip'
+                className={`flex min-w-0 items-center justify-center sm:justify-start gap-2 px-2 py-1.5 text-xs font-mono uppercase tracking-[0.16em] transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? 'theme-chip-active' : 'theme-chip'
                 }`}
               >
                 {tab.icon}
-                <span className={mobileLayout ? 'min-w-0 whitespace-normal break-words' : ''}>{tab.label}</span>
+                <span>{tab.label}</span>
               </motion.button>
             ))}
           </div>
+          )}
         </div>
 
         {/* Main Content Area */}

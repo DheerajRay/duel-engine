@@ -4,7 +4,7 @@ import { MobileBottomSheet } from '../components/mobile/MobileBottomSheet';
 import { CARD_DB } from '../constants';
 import { CardView } from '../components/CardView';
 import { Card } from '../types';
-import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, Plus, Save, Layers, X, Trash2, Star, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { getSharedTransition, useMotionPreference } from '../utils/motion';
 import type { AnnouncementInput } from '../hooks/useAnnouncementQueue';
 import { getCardSupportMeta } from '../effects/registry';
@@ -44,8 +44,9 @@ export default function DeckBuilder({
   const [sortBy, setSortBy] = useState<string>('name-asc');
   const [hoveredCard, setHoveredCard] = useState<Card | null>(null);
   const [isDeckView, setIsDeckView] = useState(false);
+  const [mobileBuilderMode, setMobileBuilderMode] = useState<'library' | 'deck'>('library');
+  const [mobileDeckLibraryExpanded, setMobileDeckLibraryExpanded] = useState(false);
   const [mobileCardSheetOpen, setMobileCardSheetOpen] = useState(false);
-  const [mobileDeckSheetOpen, setMobileDeckSheetOpen] = useState(false);
   const [mobileAssistantSheetOpen, setMobileAssistantSheetOpen] = useState(false);
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [desktopLowerTab, setDesktopLowerTab] = useState<'decks' | 'assistant'>('decks');
@@ -396,12 +397,20 @@ export default function DeckBuilder({
     }
   };
 
-  const renderDeckList = (variant: 'desktop' | 'mobile-sheet' = 'desktop') => (
-    <div className={`${variant === 'desktop' ? 'flex-1 overflow-y-auto p-4' : 'max-h-[52vh] overflow-y-auto'} flex flex-col gap-2`}>
+  const renderDeckList = (variant: 'desktop' | 'mobile-sheet' | 'mobile-inline' = 'desktop') => (
+    <div className={`${
+      variant === 'desktop'
+        ? 'flex-1 overflow-y-auto p-4'
+        : variant === 'mobile-sheet'
+          ? 'max-h-[52vh] overflow-y-auto'
+          : 'flex flex-col'
+    } flex flex-col gap-2`}>
       {decks.map((d) => (
         <div
           key={d.id}
-          className={`p-3 rounded border flex flex-col gap-2 transition-colors ${editingDeckId === d.id ? 'border-white bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-600 cursor-pointer'}`}
+          className={`p-3 rounded border flex flex-col gap-2 transition-colors ${
+            editingDeckId === d.id ? 'border-white bg-zinc-900' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-600 cursor-pointer'
+          } ${variant === 'mobile-inline' ? 'rounded-[8px]' : ''}`}
           onClick={() => {
             if (editingDeckId !== d.id) handleSwitchDeck(d.id);
           }}
@@ -558,68 +567,196 @@ export default function DeckBuilder({
       </div>
       )}
 
-      {embeddedInShell && (
-        <div className="theme-screen theme-divider border-b px-3 py-3">
-          <div className="flex items-start justify-between gap-2.5">
-            <div className="min-w-0">
-              <div className="theme-eyebrow text-[9px]">{t('deckBuilder')}</div>
-              <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em] truncate">{deckName}</div>
-              <div className="theme-subtle mt-1 text-[8px] font-mono uppercase tracking-[0.12em]">
-                {currentUserEmail ? `${syncStatusLabel} | ${currentUserEmail}` : t('localOnly')}
+      {embeddedInShell ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="theme-screen theme-divider border-b px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="theme-eyebrow text-[8px]">
+                  {mobileBuilderMode === 'library' ? t('library') : t('deckBuilder')}
+                </div>
+                <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em] truncate">
+                  {mobileBuilderMode === 'library' ? t('cardLibrary') : deckName}
+                </div>
+                <div className="theme-subtle mt-1 text-[8px] font-mono uppercase tracking-[0.12em]">
+                  {mobileBuilderMode === 'library'
+                    ? `${t('cards')}: ${filteredAndSortedCards.length}`
+                    : `${deck.length}/60 | ${t('extraLabel')} ${extraDeck.length}`}
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => setMobileDeckSheetOpen(true)}
-                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
-              >
-                {t('decks')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileAssistantSheetOpen(true)}
-                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
-              >
-                AI
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isCurrentPredefined}
-                className={`rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${
-                  isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
-                }`}
-              >
-                {t('save')}
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {mobileBuilderMode === 'library' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMobileBuilderMode('deck')}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('currentDeck')}
+                    >
+                      <Layers size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileBuilderMode('deck');
+                        setMobileDeckLibraryExpanded((previous) => !previous);
+                      }}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('decks')}
+                    >
+                      {mobileDeckLibraryExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMobileBuilderMode('library')}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('library')}
+                    >
+                      <ArrowLeft size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={isCurrentPredefined}
+                      className={`flex h-8 w-8 items-center justify-center rounded-[6px] border p-0 ${
+                        isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
+                      }`}
+                      aria-label={t('save')}
+                    >
+                      <Save size={13} />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-            <div className="theme-elevated grid grid-cols-2 rounded-[10px] p-0.5">
-              <button
-                type="button"
-                onClick={() => setIsDeckView(false)}
-                className={`rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
-              >
-                {t('library')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsDeckView(true)}
-                className={`rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
-              >
-                {t('currentDeck')}
-              </button>
+          {mobileBuilderMode === 'deck' ? (
+            <div className="theme-screen theme-divider border-b px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="theme-title text-[11px] uppercase tracking-[0.04em]">{t('deckLibrary')}</div>
+                  <div className="theme-subtle mt-1 text-[8px] font-mono uppercase tracking-[0.12em]">
+                    {t('decks')}: {decks.length}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleCreateDeck}
+                    className="theme-button-subtle flex h-7 w-7 items-center justify-center rounded-[6px] p-0"
+                    aria-label={t('createDeck')}
+                  >
+                    <Plus size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileDeckLibraryExpanded((previous) => !previous)}
+                    className="theme-button-subtle flex h-7 w-7 items-center justify-center rounded-[6px] p-0"
+                    aria-label={t('decks')}
+                  >
+                    {mobileDeckLibraryExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+                </div>
+              </div>
+              {mobileDeckLibraryExpanded ? (
+                <div className="mt-2.5">
+                  {renderDeckList('mobile-inline')}
+                </div>
+              ) : null}
             </div>
-            <div className={`rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
-              {deck.length}/60
+          ) : null}
+
+          <div className="theme-screen theme-divider border-b px-3 py-2.5">
+            <div className="grid grid-cols-[minmax(0,1fr)_108px] gap-2">
+              <div className="relative">
+                <Search className="theme-subtle absolute left-2.5 top-1/2 -translate-y-1/2" size={12} />
+                <input
+                  type="text"
+                  placeholder={t('searchCards')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="theme-input w-full rounded-[6px] pl-7 pr-2.5 py-1.5 text-[9px] font-mono transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-[1fr_28px] gap-2">
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value as any);
+                    setSortBy('name-asc');
+                  }}
+                  className="theme-input rounded-[6px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
+                >
+                  <option value="All">{t('allTypes')}</option>
+                  <option value="Monster">{t('cardTypeMonster')}</option>
+                  <option value="Spell">{t('cardTypeSpell')}</option>
+                  <option value="Trap">{t('cardTypeTrap')}</option>
+                  <option value="Fusion">{t('fusionType')}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setMobileAssistantSheetOpen(true)}
+                  className="theme-button-subtle flex h-full items-center justify-center rounded-[6px] p-0"
+                  aria-label={t('aiAssist')}
+                >
+                  <Sparkles size={12} />
+                </button>
+              </div>
+            </div>
+            <div className="mt-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="theme-input w-full rounded-[6px] px-2.5 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
+              >
+                <option value="name-asc">{t('nameSortAsc')}</option>
+                <option value="name-desc">{t('nameSortDesc')}</option>
+                {(filterType === 'Monster' || filterType === 'All' || filterType === 'Fusion') && (
+                  <>
+                    <option value="level-desc">{t('sortLevelDesc')}</option>
+                    <option value="level-asc">{t('sortLevelAsc')}</option>
+                    <option value="atk-desc">{t('sortAtkDesc')}</option>
+                    <option value="def-desc">{t('sortDefDesc')}</option>
+                  </>
+                )}
+                {(filterType === 'Spell' || filterType === 'Trap') && (
+                  <option value="type">{t('sortCardType')}</option>
+                )}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="grid grid-cols-4 gap-3">
+              {filteredAndSortedCards.map(card => {
+                const countInDeck = card.isFusion
+                  ? extraDeck.filter(id => id === card.id).length
+                  : deck.filter(id => id === card.id).length;
+
+                return (
+                  <div key={card.id} className="flex justify-center">
+                    <div
+                      className="relative cursor-pointer transition-transform active:scale-[0.98]"
+                      onClick={() => setHoveredCard(card as any)}
+                    >
+                      <CardView card={card as any} />
+                      {countInDeck > 0 ? (
+                        <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center border border-[var(--app-border-strong)] bg-[var(--app-surface-elevated)] text-[8px] font-mono text-[var(--app-text-primary)]">
+                          {countInDeck}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      )}
-
+      ) : (
       <div className="flex flex-1 flex-col md:flex-row overflow-hidden min-h-0">
         {/* Card Pool */}
         <div className="theme-screen theme-divider flex-1 flex flex-col border-r overflow-hidden">
@@ -939,6 +1076,7 @@ export default function DeckBuilder({
           </div>
         )}
       </div>
+      )}
 
       {embeddedInShell && (
         <>
@@ -1020,18 +1158,45 @@ export default function DeckBuilder({
                 </div>
 
                 <div className="sticky bottom-0 space-y-2 border-t border-zinc-800 bg-zinc-950 pt-4">
-                  <button 
-                    onClick={handleHoveredCardAction}
-                    disabled={isCurrentPredefined}
-                    className={`w-full rounded-2xl border px-4 py-3 font-mono text-sm transition-colors uppercase tracking-[0.18em] flex items-center justify-center gap-2 ${
-                      isCurrentPredefined ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-600 text-white'
-                    }`}
-                  >
-                    {isDeckView ? <X size={16} /> : <Plus size={16} />}
-                    {isDeckView
-                      ? t('removeFromDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })
-                      : t('addToDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
-                  </button>
+                  {embeddedInShell ? (
+                    <>
+                      <button
+                        onClick={() => handleAddCard(hoveredCard.id)}
+                        disabled={isCurrentPredefined}
+                        className={`w-full rounded-[8px] border px-4 py-2.5 font-mono text-[10px] transition-colors uppercase tracking-[0.14em] flex items-center justify-center gap-2 ${
+                          isCurrentPredefined ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-600 text-white'
+                        }`}
+                      >
+                        <Plus size={14} />
+                        {t('addToDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
+                      </button>
+                      {(hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length) > 0 ? (
+                        <button
+                          onClick={() => handleRemoveCard(hoveredCard.id, !!hoveredCard.isFusion)}
+                          disabled={isCurrentPredefined}
+                          className={`w-full rounded-[8px] border px-4 py-2.5 font-mono text-[10px] transition-colors uppercase tracking-[0.14em] flex items-center justify-center gap-2 ${
+                            isCurrentPredefined ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-800 text-zinc-300'
+                          }`}
+                        >
+                          <X size={14} />
+                          {t('removeFromDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
+                        </button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <button 
+                      onClick={handleHoveredCardAction}
+                      disabled={isCurrentPredefined}
+                      className={`w-full rounded-2xl border px-4 py-3 font-mono text-sm transition-colors uppercase tracking-[0.18em] flex items-center justify-center gap-2 ${
+                        isCurrentPredefined ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-600 text-white'
+                      }`}
+                    >
+                      {isDeckView ? <X size={16} /> : <Plus size={16} />}
+                      {isDeckView
+                        ? t('removeFromDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })
+                        : t('addToDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
+                    </button>
+                  )}
                   <div className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
                     {t('inDeck', {
                       zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck'),
@@ -1041,28 +1206,6 @@ export default function DeckBuilder({
                 </div>
               </div>
             ) : null}
-          </MobileBottomSheet>
-
-          <MobileBottomSheet
-            open={mobileDeckSheetOpen}
-            onClose={() => setMobileDeckSheetOpen(false)}
-            title={t('decks')}
-            expandable
-            expanded={mobileSheetExpanded}
-            onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
-            compactHeightClassName="max-h-[56vh]"
-            maxHeightClassName="max-h-[84vh]"
-          >
-            <div className="space-y-4 pb-2">
-              <button
-                type="button"
-                onClick={handleCreateDeck}
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
-              >
-                {t('createDeck')}
-              </button>
-              {renderDeckList('mobile-sheet')}
-            </div>
           </MobileBottomSheet>
 
           <MobileBottomSheet

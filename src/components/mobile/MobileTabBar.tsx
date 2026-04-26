@@ -1,14 +1,13 @@
-import { BookOpen, Gamepad2, History, Layers3 } from 'lucide-react';
+import { BookOpen, Gamepad2, Layers3 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppPreferences } from '../../preferences/AppPreferencesProvider';
 
-type MobileTabId = 'play' | 'decks' | 'history' | 'help';
+export type MobileTabId = 'play' | 'deck-builder' | 'rules';
 
-const TAB_META: Record<MobileTabId, { labelKey: 'play' | 'decks' | 'history' | 'help'; icon: LucideIcon }> = {
+const TAB_META: Record<MobileTabId, { labelKey: 'play' | 'deckBuilder' | 'rules'; icon: LucideIcon }> = {
   play: { labelKey: 'play', icon: Gamepad2 },
-  decks: { labelKey: 'decks', icon: Layers3 },
-  history: { labelKey: 'history', icon: History },
-  help: { labelKey: 'help', icon: BookOpen },
+  'deck-builder': { labelKey: 'deckBuilder', icon: Layers3 },
+  rules: { labelKey: 'rules', icon: BookOpen },
 };
 
 export function MobileTabBar({
@@ -21,7 +20,7 @@ export function MobileTabBar({
   const { t } = useAppPreferences();
 
   return (
-    <div className="ui-tab-bar theme-screen theme-divider md:hidden z-20 grid shrink-0 grid-cols-4 border-t px-2 pb-[max(env(safe-area-inset-bottom),6px)] pt-1 backdrop-blur">
+    <div className="ui-tab-bar theme-screen theme-divider md:hidden z-20 grid shrink-0 grid-cols-3 border-t px-2 pb-[max(env(safe-area-inset-bottom),6px)] pt-1 backdrop-blur">
       {(Object.keys(TAB_META) as MobileTabId[]).map((tab) => {
         const { labelKey, icon: Icon } = TAB_META[tab];
         const isActive = activeTab === tab;

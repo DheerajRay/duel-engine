@@ -4,12 +4,13 @@ import { AnnouncementOverlay } from './components/AnnouncementOverlay';
 import { CardView } from './components/CardView';
 import { MobileAppBar } from './components/mobile/MobileAppBar';
 import { MobileBottomSheet } from './components/mobile/MobileBottomSheet';
-import { MobileTabBar } from './components/mobile/MobileTabBar';
+import { MobileTabBar, type MobileTabId } from './components/mobile/MobileTabBar';
+import { DuelHistoryDetailContent, DuelHistoryEntryCard } from './components/history/DuelHistoryShared';
 import { useIsMobile } from './hooks/useIsMobile';
 import { AnnouncementInput, useAnnouncementQueue } from './hooks/useAnnouncementQueue';
 import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Layers3, Settings, Shield, Swords, Trophy } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Layers3, Settings, Shield, Swords, Trophy, UserRound } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
 import {
@@ -111,7 +112,7 @@ type UIState =
 export default function App() {
   const { t, hydrateProfile, language, theme, setLanguage, setTheme, languageOptions, themeOptions } = useAppPreferences();
   const [view, setView] = useState<'start' | 'game' | 'deck-builder' | 'how-to-play' | 'sign-in' | 'history'>('start');
-  const [mobileTab, setMobileTab] = useState<'play' | 'decks' | 'history' | 'help'>('play');
+  const [mobileTab, setMobileTab] = useState<MobileTabId>('play');
   const [gameMode, setGameMode] = useState<'random' | 'custom' | 'competition' | null>(null);
   const [competitionStageIndex, setCompetitionStageIndex] = useState<number | null>(null);
   const [competitionResumeStageIndex, setCompetitionResumeStageIndex] = useState(0);
@@ -127,6 +128,10 @@ export default function App() {
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [primaryDeckSummary, setPrimaryDeckSummary] = useState<{ name: string; mainCount: number; extraCount: number; valid: boolean } | null>(null);
   const [duelRecordSummary, setDuelRecordSummary] = useState({ wins: 0, losses: 0, forfeits: 0 });
+  const [duelHistoryEntries, setDuelHistoryEntries] = useState<DuelHistoryEntry[]>([]);
+  const [mobileHistoryExpanded, setMobileHistoryExpanded] = useState(false);
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null);
+  const [mobileHistorySheetExpanded, setMobileHistorySheetExpanded] = useState(false);
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -160,6 +165,7 @@ export default function App() {
   const showAuthPrompt = view === 'start' && authCheckComplete && !userProfile && !authPromptDismissed;
   const { reduced } = useMotionPreference();
   const { activeAnnouncement, announce, clearAnnouncements } = useAnnouncementQueue(990);
+  const selectedHistoryEntry = duelHistoryEntries.find((entry) => entry.id === selectedHistoryEntryId) ?? null;
   const playerActivationContext = {
     player: state.player,
     opponent: state.opponent,
@@ -197,6 +203,7 @@ export default function App() {
     );
 
     setDuelRecordSummary(summary);
+    setDuelHistoryEntries(historyEntries);
   };
 
   const getPhaseAnnouncement = (phase: Phase) => {
@@ -346,63 +353,106 @@ export default function App() {
           </div>
         </button>
 
+        <button
+          type="button"
+          onClick={() => handleMobileTabChange('deck-builder')}
+          className="theme-panel rounded-[8px] border px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="theme-eyebrow text-[8px]">{t('playHomePrimaryDeck')}</div>
+              <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em]">
+                {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
+              </div>
+              <div className="theme-muted mt-1 text-[10px] leading-4.5">
+                {primaryDeckSummary
+                  ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
+                  : t('loadingDeckStatus')}
+              </div>
+            </div>
+            <div className={`text-[8px] font-mono uppercase tracking-[0.12em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
+              {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileHistoryExpanded((previous) => !previous)}
+          className="theme-panel rounded-[8px] border px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="theme-eyebrow text-[8px]">{t('history')}</div>
+              <div className="theme-title mt-1 text-[12px] uppercase tracking-[0.04em]">{t('duelHistory')}</div>
+              <div className="theme-muted mt-1 text-[10px] leading-4.5">
+                {t('gamesPlayed')}: {duelHistoryEntries.length}
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="flex min-w-[28px] flex-col items-center border border-[var(--app-border)] px-1 py-1">
+                  <div className="theme-eyebrow text-[7px]">{t('wins')}</div>
+                  <div className="mt-0.5 text-[10px] font-mono text-[var(--app-text-primary)]">{duelRecordSummary.wins}</div>
+                </div>
+                <div className="flex min-w-[28px] flex-col items-center border border-[var(--app-border)] px-1 py-1">
+                  <div className="theme-eyebrow text-[7px]">{t('losses')}</div>
+                  <div className="mt-0.5 text-[10px] font-mono text-[var(--app-text-primary)]">{duelRecordSummary.losses}</div>
+                </div>
+                <div className="flex min-w-[28px] flex-col items-center border border-[var(--app-border)] px-1 py-1">
+                  <div className="theme-eyebrow text-[7px]">{t('forfeits')}</div>
+                  <div className="mt-0.5 text-[10px] font-mono text-[var(--app-text-primary)]">{duelRecordSummary.forfeits}</div>
+                </div>
+              </div>
+              <div className="theme-button-subtle flex h-6 w-6 items-center justify-center p-0">
+                {mobileHistoryExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+              </div>
+            </div>
+          </div>
+          {mobileHistoryExpanded ? (
+            <div className="mt-3 space-y-2 border-t border-[var(--app-border)] pt-3">
+              {duelHistoryEntries.length === 0 ? (
+                <div className="theme-subtle py-6 text-center text-[10px] font-mono uppercase tracking-[0.12em]">
+                  {t('noDuelHistoryYet')}
+                </div>
+              ) : (
+                duelHistoryEntries.slice(0, 4).map((entry) => (
+                  <div key={entry.id}>
+                    <DuelHistoryEntryCard
+                      entry={entry}
+                      compact
+                      onClick={() => {
+                        setSelectedHistoryEntryId(entry.id);
+                        setMobileHistorySheetExpanded(false);
+                      }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          ) : null}
+        </button>
+
         <section className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => handleMobileTabChange('decks')}
+            onClick={() => handleMobileTabChange('deck-builder')}
             className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="theme-eyebrow text-[8px]">{t('playHomePrimaryDeck')}</div>
-            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">
-              {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
-            </div>
-            <div className="theme-muted mt-1 text-[9px] leading-4.5">
-              {primaryDeckSummary
-                ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
-                : t('loadingDeckStatus')}
-            </div>
-            <div className={`mt-1.5 text-[7px] font-mono uppercase tracking-[0.1em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
-              {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
-            </div>
+            <div className="theme-eyebrow text-[8px]">{t('deckBuilder')}</div>
+            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">{t('cardLibrary')}</div>
+            <div className="theme-muted mt-1 text-[9px] leading-4.5">{t('decks')}</div>
           </button>
 
           <button
             type="button"
-            onClick={() => handleMobileTabChange('history')}
+            onClick={() => handleMobileTabChange('rules')}
             className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="theme-eyebrow text-[8px]">{t('playHomeProgress')}</div>
-            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">
-              {t('currentStage')} {competitionResumeStageIndex + 1}
-            </div>
-            <div className="theme-muted mt-1 text-[9px] leading-4.5">
-              {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
-            </div>
-            <div className="theme-subtle mt-1.5 text-[7px] font-mono uppercase tracking-[0.1em]">
-              {t('viewDuelHistory')}
-            </div>
+            <div className="theme-eyebrow text-[8px]">{t('duelRules')}</div>
+            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">{t('gameplayRules')}</div>
+            <div className="theme-muted mt-1 text-[9px] leading-4.5">{t('howToPlay')}</div>
           </button>
-        </section>
-
-        <section className="grid grid-cols-3 gap-2">
-          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
-            <div className="theme-eyebrow text-[8px]">{t('wins')}</div>
-            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
-              {duelRecordSummary.wins}
-            </div>
-          </div>
-          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
-            <div className="theme-eyebrow text-[8px]">{t('losses')}</div>
-            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
-              {duelRecordSummary.losses}
-            </div>
-          </div>
-          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
-            <div className="theme-eyebrow text-[8px]">{t('forfeits')}</div>
-            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
-              {duelRecordSummary.forfeits}
-            </div>
-          </div>
         </section>
       </div>
     </div>
@@ -521,9 +571,8 @@ export default function App() {
 
   useEffect(() => {
     if (view === 'start') setMobileTab('play');
-    if (view === 'deck-builder') setMobileTab('decks');
-    if (view === 'history') setMobileTab('history');
-    if (view === 'how-to-play') setMobileTab('help');
+    if (view === 'deck-builder') setMobileTab('deck-builder');
+    if (view === 'how-to-play') setMobileTab('rules');
   }, [view]);
 
   useEffect(() => {
@@ -693,14 +742,14 @@ export default function App() {
     setAuthPromptDismissed(true);
   };
 
-  const handleMobileTabChange = (tab: 'play' | 'decks' | 'history' | 'help') => {
+  const handleMobileTabChange = (tab: MobileTabId) => {
     setMobileTab(tab);
     setShowMobileAccountSheet(false);
+    setSelectedHistoryEntryId(null);
 
     if (tab === 'play') setView('start');
-    if (tab === 'decks') setView('deck-builder');
-    if (tab === 'history') setView('history');
-    if (tab === 'help') setView('how-to-play');
+    if (tab === 'deck-builder') setView('deck-builder');
+    if (tab === 'rules') setView('how-to-play');
   };
 
   const handleHomeAuthAction = async () => {
@@ -2353,8 +2402,9 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="ui-eyebrow max-w-[128px] truncate text-right text-[9px] transition-colors hover:text-[var(--app-text-primary)]"
+                className="flex max-w-[144px] items-center gap-1.5 text-right text-[9px] font-mono uppercase tracking-[0.14em] text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text-primary)]"
               >
+                <UserRound size={11} />
                 {userProfile ? userProfile.displayName : t('guestMode')}
               </button>
             )}
@@ -2362,17 +2412,12 @@ export default function App() {
 
           <div className="min-h-0 flex-1 overflow-hidden">
             {mobileTab === 'play' && view === 'start' ? renderMobilePlayHome() : null}
-            {mobileTab === 'decks' && view === 'deck-builder' ? (
+            {mobileTab === 'deck-builder' && view === 'deck-builder' ? (
               <Suspense fallback={renderLazyScreenFallback(t('deckBuilder'), true)}>
                 <DeckBuilder onBack={() => handleMobileTabChange('play')} announce={showAnnouncement} embeddedInShell />
               </Suspense>
             ) : null}
-            {mobileTab === 'history' && view === 'history' ? (
-              <Suspense fallback={renderLazyScreenFallback(t('gameHistory'), true)}>
-                <GameHistoryPage onBack={() => handleMobileTabChange('play')} embeddedInShell />
-              </Suspense>
-            ) : null}
-            {mobileTab === 'help' && view === 'how-to-play' ? (
+            {mobileTab === 'rules' && view === 'how-to-play' ? (
               <Suspense fallback={renderLazyScreenFallback(t('howToPlay'), true)}>
                 <HowToPlay onBack={() => handleMobileTabChange('play')} embeddedInShell />
               </Suspense>
@@ -2410,7 +2455,7 @@ export default function App() {
                 <div className="theme-eyebrow text-[9px]">
                   {userProfile ? t('signedInAs') : t('guestMode')}
                 </div>
-                <div className="mt-1.5 font-mono text-[10px] leading-4.5 text-[var(--app-text-secondary)]">
+                <div className="mt-1.5 font-mono text-[9px] uppercase tracking-[0.08em] leading-4.5 text-[var(--app-text-secondary)]">
                   {userProfile?.email ?? userProfile?.displayName ?? t('guestMode')}
                 </div>
               </div>
@@ -2426,7 +2471,7 @@ export default function App() {
                     >
                       <ChevronLeft size={12} />
                     </button>
-                    <div className="truncate px-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
+                    <div className="truncate px-2 text-center font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
                       {languageOptions.find((option) => option.value === language)?.label ?? language}
                     </div>
                     <button
@@ -2450,7 +2495,7 @@ export default function App() {
                     >
                       <ChevronLeft size={12} />
                     </button>
-                    <div className="truncate px-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
+                    <div className="truncate px-2 text-center font-mono text-[9px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
                       {themeOptions.find((option) => option.value === theme)?.label ?? theme}
                     </div>
                     <button
@@ -2472,14 +2517,14 @@ export default function App() {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
+                    className="theme-button-subtle w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
+                    className="theme-button w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
                   >
                     {t('signOut')}
                   </button>
@@ -2491,7 +2536,7 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="theme-button w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
+                  className="theme-button w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
                 >
                   {t('signIn')}
                 </button>
@@ -2580,6 +2625,31 @@ export default function App() {
                     </button>
                   ) : null}
                 </div>
+              </div>
+            ) : null}
+          </MobileBottomSheet>
+
+          <MobileBottomSheet
+            open={Boolean(selectedHistoryEntry)}
+            onClose={() => setSelectedHistoryEntryId(null)}
+            title={t('duelHistory')}
+            expandable
+            expanded={mobileHistorySheetExpanded}
+            onToggleExpanded={() => setMobileHistorySheetExpanded((previous) => !previous)}
+            compactHeightClassName="max-h-[58vh]"
+            maxHeightClassName="max-h-[84vh]"
+          >
+            {selectedHistoryEntry ? (
+              <div className="space-y-3 pb-2">
+                <div>
+                  <div className="theme-title text-[12px] uppercase tracking-[0.06em]">
+                    {selectedHistoryEntry.opponentLabel}
+                  </div>
+                  <div className="theme-muted mt-1 text-[10px] leading-4.5">
+                    {selectedHistoryEntry.summary}
+                  </div>
+                </div>
+                <DuelHistoryDetailContent entry={selectedHistoryEntry} compact />
               </div>
             ) : null}
           </MobileBottomSheet>
