@@ -572,14 +572,14 @@ export default function DeckBuilder({
               <button
                 type="button"
                 onClick={() => setMobileDeckSheetOpen(true)}
-                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em]"
+                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
               >
                 {t('decks')}
               </button>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
-                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em]"
+                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
               >
                 AI
               </button>
@@ -587,7 +587,7 @@ export default function DeckBuilder({
                 type="button"
                 onClick={handleSave}
                 disabled={isCurrentPredefined}
-                className={`rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${
+                className={`rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${
                   isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
                 }`}
               >
@@ -601,19 +601,19 @@ export default function DeckBuilder({
               <button
                 type="button"
                 onClick={() => setIsDeckView(false)}
-                className={`rounded-[6px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('library')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsDeckView(true)}
-                className={`rounded-[6px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('currentDeck')}
               </button>
             </div>
-            <div className={`rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
+            <div className={`rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
               {deck.length}/60
             </div>
           </div>
@@ -645,7 +645,7 @@ export default function DeckBuilder({
                   placeholder={t('searchCards')} 
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-[9px] font-mono transition-colors"
+                  className="theme-input w-full rounded-none pl-8 pr-3 py-1.5 text-[8px] font-mono transition-colors"
                 />
               </div>
               <select 
@@ -654,7 +654,7 @@ export default function DeckBuilder({
                   setFilterType(e.target.value as any);
                   setSortBy('name-asc');
                 }}
-                className="theme-input rounded-none px-4 py-2 text-[9px] font-mono transition-colors uppercase tracking-[0.08em]"
+                className="theme-input rounded-none px-3 py-1.5 text-[8px] font-mono transition-colors uppercase tracking-[0.08em]"
               >
                 <option value="All">{t('allTypes')}</option>
                 <option value="Monster">{t('cardTypeMonster')}</option>
@@ -665,7 +665,7 @@ export default function DeckBuilder({
               <select 
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="theme-input rounded-none px-4 py-2 text-[9px] font-mono transition-colors uppercase tracking-[0.08em]"
+                className="theme-input rounded-none px-3 py-1.5 text-[8px] font-mono transition-colors uppercase tracking-[0.08em]"
               >
                 <option value="name-asc">{t('nameSortAsc')}</option>
                 <option value="name-desc">{t('nameSortDesc')}</option>

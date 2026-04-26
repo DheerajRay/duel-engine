@@ -118,7 +118,7 @@ export default function GameHistoryPage({
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, mode: option }))}
-                    className={`shrink-0 rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${
+                    className={`shrink-0 rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${
                       filter.mode === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -142,7 +142,7 @@ export default function GameHistoryPage({
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, result: option }))}
-                    className={`shrink-0 rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${
+                    className={`shrink-0 rounded-[8px] border px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em] ${
                       filter.result === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -156,7 +156,7 @@ export default function GameHistoryPage({
               value={filter.opponent}
               onChange={(event) => setFilter((previous) => ({ ...previous, opponent: event.target.value }))}
               placeholder={t('searchOpponent')}
-              className="theme-input w-full rounded-[8px] px-3 py-2 text-[9px] font-mono uppercase tracking-[0.08em]"
+              className="theme-input w-full rounded-[8px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
             />
           </div>
         ) : (

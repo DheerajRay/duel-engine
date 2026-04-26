@@ -9,7 +9,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { AnnouncementInput, useAnnouncementQueue } from './hooks/useAnnouncementQueue';
 import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronUp, Layers3, Settings, Shield, Swords, Trophy } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Layers3, Settings, Shield, Swords, Trophy } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
 import {
@@ -169,6 +169,20 @@ export default function App() {
 
   const showAnnouncement = (input: AnnouncementInput) => announce(input);
   const showNotice = (message: string, title = t('notice')) => announce({ title, message });
+
+  const cyclePreferenceOption = <T extends string>(
+    options: Array<{ value: T }>,
+    currentValue: T,
+    direction: 'previous' | 'next',
+  ) => {
+    const currentIndex = options.findIndex((option) => option.value === currentValue);
+    if (currentIndex === -1 || options.length === 0) return currentValue;
+    const nextIndex =
+      direction === 'next'
+        ? (currentIndex + 1) % options.length
+        : (currentIndex - 1 + options.length) % options.length;
+    return options[nextIndex]?.value ?? currentValue;
+  };
 
   const refreshDuelRecordSummary = async () => {
     const historyEntries = await withTimeout(getDuelHistory(), [] as DuelHistoryEntry[]);
@@ -2396,39 +2410,59 @@ export default function App() {
                 <div className="theme-eyebrow text-[9px]">
                   {userProfile ? t('signedInAs') : t('guestMode')}
                 </div>
-                <div className="mt-1.5 text-[12px] leading-5">
+                <div className="mt-1.5 font-mono text-[10px] leading-4.5 text-[var(--app-text-secondary)]">
                   {userProfile?.email ?? userProfile?.displayName ?? t('guestMode')}
                 </div>
               </div>
               <div className="grid gap-2.5">
-                <label className="block">
+                <div className="block">
                   <span className="theme-eyebrow text-[9px]">{t('language')}</span>
-                  <select
-                    value={language}
-                    onChange={(event) => setLanguage(event.target.value as typeof language)}
-                    className="theme-input mt-1.5 w-full rounded-[8px] px-3 py-2 text-[11px]"
-                  >
-                    {languageOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
+                  <div className="theme-input mt-1.5 grid w-full grid-cols-[28px_1fr_28px] items-center rounded-[8px] px-1">
+                    <button
+                      type="button"
+                      onClick={() => setLanguage(cyclePreferenceOption(languageOptions, language, 'previous') as typeof language)}
+                      className="theme-button-subtle flex h-6 w-6 items-center justify-center p-0"
+                      aria-label={t('language')}
+                    >
+                      <ChevronLeft size={12} />
+                    </button>
+                    <div className="truncate px-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
+                      {languageOptions.find((option) => option.value === language)?.label ?? language}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLanguage(cyclePreferenceOption(languageOptions, language, 'next') as typeof language)}
+                      className="theme-button-subtle flex h-6 w-6 items-center justify-center p-0"
+                      aria-label={t('language')}
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
+                </div>
+                <div className="block">
                   <span className="theme-eyebrow text-[9px]">{t('theme')}</span>
-                  <select
-                    value={theme}
-                    onChange={(event) => setTheme(event.target.value as typeof theme)}
-                    className="theme-input mt-1.5 w-full rounded-[8px] px-3 py-2 text-[11px]"
-                  >
-                    {themeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="theme-input mt-1.5 grid w-full grid-cols-[28px_1fr_28px] items-center rounded-[8px] px-1">
+                    <button
+                      type="button"
+                      onClick={() => setTheme(cyclePreferenceOption(themeOptions, theme, 'previous') as typeof theme)}
+                      className="theme-button-subtle flex h-6 w-6 items-center justify-center p-0"
+                      aria-label={t('theme')}
+                    >
+                      <ChevronLeft size={12} />
+                    </button>
+                    <div className="truncate px-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--app-text-primary)]">
+                      {themeOptions.find((option) => option.value === theme)?.label ?? theme}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTheme(cyclePreferenceOption(themeOptions, theme, 'next') as typeof theme)}
+                      className="theme-button-subtle flex h-6 w-6 items-center justify-center p-0"
+                      aria-label={t('theme')}
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
+                </div>
               </div>
               {userProfile ? (
                 <div className="grid gap-2.5">
@@ -2438,14 +2472,14 @@ export default function App() {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
+                    className="theme-button-subtle w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
+                    className="theme-button w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
                   >
                     {t('signOut')}
                   </button>
@@ -2457,7 +2491,7 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="theme-button w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
+                  className="theme-button w-full rounded-[8px] px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.1em]"
                 >
                   {t('signIn')}
                 </button>

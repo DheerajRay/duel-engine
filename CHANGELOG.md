@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.5 - 2026-04-26
+
+Patch release focused on the remaining oversized mobile account, filter, and help controls.
+
+Included in this release:
+
+- replaced the mobile account sheet's native language/theme selects with compact inline switchers so preference changes no longer open the oversized mobile picker popup
+- reduced the account email line and the `Switch Account` / `Sign Out` action sizing to better match the duel screen's control density
+- tightened mobile Deck Builder header actions, library/current-deck toggles, search field, and filter/sort control text
+- reduced mobile History filter chip and search sizing
+- changed the mobile Help top navigation from chip-style buttons to a lighter tab-strip treatment with smaller labels
+
 ## v1.6.4 - 2026-04-26
 
 Patch release focused on bringing the mobile shell controls closer to the duel screen's smaller rectangular style.

@@ -44,7 +44,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
             <h2 className="theme-eyebrow text-[10px]">{t('helpNavigation')}</h2>
           </div>
           <div
-            className={`p-2 ${mobileLayout ? 'grid grid-cols-3' : 'flex flex-row sm:flex-col sm:p-4'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
+            className={`p-2 ${mobileLayout ? 'grid grid-cols-3 border-b border-[var(--app-border)]' : 'flex flex-row sm:flex-col sm:p-4'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
           >
             {[
               { id: 'basics', label: t('basics'), icon: <Sword size={12} /> },
@@ -55,10 +55,14 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 text-[7px] sm:text-xs font-mono uppercase tracking-[0.06em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.05]' : 'whitespace-nowrap'} ${
-                  activeTab === tab.id 
-                    ? 'theme-chip-active' 
-                    : 'theme-chip'
+                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 text-[6px] sm:text-xs font-mono uppercase tracking-[0.06em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'border-b-2 rounded-none bg-transparent text-center leading-[1.05]' : 'whitespace-nowrap'} ${
+                  activeTab === tab.id
+                    ? mobileLayout
+                      ? 'border-b-[var(--app-border-strong)] text-[var(--app-text-primary)]'
+                      : 'theme-chip-active'
+                    : mobileLayout
+                      ? 'border-b-transparent text-[var(--app-text-muted)]'
+                      : 'theme-chip'
                 }`}
               >
                 {tab.icon}
