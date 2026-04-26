@@ -281,13 +281,13 @@ export default function App() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="theme-eyebrow text-[9px]">{t('playHomeQuickDuel')}</div>
-                <div className="theme-title mt-2 text-[15px] uppercase tracking-[0.08em]">{t('cpuMode')}</div>
+                <div className="theme-title mt-1.5 text-[14px] uppercase tracking-[0.06em]">{t('cpuMode')}</div>
                 <div className="theme-muted mt-2 text-[12px] leading-5">
                   {t('playHomeCpuDescription')}
                 </div>
               </div>
-              <div className="theme-chip rounded-xl p-2">
-                <Swords size={14} />
+              <div className="theme-chip rounded-xl p-1.5">
+                <Swords size={12} />
               </div>
             </div>
           </button>
@@ -300,7 +300,7 @@ export default function App() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="theme-eyebrow text-[9px]">{t('playHomeLadder')}</div>
-                <div className="theme-title mt-2 text-[15px] uppercase tracking-[0.08em]">{t('competition')}</div>
+                <div className="theme-title mt-1.5 text-[14px] uppercase tracking-[0.06em]">{t('competition')}</div>
                 <div className="theme-muted mt-2 text-[12px] leading-5">
                   {competitionResumeOpponent
                     ? t('playHomeCompetitionDescription', {
@@ -310,8 +310,8 @@ export default function App() {
                     : t('playHomeCompetitionFallback')}
                 </div>
               </div>
-              <div className="theme-chip rounded-xl p-2">
-                <Trophy size={14} />
+              <div className="theme-chip rounded-xl p-1.5">
+                <Trophy size={12} />
               </div>
             </div>
           </button>
@@ -360,14 +360,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('decks')}
-                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[8px] font-mono uppercase tracking-[0.12em]"
+                className="theme-elevated rounded-[16px] px-3 py-2 text-[7px] font-mono uppercase tracking-[0.1em]"
               >
                 {t('deckBuilder')}
               </button>
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('help')}
-                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[8px] font-mono uppercase tracking-[0.12em]"
+                className="theme-elevated rounded-[16px] px-3 py-2 text-[7px] font-mono uppercase tracking-[0.1em]"
               >
                 {t('howToPlay')}
               </button>
@@ -952,11 +952,11 @@ export default function App() {
         transition={getSharedTransition(reduced, 'fast')}
         className="w-full rounded border border-zinc-800 bg-black"
       >
-        <div className="border-b border-zinc-800 px-3 py-3">
-          <div className="text-[15px] font-sans font-bold leading-tight text-white uppercase tracking-[0.04em]">
+        <div className="border-b border-zinc-800 px-3 py-2.5">
+          <div className="text-[13px] font-sans font-bold leading-tight text-white uppercase tracking-[0.03em]">
             {localizedCard.name}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-400">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-400">
             <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
               {localizedCard.typeLabel}
               {localizedCard.subtypeLabel ? ` / ${localizedCard.subtypeLabel}` : ''}
@@ -974,31 +974,31 @@ export default function App() {
           </div>
         </div>
 
-        <div className="px-3 py-3 space-y-3">
+        <div className="px-3 py-2.5 space-y-2.5">
           {showCardDetail.type === 'Monster' && (
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
-                <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500">ATK</div>
-                <div className="mt-1 text-[12px] font-mono text-white">{showCardDetail.atk}</div>
+                <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500">ATK</div>
+                <div className="mt-1 text-[11px] font-mono text-white">{showCardDetail.atk}</div>
               </div>
               <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
-                <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500">DEF</div>
-                <div className="mt-1 text-[12px] font-mono text-white">{showCardDetail.def}</div>
+                <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500">DEF</div>
+                <div className="mt-1 text-[11px] font-mono text-white">{showCardDetail.def}</div>
               </div>
             </div>
           )}
 
-          <div className="text-[12px] leading-5 text-zinc-300">
+          <div className="text-[11px] leading-5 text-zinc-300">
             {localizedCard.description}
           </div>
 
           {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500 mb-1.5">
+              <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500 mb-1.5">
                 {t(getLocalizedSupportStatusKey(supportMeta.status))}
               </div>
               {supportMeta.note && (
-                <div className="text-[10px] text-zinc-300 leading-5">
+                <div className="text-[9px] text-zinc-300 leading-5">
                   {supportMeta.note}
                 </div>
               )}
@@ -1007,10 +1007,10 @@ export default function App() {
 
           {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[8px] font-mono uppercase tracking-[0.14em] text-zinc-500 mb-1.5">
+              <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500 mb-1.5">
                 {t('fusionMaterials')}
               </div>
-              <div className="text-[10px] text-zinc-300 leading-5">
+              <div className="text-[9px] text-zinc-300 leading-5">
                 {showCardDetail.fusionMaterials.join(' + ')}
               </div>
             </div>
@@ -2318,9 +2318,9 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="theme-chip flex max-w-[148px] items-center gap-1.5 rounded-full px-2 py-1 text-[8px] font-mono tracking-[0.08em]"
+                className="theme-chip flex max-w-[132px] items-center gap-1 rounded-full px-1.5 py-1 text-[7px] font-mono tracking-[0.06em]"
               >
-                <UserCircle2 size={12} />
+                <UserCircle2 size={10} />
                 <span className="truncate">{userProfile ? userProfile.displayName : t('guestMode')}</span>
               </button>
             )}
@@ -2567,7 +2567,7 @@ export default function App() {
         )}
       </AnimatePresence>
       {view === 'game' && (
-        <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col md:flex-row pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
+        <div className="h-dvh md:h-screen box-border overflow-hidden bg-black text-white font-sans flex flex-col md:flex-row pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+68px)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:p-0">
           {/* Main Game Area */}
           <div className="flex-grow flex flex-col relative overflow-hidden min-h-0">
             <AnimatePresence>
@@ -3569,33 +3569,33 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`theme-panel md:hidden sticky bottom-0 z-20 rounded-t-[18px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[250px]' : 'h-[42px]'}`}>
+        <div className={`theme-panel md:hidden fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-30 rounded-[18px] flex flex-col overflow-hidden shadow-xl transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[36vh] min-h-[220px] max-h-[320px]' : 'h-[48px]'}`}>
           <div className="theme-divider flex items-center justify-center border-b py-1 shrink-0">
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="h-1 w-8 rounded-full bg-[var(--app-border-strong)]"
+              className="h-1 w-7 rounded-full bg-[var(--app-border-strong)]"
               aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
             />
           </div>
           <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-2.5 py-2 text-[8px] font-mono uppercase tracking-[0.14em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-2.5 py-2 text-[8px] font-mono uppercase tracking-[0.14em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('duelLog')}
             </button>
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="theme-subtle theme-divider flex items-center justify-center border-l px-3 transition-colors"
+              className="theme-subtle theme-divider flex items-center justify-center border-l px-2.5 transition-colors"
               aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
             >
-              {mobileInfoExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              {mobileInfoExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
             </button>
           </div>
 

@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.2 - 2026-04-26
+
+Patch release focused on tightening oversized mobile controls and making the duel info surface work as a compact overlay instead of a clipped footer.
+
+Included in this release:
+
+- reduced the size of the mobile account chip, home action icons, shortcut buttons, bottom-tab chrome, deck-builder header controls, history filter pills, and help navigation tabs
+- tightened mobile search, filter, and segmented-control typography so the app reads closer to the original compact redesign
+- converted the duel card-info / duel-log mobile area into a floating bottom drawer with a smaller header and more compact text sizing
+- reduced mobile card-detail text and stat blocks inside the duel info drawer so detail content fits without overwhelming the field
+- added extra bottom breathing room for the duel field so the floating info drawer no longer visually clips into the battlefield
+
 ## v1.6.1 - 2026-04-26
 
 Patch release focused on stabilizing the post-theme-foundation UI so active themes apply consistently across the full app.

@@ -47,15 +47,15 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
             className={`p-2 ${mobileLayout ? 'grid grid-cols-3' : 'flex flex-row sm:flex-col sm:p-4'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
           >
             {[
-              { id: 'basics', label: t('basics'), icon: <Sword size={14} /> },
-              { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={14} /> },
-              { id: 'phases', label: t('turnPhases'), icon: <Clock size={14} /> },
+              { id: 'basics', label: t('basics'), icon: <Sword size={12} /> },
+              { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={12} /> },
+              { id: 'phases', label: t('turnPhases'), icon: <Clock size={12} /> },
             ].map((tab) => (
               <motion.button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 px-2 py-2.5 text-[9px] sm:text-xs font-mono uppercase tracking-[0.1em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.1]' : 'whitespace-nowrap'} ${
+                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-2 text-[8px] sm:text-xs font-mono uppercase tracking-[0.08em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.05]' : 'whitespace-nowrap'} ${
                   activeTab === tab.id 
                     ? 'theme-chip-active' 
                     : 'theme-chip'
