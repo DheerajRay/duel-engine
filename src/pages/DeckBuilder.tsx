@@ -15,6 +15,12 @@ import { getUserDeckState, saveUserDeckState, setPrimaryDeckSelection } from '..
 import type { SavedDeck } from '../types/cloud';
 import type { DeckAssistantResponse } from '../types/assistant';
 import { useAppPreferences } from '../preferences/AppPreferencesProvider';
+import {
+  getCardSubtypeTranslationKey,
+  getCardTypeTranslationKey,
+  getLocalizedCardText,
+  getLocalizedSupportStatusKey,
+} from '../services/cardLocalization';
 
 export default function DeckBuilder({
   onBack,
@@ -25,7 +31,7 @@ export default function DeckBuilder({
   announce?: (input: AnnouncementInput) => void;
   embeddedInShell?: boolean;
 }) {
-  const { t } = useAppPreferences();
+  const { t, language } = useAppPreferences();
   const { reduced } = useMotionPreference();
   const [decks, setDecks] = useState<SavedDeck[]>([]);
   const [primaryDeckId, setPrimaryDeckId] = useState<string>('');
@@ -50,6 +56,17 @@ export default function DeckBuilder({
   const [assistantError, setAssistantError] = useState<string | null>(null);
   const [assistantResult, setAssistantResult] = useState<DeckAssistantResponse | null>(null);
   const hoveredSupportMeta = hoveredCard ? getCardSupportMeta(hoveredCard) : null;
+  const localizedHoveredCard = hoveredCard ? getLocalizedCardText(hoveredCard, language) : null;
+  const syncStatusLabel =
+    syncStatus === 'loading'
+      ? t('syncStatusLoading')
+      : syncStatus === 'syncing'
+        ? t('syncStatusSyncing')
+        : syncStatus === 'synced'
+          ? t('syncStatusSynced')
+          : syncStatus === 'error'
+            ? t('syncStatusError')
+            : t('syncStatusLocal');
 
   const allCards = useMemo(() => Object.values(CARD_DB), [decks.length]);
 
@@ -57,8 +74,8 @@ export default function DeckBuilder({
     let filtered = allCards.filter(card => {
       const searchValue = search.toLowerCase();
       const searchableText = [
-        card.name,
-        card.description,
+        getLocalizedCardText(card, language).name,
+        getLocalizedCardText(card, language).description,
         card.monsterTypeLine,
         card.monsterRace,
         card.spellTrapProperty,
@@ -97,7 +114,7 @@ export default function DeckBuilder({
     });
 
     return filtered;
-  }, [allCards, search, filterType, sortBy]);
+  }, [allCards, search, filterType, sortBy, language]);
 
   const deckCards = useMemo(() => {
     return deck.map(id => CARD_DB[id]).filter(Boolean);
@@ -149,7 +166,7 @@ export default function DeckBuilder({
 
   const handleAddCard = (id: string) => {
     if (isCurrentPredefined) {
-      announce({ title: 'Deck Builder', message: 'Cannot modify predefined character decks. Please create a new custom deck.' });
+      announce({ title: t('deckBuilder'), message: t('cannotModifyPredefinedDecks') });
       return;
     }
 
@@ -158,23 +175,23 @@ export default function DeckBuilder({
 
     if (card.isFusion) {
       if (extraDeck.length >= 15) {
-        announce({ title: 'Deck Builder', message: 'Extra Deck cannot exceed 15 cards.' });
+        announce({ title: t('deckBuilder'), message: t('extraDeckLimit') });
         return;
       }
       const count = extraDeck.filter(c => c === id).length;
       if (count >= 3) {
-        announce({ title: 'Deck Builder', message: 'You can only have up to 3 copies of a card.' });
+        announce({ title: t('deckBuilder'), message: t('maxThreeCopies') });
         return;
       }
       setExtraDeck([...extraDeck, id]);
     } else {
       if (deck.length >= 60) {
-        announce({ title: 'Deck Builder', message: 'Main Deck cannot exceed 60 cards.' });
+        announce({ title: t('deckBuilder'), message: t('mainDeckCannotExceed60') });
         return;
       }
       const count = deck.filter(c => c === id).length;
       if (count >= 3) {
-        announce({ title: 'Deck Builder', message: 'You can only have up to 3 copies of a card.' });
+        announce({ title: t('deckBuilder'), message: t('maxThreeCopies') });
         return;
       }
       setDeck([...deck, id]);
@@ -183,7 +200,7 @@ export default function DeckBuilder({
 
   const handleRemoveCard = (id: string, isFusion: boolean) => {
     if (isCurrentPredefined) {
-      announce({ title: 'Deck Builder', message: 'Cannot modify predefined character decks. Please create a new custom deck.' });
+      announce({ title: t('deckBuilder'), message: t('cannotModifyPredefinedDecks') });
       return;
     }
 
@@ -206,12 +223,12 @@ export default function DeckBuilder({
 
   const handleSave = () => {
     if (isCurrentPredefined) {
-      announce({ title: 'Deck Builder', message: 'Cannot save predefined character decks.' });
+      announce({ title: t('deckBuilder'), message: t('cannotSavePredefinedDecks') });
       return;
     }
 
     if (deck.length < 40) {
-      announce({ title: 'Deck Builder', message: 'Main Deck must have at least 40 cards.' });
+      announce({ title: t('deckBuilder'), message: t('mainDeckMinimum40') });
       return;
     }
 
@@ -233,19 +250,21 @@ export default function DeckBuilder({
 
       setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
       setSyncStatus(currentUserEmail ? 'synced' : 'local');
-      announce({ title: 'Deck Builder', message: 'Deck saved successfully.' });
+      announce({ title: t('deckBuilder'), message: t('deckBuilderSaved') });
     };
 
     void persist().catch(() => {
       setSyncStatus('error');
-      announce({ title: 'Deck Builder', message: 'Deck save failed. Your local deck remains unchanged.' });
+      announce({ title: t('deckBuilder'), message: t('deckBuilderSaveFailed') });
     });
   };
 
   const handleCreateDeck = () => {
     const newDeck: SavedDeck = {
       id: Date.now().toString(),
-      name: `New Deck ${decks.filter((entry) => !entry.isPredefined).length + 1}`,
+      name: t('newDeckName', {
+        index: decks.filter((entry) => !entry.isPredefined).length + 1,
+      }),
       mainDeck: [],
       extraDeck: [],
       kind: 'user',
@@ -290,20 +309,20 @@ export default function DeckBuilder({
       await setPrimaryDeckSelection(id);
       setDecks([...updatedUserDecks, ...CHARACTER_DECKS]);
       const selectedDeck = [...updatedUserDecks, ...CHARACTER_DECKS].find((entry) => entry.id === id);
-      announce({ title: t('deckBuilder'), message: `${selectedDeck?.name || t('decks')} set as primary deck.` });
+      announce({ title: t('deckBuilder'), message: t('primaryDeckSet', { name: selectedDeck?.name || t('decks') }) });
       setSyncStatus(currentUserEmail ? 'synced' : 'local');
     };
 
     setSyncStatus(currentUserEmail ? 'syncing' : 'local');
     void persist().catch(() => {
       setSyncStatus('error');
-      announce({ title: t('deckBuilder'), message: 'Could not update the primary deck.' });
+      announce({ title: t('deckBuilder'), message: t('primaryDeckUpdateFailed') });
     });
   };
   
   const handleDeleteDeck = (id: string) => {
     if (decks.length <= 1) {
-      announce({ title: 'Deck Builder', message: 'You must have at least one deck.' });
+      announce({ title: t('deckBuilder'), message: t('atLeastOneDeckRequired') });
       return;
     }
     
@@ -356,7 +375,7 @@ export default function DeckBuilder({
           id: card.id,
           name: card.name,
           type: card.type,
-          description: card.description,
+          description: getLocalizedCardText(card, language).description,
         })),
         supportMatrix: allCards.map((card) => ({
           id: card.id,
@@ -372,7 +391,7 @@ export default function DeckBuilder({
       setAssistantError(
         assistantRequestError instanceof Error
           ? assistantRequestError.message
-          : 'Deck assistant request failed.',
+          : t('deckAssistantRequestFailed'),
       );
     }
   };
@@ -403,7 +422,7 @@ export default function DeckBuilder({
               <button
                 onClick={(e) => { e.stopPropagation(); handleSetPrimary(d.id); }}
                 className={`transition-colors ${primaryDeckId === d.id ? 'text-yellow-500' : 'text-zinc-600 hover:text-yellow-500'}`}
-                title={primaryDeckId === d.id ? 'Primary Deck' : 'Set as Primary'}
+                title={primaryDeckId === d.id ? t('primaryDeckTooltip') : t('primaryDeckTooltip')}
               >
                 <Star size={14} fill={primaryDeckId === d.id ? 'currentColor' : 'none'} />
               </button>
@@ -411,7 +430,7 @@ export default function DeckBuilder({
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDeleteDeck(d.id); }}
                   className="text-zinc-600 hover:text-red-500 transition-colors"
-                  title="Delete Deck"
+                  title={t('deckDelete')}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -419,8 +438,8 @@ export default function DeckBuilder({
             </div>
           </div>
           <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 flex justify-between">
-            <span>Main: {editingDeckId === d.id ? deck.length : d.mainDeck.length}</span>
-            <span>Extra: {editingDeckId === d.id ? extraDeck.length : d.extraDeck.length}</span>
+            <span>{t('mainLabel')}: {editingDeckId === d.id ? deck.length : d.mainDeck.length}</span>
+            <span>{t('extraLabel')}: {editingDeckId === d.id ? extraDeck.length : d.extraDeck.length}</span>
           </div>
         </div>
       ))}
@@ -430,14 +449,14 @@ export default function DeckBuilder({
   const renderAssistantPanel = (variant: 'desktop' | 'mobile-sheet' = 'desktop') => (
     <div className={`${variant === 'desktop' ? 'flex-1 overflow-y-auto p-4' : 'max-h-[56vh] overflow-y-auto'} flex flex-col gap-4`}>
       <div className="theme-eyebrow text-[10px]">
-        Suggest + explain
+        {t('summary')}
       </div>
       <textarea
         value={assistantPrompt}
         onChange={(event) => setAssistantPrompt(event.target.value)}
         rows={4}
         className="theme-input w-full rounded-none px-4 py-3 text-xs"
-        placeholder="Make this deck more aggressive. Reduce unsupported cards."
+        placeholder={t('assistantPromptPlaceholder')}
       />
       <button
         onClick={() => void handleAssistantRequest()}
@@ -445,7 +464,7 @@ export default function DeckBuilder({
         className="theme-button disabled:border-[var(--app-border)] disabled:text-[var(--app-text-dim)] disabled:cursor-not-allowed px-4 py-3 font-mono text-xs uppercase tracking-widest flex items-center justify-center gap-2"
       >
         <Sparkles size={14} />
-        {assistantStatus === 'loading' ? 'Analyzing...' : 'Analyze Deck'}
+        {assistantStatus === 'loading' ? t('analyzing') : t('analyzeDeck')}
       </button>
 
       {assistantError && <div className="text-sm text-red-400">{assistantError}</div>}
@@ -453,25 +472,25 @@ export default function DeckBuilder({
       {assistantResult ? (
         <div className="space-y-4">
           <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Summary</div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">{t('summary')}</div>
             <div className="text-sm text-zinc-300 leading-6">{assistantResult.summary}</div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Strengths</div>
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">{t('strengths')}</div>
               <div className="space-y-2 text-sm text-zinc-300">
                 {assistantResult.strengths.map((item) => <div key={item}>- {item}</div>)}
               </div>
             </div>
             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Weaknesses</div>
+              <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">{t('weaknesses')}</div>
               <div className="space-y-2 text-sm text-zinc-300">
                 {assistantResult.weaknesses.map((item) => <div key={item}>- {item}</div>)}
               </div>
             </div>
           </div>
           <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">Suggested Changes</div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 mb-2">{t('suggestedChanges')}</div>
             <div className="space-y-3">
               {assistantResult.suggestions.map((suggestion, index) => {
                 const card = CARD_DB[suggestion.cardId];
@@ -488,7 +507,7 @@ export default function DeckBuilder({
         </div>
       ) : (
         <div className="text-zinc-600 text-xs font-mono uppercase tracking-widest">
-          Ask for a direction like "make this deck feel more like Kaiba" or "cut unsupported cards."
+          {t('assistantEmptyState')}
         </div>
       )}
     </div>
@@ -509,7 +528,7 @@ export default function DeckBuilder({
           <div className="hidden sm:flex flex-col">
             <h1 className="theme-eyebrow text-xs">{t('deckBuilder')}</h1>
             <div className="theme-subtle text-[9px] font-mono uppercase tracking-[0.22em]">
-              {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'local only'}
+              {currentUserEmail ? `${syncStatusLabel} | ${currentUserEmail}` : t('localOnly')}
             </div>
           </div>
         </div>
@@ -519,7 +538,7 @@ export default function DeckBuilder({
             className="theme-button flex items-center gap-2 px-3 md:px-4 py-2 text-[10px] md:text-xs font-mono uppercase tracking-widest"
           >
             <Layers size={14} /> 
-            <span className="hidden sm:inline">{isDeckView ? 'Card View' : 'Deck View'}</span>
+            <span className="hidden sm:inline">{isDeckView ? t('cards') : t('deckView')}</span>
             <span className={deck.length < 40 || deck.length > 60 ? 'text-red-400 ml-1' : 'ml-1'}>
               ({deck.length}/60)
             </span>
@@ -540,35 +559,35 @@ export default function DeckBuilder({
       )}
 
       {embeddedInShell && (
-        <div className="theme-screen theme-divider border-b px-4 py-4">
+        <div className="theme-screen theme-divider border-b px-3 py-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="theme-eyebrow text-[10px]">{t('deckBuilder')}</div>
-              <div className="theme-title mt-2 text-base uppercase tracking-[0.14em] truncate">{deckName}</div>
-              <div className="theme-subtle mt-2 text-[10px] font-mono uppercase tracking-[0.2em]">
-                {currentUserEmail ? `${syncStatus} | ${currentUserEmail}` : 'Local only'}
+              <div className="theme-eyebrow text-[9px]">{t('deckBuilder')}</div>
+              <div className="theme-title mt-1.5 text-sm uppercase tracking-[0.08em] truncate">{deckName}</div>
+              <div className="theme-subtle mt-1.5 text-[9px] font-mono uppercase tracking-[0.16em]">
+                {currentUserEmail ? `${syncStatusLabel} | ${currentUserEmail}` : t('localOnly')}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setMobileDeckSheetOpen(true)}
-                className="theme-elevated rounded-2xl px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
+                className="theme-elevated rounded-[14px] px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em]"
               >
                 {t('decks')}
               </button>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
-                className="theme-elevated rounded-2xl px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
+                className="theme-elevated rounded-[14px] px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em]"
               >
-                AI
+                {t('aiAssist')}
               </button>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={isCurrentPredefined}
-                className={`rounded-2xl border px-3 py-3 text-[10px] font-mono uppercase tracking-[0.2em] ${
+                className={`rounded-[14px] border px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${
                   isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
                 }`}
               >
@@ -577,24 +596,24 @@ export default function DeckBuilder({
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-[1fr_auto] gap-3">
-            <div className="theme-elevated grid grid-cols-2 rounded-2xl p-1">
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <div className="theme-elevated grid grid-cols-2 rounded-[16px] p-0.5">
               <button
                 type="button"
                 onClick={() => setIsDeckView(false)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[12px] px-2 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
-                Library
+                {t('library')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsDeckView(true)}
-                className={`rounded-xl px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[12px] px-2 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
-                Current Deck
+                {t('currentDeck')}
               </button>
             </div>
-            <div className={`rounded-2xl border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.2em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
+            <div className={`rounded-[16px] border px-2.5 py-2 text-[9px] font-mono uppercase tracking-[0.16em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
               {deck.length}/60
             </div>
           </div>
@@ -607,26 +626,26 @@ export default function DeckBuilder({
           {isDeckView ? (
             <div className="theme-screen theme-divider p-4 border-b flex items-center justify-between shrink-0">
               <div>
-                <div className="theme-title text-xs uppercase tracking-widest">Current Deck</div>
+                <div className="theme-title text-xs uppercase tracking-widest">{t('currentDeck')}</div>
                 <div className="theme-subtle text-[10px] font-mono mt-1">
-                  Main: {deck.length} / 60
-                  {extraDeck.length > 0 && <span className="ml-3">Extra: {extraDeck.length} / 15</span>}
+                  {t('mainLabel')}: {deck.length} / 60
+                  {extraDeck.length > 0 && <span className="ml-3">{t('extraLabel')}: {extraDeck.length} / 15</span>}
                 </div>
               </div>
               <div className="theme-subtle text-[10px] font-mono uppercase tracking-widest">
-                Click cards for details
+                {t('tapCardsForDetails')}
               </div>
             </div>
           ) : (
-            <div className="theme-screen theme-divider p-4 border-b flex flex-wrap gap-4 shrink-0">
-              <div className="relative flex-1 min-w-[200px]">
+            <div className="theme-screen theme-divider p-3 border-b flex flex-wrap gap-3 shrink-0">
+              <div className="relative flex-1 min-w-[180px]">
                 <Search className="theme-subtle absolute left-3 top-1/2 -translate-y-1/2" size={14} />
                 <input 
                   type="text" 
-                  placeholder="Search cards..." 
+                  placeholder={t('searchCards')} 
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-xs font-mono transition-colors"
+                  className="theme-input w-full rounded-none pl-9 pr-4 py-2 text-[11px] font-mono transition-colors"
                 />
               </div>
               <select 
@@ -635,31 +654,31 @@ export default function DeckBuilder({
                   setFilterType(e.target.value as any);
                   setSortBy('name-asc');
                 }}
-                className="theme-input rounded-none px-4 py-2 text-xs font-mono transition-colors uppercase tracking-widest"
+                className="theme-input rounded-none px-4 py-2 text-[11px] font-mono transition-colors uppercase tracking-[0.16em]"
               >
-                <option value="All">All Types</option>
-                <option value="Monster">Monsters</option>
-                <option value="Spell">Spells</option>
-                <option value="Trap">Traps</option>
-                <option value="Fusion">Fusion</option>
+                <option value="All">{t('allTypes')}</option>
+                <option value="Monster">{t('cardTypeMonster')}</option>
+                <option value="Spell">{t('cardTypeSpell')}</option>
+                <option value="Trap">{t('cardTypeTrap')}</option>
+                <option value="Fusion">{t('fusionType')}</option>
               </select>
               <select 
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
-                className="theme-input rounded-none px-4 py-2 text-xs font-mono transition-colors uppercase tracking-widest"
+                className="theme-input rounded-none px-4 py-2 text-[11px] font-mono transition-colors uppercase tracking-[0.16em]"
               >
-                <option value="name-asc">Name (A-Z)</option>
-                <option value="name-desc">Name (Z-A)</option>
+                <option value="name-asc">{t('nameSortAsc')}</option>
+                <option value="name-desc">{t('nameSortDesc')}</option>
                 {(filterType === 'Monster' || filterType === 'All' || filterType === 'Fusion') && (
                   <>
-                    <option value="level-desc">Level (High-Low)</option>
-                    <option value="level-asc">Level (Low-High)</option>
-                    <option value="atk-desc">ATK (High-Low)</option>
-                    <option value="def-desc">DEF (High-Low)</option>
+                    <option value="level-desc">{t('sortLevelDesc')}</option>
+                    <option value="level-asc">{t('sortLevelAsc')}</option>
+                    <option value="atk-desc">{t('sortAtkDesc')}</option>
+                    <option value="def-desc">{t('sortDefDesc')}</option>
                   </>
                 )}
                 {(filterType === 'Spell' || filterType === 'Trap') && (
-                  <option value="type">Card Type</option>
+                  <option value="type">{t('sortCardType')}</option>
                 )}
               </select>
             </div>
@@ -679,18 +698,18 @@ export default function DeckBuilder({
                 >
                   {deckCards.length === 0 && extraDeckCards.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-zinc-600 font-mono text-sm uppercase tracking-widest">
-                      Your deck is empty
+                      {t('yourDeckIsEmpty')}
                     </div>
                   ) : (
                     <div className="flex flex-col gap-8">
                   <div>
                     <div className="flex justify-between items-end mb-4 border-b border-zinc-800 pb-2">
-                      <h3 className="text-lg font-mono text-white uppercase tracking-widest">Main Deck</h3>
+                      <h3 className="text-lg font-mono text-white uppercase tracking-widest">{t('mainDeck')}</h3>
                       <span className="text-xs font-mono text-zinc-500">{deck.length} / 60</span>
                     </div>
                     {deckCards.length === 0 ? (
                       <div className="text-zinc-600 font-mono text-xs uppercase tracking-widest py-4">
-                        Main deck is empty
+                        {t('mainDeckEmpty')}
                       </div>
                     ) : (
                       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4">
@@ -722,7 +741,7 @@ export default function DeckBuilder({
                   {extraDeckCards.length > 0 && (
                     <div>
                       <div className="flex justify-between items-end mb-4 border-b border-zinc-800 pb-2">
-                        <h3 className="text-lg font-mono text-zinc-400 uppercase tracking-widest">Extra Deck</h3>
+                        <h3 className="text-lg font-mono text-zinc-400 uppercase tracking-widest">{t('extraDeck')}</h3>
                         <span className="text-xs font-mono text-zinc-500">{extraDeck.length} / 15</span>
                       </div>
                       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4">
@@ -794,7 +813,7 @@ export default function DeckBuilder({
           {/* Card Details Section */}
           <div className="h-1/2 flex flex-col border-b border-zinc-800">
             <div className="p-4 border-b border-zinc-800 flex justify-center items-center shrink-0">
-              <h2 className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Card Details</h2>
+              <h2 className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">{t('cardDetails')}</h2>
             </div>
             <div className="flex-1 min-h-0 flex flex-col">
               <AnimatePresence mode="wait" initial={false}>
@@ -809,19 +828,19 @@ export default function DeckBuilder({
                 >
                   <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
                     <div className="w-full max-w-[220px] rounded border border-zinc-700 p-4 flex flex-col bg-black">
-                      <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{hoveredCard.name}</div>
+                      <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{localizedHoveredCard?.name ?? hoveredCard.name}</div>
                       <div className="text-[10px] font-mono text-zinc-500 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2 flex justify-between">
-                        <span>[{hoveredCard.type}{hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}]</span>
+                        <span>[{t(getCardTypeTranslationKey(hoveredCard.type))}{hoveredCard.subType ? ` / ${t(getCardSubtypeTranslationKey(hoveredCard.subType) || 'cardTypeNormal')}` : ''}]</span>
                         {hoveredCard.type === 'Monster' && (
-                          <span>LVL {hoveredCard.level} {hoveredCard.level! >= 7 ? '(2 Tributes)' : hoveredCard.level! >= 5 ? '(1 Tribute)' : ''}</span>
+                          <span>LVL {hoveredCard.level} {hoveredCard.level! >= 7 ? `(${t('helpTwoTributes')})` : hoveredCard.level! >= 5 ? `(${t('helpOneTribute')})` : ''}</span>
                         )}
                       </div>
                       <div className="text-xs text-zinc-400 font-sans leading-relaxed">
-                        {hoveredCard.description}
+                        {localizedHoveredCard?.description ?? hoveredCard.description}
                       </div>
                       {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') && (
                         <div className="mt-4 pt-3 border-t border-zinc-800 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-                          <div className="text-zinc-400">{hoveredSupportMeta.label}</div>
+                          <div className="text-zinc-400">{t(getLocalizedSupportStatusKey(hoveredSupportMeta.status))}</div>
                           {hoveredSupportMeta.note && (
                             <div className="mt-1 normal-case tracking-normal text-zinc-500">
                               {hoveredSupportMeta.note}
@@ -837,7 +856,7 @@ export default function DeckBuilder({
                       )}
                       {hoveredCard.isFusion && hoveredCard.fusionMaterials && (
                         <div className="mt-4 border-t border-zinc-800 pt-3">
-                          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Fusion Materials</div>
+                          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('fusionMaterials')}</div>
                           <div className="mt-1 text-[11px] text-zinc-300 leading-5">{hoveredCard.fusionMaterials.join(' + ')}</div>
                         </div>
                       )}
@@ -856,10 +875,15 @@ export default function DeckBuilder({
                       }`}
                     >
                       {isDeckView ? <X size={16} /> : <Plus size={16} />}
-                      {isDeckView ? `Remove from ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}` : `Add to ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}`}
+                      {isDeckView
+                        ? t('removeFromDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })
+                        : t('addToDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
                     </button>
                     <div className="text-center text-xs font-mono text-zinc-500 mt-2">
-                      In {hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}: {hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length} / 3
+                      {t('inDeck', {
+                        zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck'),
+                        count: hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length,
+                      })}
                     </div>
                   </div>
                   </div>
@@ -873,7 +897,7 @@ export default function DeckBuilder({
                   transition={getSharedTransition(reduced, 'fast')}
                   className="flex-1 flex items-center justify-center text-zinc-600 text-xs font-mono uppercase tracking-widest text-center px-6"
                 >
-                  Click card for details
+                  {t('clickCardForDetails')}
                 </motion.div>
               )}
               </AnimatePresence>
@@ -888,19 +912,19 @@ export default function DeckBuilder({
                   onClick={() => setDesktopLowerTab('decks')}
                   className={`text-[10px] font-mono uppercase tracking-widest transition-colors ${desktopLowerTab === 'decks' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
                 >
-                  Decks
+                  {t('decks')}
                 </button>
                 <button
                   onClick={() => setDesktopLowerTab('assistant')}
                   className={`text-[10px] font-mono uppercase tracking-widest transition-colors ${desktopLowerTab === 'assistant' ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
                 >
-                  AI Assist
+                  {t('aiAssist')}
                 </button>
               </div>
               <button
                 onClick={handleCreateDeck}
                 className="text-zinc-400 hover:text-white transition-colors"
-                title="Create New Deck"
+                title={t('createNewDeck')}
               >
                 <Plus size={16} />
               </button>
@@ -911,7 +935,7 @@ export default function DeckBuilder({
 
         {!embeddedInShell && (
           <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500">
-            Tap a card to inspect it, then use the mobile actions below.
+            {t('tapCardToInspect')}
           </div>
         )}
       </div>
@@ -921,7 +945,7 @@ export default function DeckBuilder({
           <MobileBottomSheet
             open={mobileCardSheetOpen && Boolean(hoveredCard)}
             onClose={() => setMobileCardSheetOpen(false)}
-            title="Card Details"
+            title={t('cardDetails')}
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
@@ -933,12 +957,12 @@ export default function DeckBuilder({
                 <div className="rounded-2xl border border-zinc-800 bg-black">
                   <div className="border-b border-zinc-800 px-4 py-4">
                     <div className="text-xl font-sans font-bold leading-tight text-white uppercase tracking-wide">
-                      {hoveredCard.name}
+                      {localizedHoveredCard?.name ?? hoveredCard.name}
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
                       <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5">
-                        {hoveredCard.type}
-                        {hoveredCard.subType ? ` / ${hoveredCard.subType}` : ''}
+                        {t(getCardTypeTranslationKey(hoveredCard.type))}
+                        {hoveredCard.subType ? ` / ${t(getCardSubtypeTranslationKey(hoveredCard.subType) || 'cardTypeNormal')}` : ''}
                       </span>
                       {hoveredCard.type === 'Monster' ? (
                         <>
@@ -946,7 +970,7 @@ export default function DeckBuilder({
                             Lvl {hoveredCard.level}
                           </span>
                           <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-zinc-500">
-                            {hoveredCard.level! >= 7 ? '2 Tributes' : hoveredCard.level! >= 5 ? '1 Tribute' : 'No Tribute'}
+                            {hoveredCard.level! >= 7 ? t('helpTwoTributes') : hoveredCard.level! >= 5 ? t('helpOneTribute') : t('helpNoTributes')}
                           </span>
                         </>
                       ) : null}
@@ -968,13 +992,13 @@ export default function DeckBuilder({
                     ) : null}
 
                     <div className="text-sm leading-7 text-zinc-300">
-                      {hoveredCard.description}
+                      {localizedHoveredCard?.description ?? hoveredCard.description}
                     </div>
 
                     {hoveredSupportMeta && (hoveredCard.type !== 'Monster' || hoveredSupportMeta.status !== 'implemented') ? (
                       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
                         <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-2">
-                          {hoveredSupportMeta.label}
+                          {t(getLocalizedSupportStatusKey(hoveredSupportMeta.status))}
                         </div>
                         {hoveredSupportMeta.note ? (
                           <div className="text-[11px] leading-5 text-zinc-300">{hoveredSupportMeta.note}</div>
@@ -985,7 +1009,7 @@ export default function DeckBuilder({
                     {hoveredCard.isFusion && hoveredCard.fusionMaterials ? (
                       <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
                         <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-2">
-                          Fusion Materials
+                          {t('fusionMaterials')}
                         </div>
                         <div className="text-[11px] leading-5 text-zinc-300">
                           {hoveredCard.fusionMaterials.join(' + ')}
@@ -1004,10 +1028,15 @@ export default function DeckBuilder({
                     }`}
                   >
                     {isDeckView ? <X size={16} /> : <Plus size={16} />}
-                    {isDeckView ? `Remove from ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}` : `Add to ${hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}`}
+                    {isDeckView
+                      ? t('removeFromDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })
+                      : t('addToDeck', { zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck') })}
                   </button>
                   <div className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-                    In {hoveredCard.isFusion ? 'Extra Deck' : 'Deck'}: {hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length} / 3
+                    {t('inDeck', {
+                      zone: hoveredCard.isFusion ? t('extraDeck') : t('mainDeck'),
+                      count: hoveredCard.isFusion ? extraDeck.filter(id => id === hoveredCard.id).length : deck.filter(id => id === hoveredCard.id).length,
+                    })}
                   </div>
                 </div>
               </div>
@@ -1017,7 +1046,7 @@ export default function DeckBuilder({
           <MobileBottomSheet
             open={mobileDeckSheetOpen}
             onClose={() => setMobileDeckSheetOpen(false)}
-            title="Decks"
+            title={t('decks')}
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
@@ -1030,7 +1059,7 @@ export default function DeckBuilder({
                 onClick={handleCreateDeck}
                 className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300"
               >
-                Create Deck
+                {t('createDeck')}
               </button>
               {renderDeckList('mobile-sheet')}
             </div>
@@ -1039,7 +1068,7 @@ export default function DeckBuilder({
           <MobileBottomSheet
             open={mobileAssistantSheetOpen}
             onClose={() => setMobileAssistantSheetOpen(false)}
-            title="AI Assist"
+            title={t('aiAssist')}
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}

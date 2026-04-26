@@ -66,8 +66,8 @@ export default function SignInPage({
       const user = await getCurrentUser();
       if (!user) {
         throw new Error(authMode === 'create-account'
-          ? 'Account created, but no session was returned. Check your account confirmation settings if you expect immediate sign-in.'
-          : 'Sign-in succeeded, but no session was returned.');
+          ? t('authCreateSessionMissing')
+          : t('authSignInSessionMissing'));
       }
 
       const nextProfile = await ensureProfile(user);
@@ -76,7 +76,7 @@ export default function SignInPage({
       onSuccess?.();
     } catch (authError) {
       setStatus('error');
-      setError(authError instanceof Error ? authError.message : 'Authentication failed.');
+      setError(authError instanceof Error ? authError.message : t('authFailed'));
     }
   };
 
@@ -199,7 +199,7 @@ export default function SignInPage({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('placeholderEmail')}
               className="theme-input mt-2 w-full rounded-none px-4 py-3 text-sm transition-colors"
             />
           </label>

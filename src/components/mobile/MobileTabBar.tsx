@@ -21,7 +21,7 @@ export function MobileTabBar({
   const { t } = useAppPreferences();
 
   return (
-    <div className="theme-screen theme-divider md:hidden z-20 grid shrink-0 grid-cols-4 border-t px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur">
+    <div className="ui-tab-bar theme-screen theme-divider md:hidden z-20 grid shrink-0 grid-cols-4 border-t px-2 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 backdrop-blur">
       {(Object.keys(TAB_META) as MobileTabId[]).map((tab) => {
         const { labelKey, icon: Icon } = TAB_META[tab];
         const isActive = activeTab === tab;
@@ -31,12 +31,12 @@ export function MobileTabBar({
             key={tab}
             type="button"
             onClick={() => onTabChange(tab)}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-2 transition-colors ${
               isActive ? 'theme-chip-active' : 'theme-subtle'
             }`}
           >
-            <Icon size={16} />
-            <span className="text-[9px] font-mono uppercase tracking-[0.22em]">
+            <Icon size={15} />
+            <span className="ui-mono-label">
               {t(labelKey)}
             </span>
           </button>

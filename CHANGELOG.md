@@ -11,6 +11,20 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.0 - 2026-04-26
+
+Foundation release focused on turning theme, typography, and localization into first-class app systems instead of partial UI patches.
+
+Included in this release:
+
+- rebuilt the styling base around centralized theme, surface, typography, spacing, radius, and control-size tokens in the shared CSS layer
+- added formal design-system documentation for themes, typography, and reusable UI components under `docs/design-system/`
+- split localization into per-language message modules with proper Unicode handling and English fallback
+- translated more of the app shell, duel chrome, deck-builder flows, history, help, auth messaging, prompts, and competition surfaces through the shared message layer
+- added centralized competition-flavor content and localized log-formatting helpers so duel/history rendering can be language-aware
+- added card-localization infrastructure plus a Supabase migration for `card_localizations`, with English fallback behavior in the client content loader
+- added regression coverage for message fallback and card-localization fallback and updated deck-builder tests for the current mobile/desktop controls
+
 ## v1.5.1 - 2026-04-25
 
 Patch release focused on stabilizing the new preference UI and restoring the default visual baseline.

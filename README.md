@@ -209,6 +209,32 @@ Using Git tags plus Vercel deployment history gives you two rollback paths:
 - shared centered announcement overlays for transient UI feedback
 - `papaparse` for parsing the card CSV into an in-memory card database
 
+## Design System And Localization Foundation
+
+The app now includes a shared foundation for:
+
+- app-wide themes
+- typography roles
+- shared surface/control tokens
+- account-backed or guest-local language/theme preferences
+- centralized UI message dictionaries
+- language-aware card presentation through the `card_localizations` model with English fallback
+
+Primary implementation files:
+
+- `src/index.css`
+- `src/preferences/AppPreferencesProvider.tsx`
+- `src/services/preferences.ts`
+- `src/i18n/messages.ts`
+- `src/i18n/messages/*.ts`
+- `src/services/cardLocalization.ts`
+
+Internal design-system docs:
+
+- `docs/design-system/themes.md`
+- `docs/design-system/typography.md`
+- `docs/design-system/components.md`
+
 ## High-Level Application Flow
 
 At runtime the app works like this:

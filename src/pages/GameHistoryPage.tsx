@@ -5,6 +5,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { getDuelHistory } from '../services/history';
 import type { DuelHistoryEntry } from '../types/cloud';
 import { useAppPreferences } from '../preferences/AppPreferencesProvider';
+import { formatLogEntryMessage } from '../utils/logFormatter';
 
 type HistoryFilter = {
   mode: 'all' | DuelHistoryEntry['mode'];
@@ -22,7 +23,7 @@ export default function GameHistoryPage({
   onBack: () => void;
   embeddedInShell?: boolean;
 }) {
-  const { t } = useAppPreferences();
+  const { t, language } = useAppPreferences();
   const isMobile = useIsMobile();
   const mobileLayout = embeddedInShell && isMobile;
   const [history, setHistory] = useState<DuelHistoryEntry[]>([]);
@@ -80,7 +81,7 @@ export default function GameHistoryPage({
         <div className="max-h-64 overflow-y-auto">
           {entry.logs.map((log) => (
             <div key={log.id} className="border-b border-zinc-900 px-4 py-3 text-xs leading-5 text-zinc-300 last:border-b-0">
-              {log.message}
+              {formatLogEntryMessage(log, language)}
             </div>
           ))}
         </div>
@@ -106,18 +107,18 @@ export default function GameHistoryPage({
         </div>
       )}
 
-      <div className={`flex-1 overflow-y-auto ${mobileLayout ? 'px-4 py-4' : 'px-4 md:px-8 py-6'} flex flex-col gap-5`}>
+      <div className={`flex-1 overflow-y-auto ${mobileLayout ? 'px-3 py-3' : 'px-4 md:px-8 py-6'} flex flex-col gap-5`}>
         {mobileLayout ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <div className="theme-eyebrow text-[10px]">{t('mode')}</div>
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="theme-eyebrow text-[9px]">{t('mode')}</div>
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {MODE_OPTIONS.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, mode: option }))}
-                    className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] ${
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.16em] ${
                       filter.mode === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -134,14 +135,14 @@ export default function GameHistoryPage({
             </div>
 
             <div>
-              <div className="theme-eyebrow text-[10px]">{t('result')}</div>
-              <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="theme-eyebrow text-[9px]">{t('result')}</div>
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 {RESULT_OPTIONS.map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setFilter((previous) => ({ ...previous, result: option }))}
-                    className={`shrink-0 rounded-full border px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em] ${
+                    className={`shrink-0 rounded-full border px-3 py-1.5 text-[9px] font-mono uppercase tracking-[0.16em] ${
                       filter.result === option ? 'theme-chip-active' : 'theme-chip'
                     }`}
                   >
@@ -155,7 +156,7 @@ export default function GameHistoryPage({
               value={filter.opponent}
               onChange={(event) => setFilter((previous) => ({ ...previous, opponent: event.target.value }))}
               placeholder={t('searchOpponent')}
-              className="theme-input w-full rounded-2xl px-4 py-3 text-xs font-mono uppercase tracking-[0.18em]"
+              className="theme-input w-full rounded-[16px] px-3 py-2.5 text-[11px] font-mono uppercase tracking-[0.14em]"
             />
           </div>
         ) : (
@@ -208,20 +209,20 @@ export default function GameHistoryPage({
                       setExpandedId(entry.id);
                       setSheetExpanded(false);
                     }}
-                    className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-4 text-left"
+                    className="rounded-[18px] border border-zinc-800 bg-zinc-950 px-3.5 py-3.5 text-left"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-[10px] font-mono uppercase tracking-[0.26em] text-zinc-500">
+                      <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-zinc-500">
                         {modeLabel} | {entry.result}
                       </div>
-                      <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-600">
+                      <div className="text-[9px] font-mono uppercase tracking-[0.14em] text-zinc-600">
                         {new Date(entry.createdAt).toLocaleDateString()}
                       </div>
                     </div>
-                    <div className="mt-3 text-base font-mono uppercase tracking-[0.12em] text-white">
+                    <div className="mt-2.5 text-[15px] font-mono uppercase tracking-[0.08em] text-white">
                       {entry.opponentLabel}
                     </div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-400">{entry.summary}</div>
+                    <div className="mt-2 text-[13px] leading-6 text-zinc-400">{entry.summary}</div>
                   </button>
                 );
               }

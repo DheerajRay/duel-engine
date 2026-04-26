@@ -43,7 +43,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
           <div className="theme-divider p-4 border-b flex justify-center items-center shrink-0 hidden sm:flex">
             <h2 className="theme-eyebrow text-[10px]">{t('helpNavigation')}</h2>
           </div>
-          <div className={`p-3 ${mobileLayout ? '' : 'sm:p-4'} flex flex-row ${mobileLayout ? '' : 'sm:flex-col'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
+          <div className={`p-2 ${mobileLayout ? '' : 'sm:p-4'} flex flex-row ${mobileLayout ? '' : 'sm:flex-col'} gap-2 overflow-x-auto sm:overflow-visible [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}>
             {[
               { id: 'basics', label: t('basics'), icon: <Sword size={14} /> },
               { id: 'cards', label: t('cardTypes'), icon: <Sparkles size={14} /> },
@@ -53,7 +53,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex items-center justify-center sm:justify-start gap-3 px-4 py-3 text-[10px] sm:text-xs font-mono uppercase tracking-widest transition-colors border border-transparent whitespace-nowrap ${
+                className={`flex items-center justify-center sm:justify-start gap-2.5 px-3 py-2.5 text-[10px] sm:text-xs font-mono uppercase tracking-[0.16em] transition-colors border border-transparent whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'theme-chip-active' 
                     : 'theme-chip'
@@ -67,7 +67,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
         </div>
 
         {/* Main Content Area */}
-        <div className={`theme-screen flex-1 ${mobileLayout ? 'overflow-y-auto px-4 py-4' : 'overflow-y-auto p-4 md:p-12'} min-h-0`}>
+        <div className={`theme-screen flex-1 ${mobileLayout ? 'overflow-y-auto px-3 py-3' : 'overflow-y-auto p-4 md:p-12'} min-h-0`}>
           <div className={`${mobileLayout ? 'mx-auto max-w-2xl' : 'max-w-3xl mx-auto'}`}>
             <AnimatePresence mode="wait">
               
@@ -78,12 +78,12 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: reduced ? 0 : -8 }}
                   transition={getSharedTransition(reduced, 'normal')}
-                  className="space-y-12"
+                  className={`${mobileLayout ? 'space-y-8' : 'space-y-12'}`}
                 >
                 <section>
                   <h2 className="theme-eyebrow theme-divider mb-6 border-b pb-2 text-xs">{t('objective')}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="theme-elevated p-6 flex flex-col items-center text-center gap-4">
+                    <div className={`theme-elevated flex flex-col items-center text-center ${mobileLayout ? 'gap-3 p-5' : 'gap-4 p-6'}`}>
                       <div className="theme-button-subtle w-10 h-10 flex items-center justify-center">
                         <Heart size={16} />
                       </div>
@@ -92,7 +92,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                         {t('helpObjectiveLifePointsBody')}
                       </p>
                     </div>
-                    <div className="theme-elevated p-6 flex flex-col items-center text-center gap-4">
+                    <div className={`theme-elevated flex flex-col items-center text-center ${mobileLayout ? 'gap-3 p-5' : 'gap-4 p-6'}`}>
                       <div className="theme-button-subtle w-10 h-10 flex items-center justify-center">
                         <Skull size={16} />
                       </div>

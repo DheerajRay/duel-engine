@@ -4,7 +4,10 @@ import type {
   CompetitionOpponentContent,
   CompetitionStageContent,
 } from '../types/cloud';
+import type { AppLanguage } from '../types/preferences';
 import { CHARACTER_DECKS } from './characterDecks';
+import { getLocalizedCompetitionContent } from '../i18n/competitionContent';
+import { translate } from '../i18n/messages';
 
 const localCharacters: CharacterContent[] = [
   {
@@ -179,27 +182,32 @@ export const rebuildCompetitionLadder = () => {
 
 rebuildCompetitionLadder();
 
-export const getCompetitionNotablePlay = (logs: LogEntry[]) => {
+export const getCompetitionNotablePlay = (logs: LogEntry[], language: AppLanguage = 'en') => {
   const recentInterestingLog = [...logs].reverse().find((entry) =>
     ['ACTIVATE_SPELL', 'ACTIVATE_TRAP', 'SUMMON_MONSTER', 'DIRECT_ATTACK', 'MONSTER_DESTROYED'].includes(entry.type),
   );
 
-  return recentInterestingLog?.message ?? 'The duel turned on steady pressure and clean sequencing.';
+  return recentInterestingLog?.message ?? translate(language, 'steadyPressureNotablePlay');
 };
 
-export const formatCompetitionLogMessage = (entry: LogEntry, opponent: CompetitionOpponentContent): string => {
+export const formatCompetitionLogMessage = (
+  entry: LogEntry,
+  opponent: CompetitionOpponentContent,
+  language: AppLanguage = 'en',
+): string => {
+  const localizedContent = getLocalizedCompetitionContent(language, opponent.id, opponent);
   const isOpponentEvent = entry.data?.player === 'opponent' || entry.data?.nextTurn === 'opponent';
 
   if (entry.type === 'DUEL_START') {
-    return `${opponent.voice.intro} ${entry.message}`;
+    return `${localizedContent.voice.intro} ${entry.message}`;
   }
 
   if (entry.type === 'NEXT_TURN' && entry.data?.nextTurn === 'opponent') {
-    return `${opponent.voice.turn} ${entry.message}`;
+    return `${localizedContent.voice.turn} ${entry.message}`;
   }
 
   if (entry.type === 'DECK_OUT' && entry.data?.player === 'opponent') {
-    return `${opponent.voice.loss} ${entry.message}`;
+    return `${localizedContent.voice.loss} ${entry.message}`;
   }
 
   if (!isOpponentEvent) {
@@ -207,19 +215,19 @@ export const formatCompetitionLogMessage = (entry: LogEntry, opponent: Competiti
   }
 
   if (entry.type === 'SUMMON_MONSTER' || entry.type === 'SET_MONSTER') {
-    return `${opponent.voice.summon} ${entry.message}`;
+    return `${localizedContent.voice.summon} ${entry.message}`;
   }
 
   if (entry.type === 'ACTIVATE_SPELL' || entry.type === 'SPELL_EFFECT') {
-    return `${opponent.voice.spell} ${entry.message}`;
+    return `${localizedContent.voice.spell} ${entry.message}`;
   }
 
   if (entry.type === 'ACTIVATE_TRAP') {
-    return `${opponent.voice.trap} ${entry.message}`;
+    return `${localizedContent.voice.trap} ${entry.message}`;
   }
 
   if (entry.type === 'DECLARE_ATTACK' || entry.type === 'DIRECT_ATTACK' || entry.type === 'BATTLE_DAMAGE') {
-    return `${opponent.voice.attack} ${entry.message}`;
+    return `${localizedContent.voice.attack} ${entry.message}`;
   }
 
   return entry.message;

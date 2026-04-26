@@ -21,13 +21,20 @@ describe('DeckBuilder', () => {
     expect(screen.getByPlaceholderText(/search cards/i)).toBeInTheDocument();
     expect(screen.queryByText(/current deck/i)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /deck view/i }));
+    const toggleViewButton = () => {
+      const countChip = screen.getByText(/\(\d+\/60\)/i);
+      const button = countChip.closest('button');
+      if (!button) {
+        throw new Error('Deck/library toggle button not found.');
+      }
+      return button;
+    };
+
+    fireEvent.click(toggleViewButton());
 
     expect(screen.queryByPlaceholderText(/search cards/i)).not.toBeInTheDocument();
     expect(screen.getByText(/current deck/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /card view/i })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /card view/i }));
+    fireEvent.click(toggleViewButton());
 
     expect(screen.getByPlaceholderText(/search cards/i)).toBeInTheDocument();
     expect(screen.queryByText(/current deck/i)).not.toBeInTheDocument();

@@ -60,6 +60,7 @@ export interface CardReviewQueueEntry {
 
 export interface GameContentBundle {
   cards: CloudCardRecord[];
+  cardLocalizations: CloudCardLocalizationRow[];
   predefinedDecks: SavedDeck[];
   characters: CharacterContent[];
   competitionStages: CompetitionStageContent[];
@@ -222,6 +223,13 @@ export interface CloudCardEngineMetadataRow {
   has_hidden_information_impact: boolean | null;
   ai_priority_weight: number | null;
   updated_at: string;
+}
+
+export interface CloudCardLocalizationRow {
+  card_id: string;
+  language: AppLanguage;
+  name: string;
+  description: string;
 }
 
 export interface CloudCardReviewQueueRow {

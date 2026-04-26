@@ -48,7 +48,7 @@ export function MobileBottomSheet({
           {showBackdrop && (
             <button
               type="button"
-              aria-label="Close mobile sheet"
+              aria-label={t('closeMobileSheet')}
               onClick={onClose}
               className="absolute inset-0 bg-black/70"
             />
@@ -58,13 +58,13 @@ export function MobileBottomSheet({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: reduced ? 0 : 18 }}
             transition={getSharedTransition(reduced, 'normal')}
-            className={`theme-panel relative z-10 w-full rounded-t-[22px] border-t ${activeHeightClassName} ${maxHeightClassName} overflow-hidden ${className}`}
+            className={`ui-sheet theme-panel relative z-10 w-full border-t ${activeHeightClassName} ${maxHeightClassName} overflow-hidden ${className}`}
           >
-            <div className="theme-divider flex items-center justify-between border-b px-4 py-3">
+            <div className="theme-divider flex min-h-[var(--ui-sheet-header-height)] items-center justify-between border-b px-3 py-2">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="h-1.5 w-10 rounded-full bg-[var(--app-border-strong)]" />
+                <div className="h-1 w-8 rounded-full bg-[var(--app-border-strong)]" />
                 {title ? (
-                  <div className="theme-eyebrow truncate text-[10px]">
+                  <div className="ui-eyebrow truncate">
                     {title}
                   </div>
                 ) : null}
@@ -82,13 +82,13 @@ export function MobileBottomSheet({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="theme-subtle text-[10px] font-mono uppercase tracking-[0.2em]"
+                  className="ui-mono-label theme-subtle"
                 >
                   {t('close')}
                 </button>
               </div>
             </div>
-            <div className="overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-4">
+            <div className="overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3">
               {children}
             </div>
           </motion.div>

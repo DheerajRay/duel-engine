@@ -37,6 +37,14 @@ import {
 } from './services/userData';
 import type { DuelHistoryEntry, UserProfile } from './types/cloud';
 import { useAppPreferences } from './preferences/AppPreferencesProvider';
+import { getLocalizedCompetitionContent } from './i18n/competitionContent';
+import { formatLogEntryMessage } from './utils/logFormatter';
+import {
+  getCardSubtypeTranslationKey,
+  getCardTypeTranslationKey,
+  getLocalizedCardText,
+  getLocalizedSupportStatusKey,
+} from './services/cardLocalization';
 
 const DeckBuilder = lazy(() => import('./pages/DeckBuilder'));
 const HowToPlay = lazy(() => import('./pages/HowToPlay'));
@@ -132,8 +140,11 @@ export default function App() {
   const currentCompetitionOpponent = competitionStageIndex !== null ? COMPETITION_LADDER[competitionStageIndex] : null;
   const competitionResumeOpponent = COMPETITION_LADDER[competitionResumeStageIndex];
   const competitionSignatureCards = currentCompetitionOpponent?.signatureCardIds.map(buildCompetitionPreviewCard) ?? [];
-  const opponentLabel = currentCompetitionOpponent?.name ?? 'COM';
-  const opponentShortLabel = currentCompetitionOpponent?.name.split(' ')[0] ?? 'Opponent';
+  const localizedCompetitionContent = currentCompetitionOpponent
+    ? getLocalizedCompetitionContent(language, currentCompetitionOpponent.id, currentCompetitionOpponent)
+    : null;
+  const opponentLabel = localizedCompetitionContent?.name ?? currentCompetitionOpponent?.name ?? 'COM';
+  const opponentShortLabel = opponentLabel.split(' ')[0] ?? 'Opponent';
   const cpuModeHeading =
     gameMode === 'random'
       ? t('cpuModeRandomDeck')
@@ -228,6 +239,7 @@ export default function App() {
 
   const getCompetitionSummaryStats = () => {
     if (!currentCompetitionOpponent) return null;
+    const localizedContent = getLocalizedCompetitionContent(language, currentCompetitionOpponent.id, currentCompetitionOpponent);
 
     const turnsSurvived = Math.max(1, Math.ceil(state.turnCount / 2));
     const lpRemaining = state.winner === 'player' ? state.player.lp : state.opponent.lp;
@@ -243,10 +255,10 @@ export default function App() {
       turnsSurvived,
       lpRemaining,
       finishingCard,
-      notablePlay: getCompetitionNotablePlay(state.log),
+      notablePlay: getCompetitionNotablePlay(state.log, language),
       summaryLine: state.winner === 'player'
-        ? currentCompetitionOpponent.summaryLines.stageClear
-        : currentCompetitionOpponent.summaryLines.defeat,
+        ? localizedContent.stageClearLine
+        : localizedContent.defeatLine,
     };
   };
 
@@ -259,23 +271,23 @@ export default function App() {
   );
 
   const renderMobilePlayHome = () => (
-    <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="mx-auto flex max-w-md flex-col gap-4">
+    <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="mx-auto flex max-w-md flex-col gap-3">
           <button
             type="button"
             onClick={openCpuModeSelection}
-            className="theme-panel rounded-[24px] px-5 py-5 text-left transition-colors hover:border-[var(--app-border-strong)]"
+            className="theme-panel rounded-[20px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="theme-eyebrow text-[10px]">{t('playHomeQuickDuel')}</div>
-                <div className="theme-title mt-3 text-lg uppercase">{t('cpuMode')}</div>
-                <div className="theme-muted mt-2 text-sm leading-6">
+                <div className="theme-eyebrow text-[9px]">{t('playHomeQuickDuel')}</div>
+                <div className="theme-title mt-2.5 text-base uppercase">{t('cpuMode')}</div>
+                <div className="theme-muted mt-2 text-[13px] leading-6">
                   {t('playHomeCpuDescription')}
                 </div>
               </div>
-              <div className="theme-chip rounded-2xl p-3">
-                <Swords size={18} />
+              <div className="theme-chip rounded-xl p-2.5">
+                <Swords size={16} />
               </div>
             </div>
           </button>
@@ -283,13 +295,13 @@ export default function App() {
           <button
             type="button"
             onClick={startCompetitionMode}
-            className="theme-panel rounded-[24px] px-5 py-5 text-left transition-colors hover:border-[var(--app-border-strong)]"
+            className="theme-panel rounded-[20px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="theme-eyebrow text-[10px]">{t('playHomeLadder')}</div>
-                <div className="theme-title mt-3 text-lg uppercase">{t('competition')}</div>
-                <div className="theme-muted mt-2 text-sm leading-6">
+                <div className="theme-eyebrow text-[9px]">{t('playHomeLadder')}</div>
+                <div className="theme-title mt-2.5 text-base uppercase">{t('competition')}</div>
+                <div className="theme-muted mt-2 text-[13px] leading-6">
                   {competitionResumeOpponent
                     ? t('playHomeCompetitionDescription', {
                         stage: competitionResumeStageIndex + 1,
@@ -298,8 +310,8 @@ export default function App() {
                     : t('playHomeCompetitionFallback')}
                 </div>
               </div>
-              <div className="theme-chip rounded-2xl p-3">
-                <Trophy size={18} />
+              <div className="theme-chip rounded-xl p-2.5">
+                <Trophy size={16} />
               </div>
             </div>
           </button>
@@ -308,18 +320,18 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleMobileTabChange('decks')}
-              className="theme-panel rounded-[22px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
+              className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
-              <div className="theme-eyebrow text-[10px]">{t('playHomePrimaryDeck')}</div>
-              <div className="theme-title mt-3 text-sm uppercase">
+              <div className="theme-eyebrow text-[9px]">{t('playHomePrimaryDeck')}</div>
+              <div className="theme-title mt-2.5 text-[13px] uppercase">
                 {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
               </div>
-              <div className="theme-muted mt-2 text-xs">
-                {primaryDeckSummary
-                  ? `${primaryDeckSummary.mainCount}/60 main | ${primaryDeckSummary.extraCount}/15 extra`
-                  : t('loadingDeckStatus')}
-              </div>
-              <div className={`mt-2 text-[10px] font-mono uppercase tracking-[0.2em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
+                <div className="theme-muted mt-2 text-[11px] leading-5">
+                  {primaryDeckSummary
+                    ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
+                    : t('loadingDeckStatus')}
+                </div>
+              <div className={`mt-2 text-[9px] font-mono uppercase tracking-[0.16em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
                 {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
               </div>
             </button>
@@ -327,35 +339,35 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleMobileTabChange('history')}
-              className="theme-panel rounded-[22px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
+              className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
             >
-              <div className="theme-eyebrow text-[10px]">{t('playHomeProgress')}</div>
-              <div className="theme-title mt-3 text-sm uppercase">
+              <div className="theme-eyebrow text-[9px]">{t('playHomeProgress')}</div>
+              <div className="theme-title mt-2.5 text-[13px] uppercase">
                 {t('currentStage')} {competitionResumeStageIndex + 1}
               </div>
-              <div className="theme-muted mt-2 text-xs">
+              <div className="theme-muted mt-2 text-[11px] leading-5">
                 {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
               </div>
-              <div className="theme-subtle mt-2 text-[10px] font-mono uppercase tracking-[0.2em]">
+              <div className="theme-subtle mt-2 text-[9px] font-mono uppercase tracking-[0.16em]">
                 {t('viewDuelHistory')}
               </div>
             </button>
           </section>
 
-          <section className="theme-panel rounded-[24px] px-5 py-4">
-            <div className="theme-eyebrow text-[10px]">{t('playHomeShortcuts')}</div>
-            <div className="mt-4 grid grid-cols-2 gap-3">
+          <section className="theme-panel rounded-[20px] px-4 py-3.5">
+            <div className="theme-eyebrow text-[9px]">{t('playHomeShortcuts')}</div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('decks')}
-                className="theme-elevated rounded-2xl px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
+                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[9px] font-mono uppercase tracking-[0.16em]"
               >
                 {t('deckBuilder')}
               </button>
               <button
                 type="button"
                 onClick={() => handleMobileTabChange('help')}
-                className="theme-elevated rounded-2xl px-4 py-3 text-[10px] font-mono uppercase tracking-[0.2em]"
+                className="theme-elevated rounded-[16px] px-3 py-2.5 text-[9px] font-mono uppercase tracking-[0.16em]"
               >
                 {t('howToPlay')}
               </button>
@@ -367,10 +379,10 @@ export default function App() {
 
   const getDisplayLogMessage = (logEntry: LogEntry) => {
     if (gameMode === 'competition' && currentCompetitionOpponent) {
-      return formatCompetitionLogMessage(logEntry, currentCompetitionOpponent);
+      return formatCompetitionLogMessage(logEntry, currentCompetitionOpponent, language);
     }
 
-    return logEntry.message;
+    return formatLogEntryMessage(logEntry, language);
   };
 
   // Center-screen announcements for duel log entries
@@ -515,21 +527,23 @@ export default function App() {
 
     const saveHistory = async () => {
       const summary = getCompetitionSummaryStats();
-      const fallbackNotablePlay = [...state.log].reverse().find((entry) => entry.message)?.message ?? 'The duel ended without a standout play.';
+      const fallbackNotablePlay = [...state.log].reverse().find((entry) => entry.message)?.message ?? t('duelEndedWithoutStandoutPlay');
       const finishingCard =
         [...state.log].reverse().find((entry) => entry.data?.cardName)?.data?.cardName ?? null;
 
       const historyEntry: DuelHistoryEntry = {
         id: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         mode: gameMode === 'competition' ? 'competition' : gameMode === 'custom' ? 'cpu_custom' : 'cpu_random',
-        opponentLabel: currentCompetitionOpponent?.name ?? (gameMode === 'custom' ? 'CPU Custom' : 'CPU Random'),
+        opponentLabel:
+          localizedCompetitionContent?.name ??
+          (gameMode === 'custom' ? t('cpuCustomLabel') : t('cpuRandomLabel')),
         stageIndex: competitionStageIndex,
         result: state.winner === 'player' ? 'win' : 'loss',
         turnCount: state.turnCount,
         lpRemaining: state.winner === 'player' ? state.player.lp : state.opponent.lp,
         finishingCard,
         notablePlay: summary?.notablePlay ?? fallbackNotablePlay,
-        summary: summary?.summaryLine ?? (state.winner === 'player' ? 'You won the duel.' : 'You lost the duel.'),
+        summary: summary?.summaryLine ?? (state.winner === 'player' ? t('victoryLog') : t('defeatLog')),
         logs: state.log,
         createdAt: new Date().toISOString(),
       };
@@ -673,14 +687,16 @@ export default function App() {
       await appendDuelHistoryEntry({
         id: `duel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         mode: gameMode === 'competition' ? 'competition' : gameMode === 'custom' ? 'cpu_custom' : 'cpu_random',
-        opponentLabel: currentCompetitionOpponent?.name ?? (gameMode === 'custom' ? 'CPU Custom' : 'CPU Random'),
+        opponentLabel:
+          localizedCompetitionContent?.name ??
+          (gameMode === 'custom' ? t('cpuCustomLabel') : t('cpuRandomLabel')),
         stageIndex: competitionStageIndex,
         result: 'forfeit',
         turnCount: state.turnCount,
         lpRemaining: state.player.lp,
         finishingCard: null,
-        notablePlay: getCompetitionNotablePlay(state.log),
-        summary: 'You forfeited the duel from the in-game menu.',
+        notablePlay: getCompetitionNotablePlay(state.log, language),
+        summary: t('forfeitSummary'),
         logs: state.log,
         createdAt: new Date().toISOString(),
       });
@@ -712,7 +728,7 @@ export default function App() {
     const deckData = await loadPrimaryDeck();
 
     if (!deckData) {
-      showNotice('Your custom deck must have at least 40 cards. Please use the Deck Builder.', 'Deck Required');
+      showNotice(t('customDeckRequired'), t('deckRequired'));
       return;
     }
 
@@ -729,7 +745,7 @@ export default function App() {
     const deckData = await loadPrimaryDeck();
 
     if (!deckData) {
-      showNotice('Competition Mode uses your saved custom deck. Build a 40-card deck first.', 'Deck Required');
+      showNotice(t('competitionModeDeckRequired'), t('deckRequired'));
       return;
     }
 
@@ -779,7 +795,7 @@ export default function App() {
     const nextStageIndex = competitionStageIndex + 1;
     if (nextStageIndex >= COMPETITION_LADDER.length) {
       void clearCompetitionProgress().then(() => setCompetitionResumeStageIndex(0));
-      showNotice('Competition cleared. You defeated every duelist in the ladder.', 'Competition');
+      showNotice(t('competitionCleared'), t('competition'));
       returnToMenu();
       return;
     }
@@ -790,37 +806,44 @@ export default function App() {
   const getMenuPromptContent = () => {
     if (gameMode === 'competition' && currentCompetitionOpponent) {
       return {
-        eyebrow: `Stage ${currentCompetitionOpponent.stage} of ${currentCompetitionOpponent.totalStages}`,
-        title: 'Forfeit Duel?',
-        message: currentCompetitionOpponent.voice.forfeit,
-        detail: `Your ladder progress will stay at ${currentCompetitionOpponent.name}.`,
-        confirmLabel: 'Forfeit Duel',
-        cancelLabel: 'Stay in Duel',
+        eyebrow: t('stageHeading', { stage: currentCompetitionOpponent.stage, total: currentCompetitionOpponent.totalStages }),
+        title: t('forfeitDuelQuestion'),
+        message: localizedCompetitionContent?.forfeitLine || currentCompetitionOpponent.voice.forfeit,
+        detail: t('forfeitStageProgress', { name: localizedCompetitionContent?.name || currentCompetitionOpponent.name }),
+        confirmLabel: t('forfeitDuel'),
+        cancelLabel: t('stayInDuel'),
       };
     }
 
     if (gameMode === 'custom') {
       return {
-        eyebrow: 'CPU Mode: Custom Deck',
-        title: 'Forfeit Duel?',
-        message: 'The CPU smirks. "Walking out already? Leave now and this duel is a forfeit."',
-        detail: 'You will return to the menu and can start a fresh custom duel any time.',
-        confirmLabel: 'Forfeit Duel',
-        cancelLabel: 'Stay in Duel',
+        eyebrow: t('cpuPromptCustomEyebrow'),
+        title: t('forfeitDuelQuestion'),
+        message: t('cpuPromptCustomMessage'),
+        detail: t('cpuPromptCustomDetail'),
+        confirmLabel: t('forfeitDuel'),
+        cancelLabel: t('stayInDuel'),
       };
     }
 
     return {
-      eyebrow: 'CPU Mode: Random Deck',
-      title: 'Forfeit Duel?',
-      message: 'The CPU shrugs. "No dramatic finish? Leave now and I will take the win by forfeit."',
-      detail: 'You will return to the menu and can spin up another random duel immediately.',
-      confirmLabel: 'Forfeit Duel',
-      cancelLabel: 'Stay in Duel',
+      eyebrow: t('cpuPromptRandomEyebrow'),
+      title: t('forfeitDuelQuestion'),
+      message: t('cpuPromptRandomMessage'),
+      detail: t('cpuPromptRandomDetail'),
+      confirmLabel: t('forfeitDuel'),
+      cancelLabel: t('stayInDuel'),
     };
   };
 
   const menuPromptContent = getMenuPromptContent();
+  const getLocalizedCardMeta = (card: GameCard) => {
+    const localizedText = getLocalizedCardText(card, language);
+    const typeLabel = t(getCardTypeTranslationKey(card.type));
+    const subtypeKey = getCardSubtypeTranslationKey(card.subType);
+    const subtypeLabel = subtypeKey ? t(subtypeKey) : null;
+    return { ...localizedText, typeLabel, subtypeLabel };
+  };
 
   const renderPhaseTracker = (className = 'flex gap-3 text-xs font-mono') => (
     <div className={className}>
@@ -865,6 +888,7 @@ export default function App() {
     }
 
     const supportMeta = getCardSupportMeta(showCardDetail);
+    const localizedCard = getLocalizedCardMeta(showCardDetail);
     return (
       <motion.div
         key={showCardDetail.instanceId}
@@ -873,19 +897,19 @@ export default function App() {
         transition={getSharedTransition(reduced, 'fast')}
         className="w-full max-w-[220px] rounded border border-zinc-700 p-4 flex flex-col bg-black"
       >
-        <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{showCardDetail.name}</div>
+        <div className="font-sans text-xl font-bold leading-tight mb-2 text-white uppercase tracking-wider">{localizedCard.name}</div>
         <div className="text-[10px] font-mono text-zinc-500 mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2 flex justify-between gap-2">
-          <span>[{showCardDetail.type}{showCardDetail.subType ? ` / ${showCardDetail.subType}` : ''}]</span>
+          <span>[{localizedCard.typeLabel}{localizedCard.subtypeLabel ? ` / ${localizedCard.subtypeLabel}` : ''}]</span>
           {showCardDetail.type === 'Monster' && (
-            <span>LVL {showCardDetail.level} {showCardDetail.level! >= 7 ? '(2 Tributes)' : showCardDetail.level! >= 5 ? '(1 Tribute)' : ''}</span>
+            <span>LVL {showCardDetail.level} {showCardDetail.level! >= 7 ? `(${t('helpTwoTributes')})` : showCardDetail.level! >= 5 ? `(${t('helpOneTribute')})` : ''}</span>
           )}
         </div>
         <div className="text-xs text-zinc-400 font-sans leading-relaxed">
-          {showCardDetail.description}
+          {localizedCard.description}
         </div>
         {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
           <div className="mt-4 border-t border-zinc-800 pt-3 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500">
-            <div className="text-zinc-400">{supportMeta.label}</div>
+            <div className="text-zinc-400">{t(getLocalizedSupportStatusKey(supportMeta.status))}</div>
             {supportMeta.note && <div className="mt-1 normal-case tracking-normal text-zinc-500">{supportMeta.note}</div>}
           </div>
         )}
@@ -897,7 +921,7 @@ export default function App() {
         )}
         {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
           <div className="mt-4 border-t border-zinc-800 pt-3">
-            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Fusion Materials</div>
+            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('fusionMaterials')}</div>
             <div className="mt-1 text-[11px] text-zinc-300 leading-5">{showCardDetail.fusionMaterials.join(' + ')}</div>
           </div>
         )}
@@ -912,7 +936,7 @@ export default function App() {
           initial={{ opacity: 0, y: reduced ? 0 : 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={getSharedTransition(reduced, 'fast')}
-          className="text-zinc-600 text-xs font-mono uppercase tracking-widest text-center px-6"
+          className="text-zinc-600 text-[10px] font-mono uppercase tracking-[0.18em] text-center px-4"
         >
           {emptyMessage}
         </motion.div>
@@ -920,6 +944,7 @@ export default function App() {
     }
 
     const supportMeta = getCardSupportMeta(showCardDetail);
+    const localizedCard = getLocalizedCardMeta(showCardDetail);
     return (
       <motion.div
         key={showCardDetail.instanceId}
@@ -929,13 +954,13 @@ export default function App() {
         className="w-full rounded border border-zinc-800 bg-black"
       >
         <div className="border-b border-zinc-800 px-4 py-3">
-          <div className="text-xl font-sans font-bold leading-tight text-white uppercase tracking-wide">
-            {showCardDetail.name}
+          <div className="text-lg font-sans font-bold leading-tight text-white uppercase tracking-[0.06em]">
+            {localizedCard.name}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-400">
             <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
-              {showCardDetail.type}
-              {showCardDetail.subType ? ` / ${showCardDetail.subType}` : ''}
+              {localizedCard.typeLabel}
+              {localizedCard.subtypeLabel ? ` / ${localizedCard.subtypeLabel}` : ''}
             </span>
             {showCardDetail.type === 'Monster' && (
               <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
@@ -944,7 +969,7 @@ export default function App() {
             )}
             {showCardDetail.type === 'Monster' && (
               <span className="border border-zinc-800 bg-zinc-950 px-2 py-1 text-zinc-500">
-                {showCardDetail.level! >= 7 ? '2 Tributes' : showCardDetail.level! >= 5 ? '1 Tribute' : 'No Tribute'}
+                {showCardDetail.level! >= 7 ? t('helpTwoTributes') : showCardDetail.level! >= 5 ? t('helpOneTribute') : t('helpNoTributes')}
               </span>
             )}
           </div>
@@ -953,21 +978,21 @@ export default function App() {
         <div className="px-4 py-3 space-y-3">
           {showCardDetail.type === 'Monster' && (
             <div className="border-t border-zinc-800 pt-3">
-              <div className="flex items-center gap-5 font-mono text-sm uppercase tracking-[0.2em]">
+              <div className="flex items-center gap-4 font-mono text-xs uppercase tracking-[0.16em]">
                 <span className="text-zinc-500">ATK <span className="text-white tracking-normal">{showCardDetail.atk}</span></span>
                 <span className="text-zinc-500">DEF <span className="text-white tracking-normal">{showCardDetail.def}</span></span>
               </div>
             </div>
           )}
 
-          <div className="text-xs leading-6 text-zinc-300">
-            {showCardDetail.description}
+          <div className="text-[13px] leading-6 text-zinc-300">
+            {localizedCard.description}
           </div>
 
           {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
               <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                {supportMeta.label}
+                {t(getLocalizedSupportStatusKey(supportMeta.status))}
               </div>
               {supportMeta.note && (
                 <div className="text-[11px] text-zinc-300 leading-5">
@@ -980,7 +1005,7 @@ export default function App() {
           {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
             <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
               <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1.5">
-                Fusion Materials
+                {t('fusionMaterials')}
               </div>
               <div className="text-[11px] text-zinc-300 leading-5">
                 {showCardDetail.fusionMaterials.join(' + ')}
@@ -1005,19 +1030,19 @@ export default function App() {
         
         if (entry.type === 'DUEL_START') {
           textColor = 'text-yellow-400';
-          prefix = '[System] ';
+          prefix = `[${t('actorSystem')}] `;
         } else if (entry.type === 'NEXT_TURN') {
           textColor = isPlayer ? 'text-blue-400' : 'text-red-400';
-          prefix = isPlayer ? '[You] ' : `[${opponentShortLabel}] `;
+          prefix = isPlayer ? `[${t('actorYou')}] ` : `[${opponentShortLabel}] `;
         } else if (isPlayer) {
           textColor = 'text-blue-400';
-          prefix = '[You] ';
+          prefix = `[${t('actorYou')}] `;
         } else if (isOpponent) {
           textColor = 'text-red-400';
-          prefix = currentCompetitionOpponent ? `[${opponentShortLabel}] ` : '[Opponent] ';
+          prefix = currentCompetitionOpponent ? `[${opponentShortLabel}] ` : `[${t('actorOpponent')}] `;
         } else if (isBoth) {
           textColor = 'text-purple-400';
-          prefix = '[Both] ';
+          prefix = `[${t('actorBoth')}] `;
         }
 
         return (
@@ -1041,14 +1066,21 @@ export default function App() {
       .filter(Boolean) as { card: GameCard, sourceIndex: number }[];
 
     if (cards.length === 0) {
-      showNotice(`No monsters in ${targetPlayer === 'player' ? 'your' : "opponent's"} Graveyard!`, 'No Target');
+      showNotice(
+        t('noMonstersInSelectedGraveyard', {
+          owner: targetPlayer === 'player' ? t('yourGraveyard') : t('opponentGraveyard'),
+        }),
+        t('noTarget'),
+      );
       return;
     }
 
     setUiState({
       type: 'SELECT_ZONE_CARD',
-      title: `Select a monster from ${targetPlayer === 'player' ? 'your' : "opponent's"} Graveyard`,
-      description: 'Choose the card you want to Special Summon with Monster Reborn.',
+      title: t('selectMonsterFromGraveyardTitle', {
+        owner: targetPlayer === 'player' ? t('yourGraveyard') : t('opponentGraveyard'),
+      }),
+      description: t('monsterRebornZoneDescription'),
       zone: 'graveyard',
       owner: targetPlayer,
       cards,
@@ -1197,7 +1229,7 @@ export default function App() {
 
     setUiState({
       type: 'CONFIRM_RESPONSE',
-      message: 'You have a card that can respond to this action. Do you want to activate it now?',
+      message: t('responsePromptActivateCard'),
       options,
       pendingAction,
     });
@@ -1507,7 +1539,7 @@ export default function App() {
     
     if (uiState.type === 'SELECT_DISCARD') {
       if (card.instanceId === uiState.spellCard.instanceId) {
-        showNotice('You cannot discard the spell you are activating!', 'Invalid Action');
+        showNotice(t('cannotDiscardActivatingSpell'), t('invalidAction'));
         return;
       }
       setUiState({ 
@@ -1516,7 +1548,7 @@ export default function App() {
         discardInstanceId: card.instanceId,
         fromZone: uiState.fromZone 
       });
-      showNotice('Select a monster to destroy.', 'Action Required');
+      showNotice(t('selectMonsterToDestroy'), t('actionRequired'));
       return;
     }
 
@@ -1545,7 +1577,7 @@ export default function App() {
         }
 
         if (!isValid) {
-          showNotice('Selected materials do not match the required Fusion Materials!', 'Invalid Selection');
+          showNotice(t('fusionMaterialsInvalid'), t('invalidSelection'));
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1553,7 +1585,7 @@ export default function App() {
         // Check if there will be an empty zone
         const willHaveEmptyZone = state.player.monsterZone.some((m, i) => m === null || newSelected.includes(m.instanceId));
         if (!willHaveEmptyZone) {
-          showNotice('No empty monster zones available for the Fusion Monster!', 'No Open Zone');
+          showNotice(t('fusionNoOpenZone'), t('noOpenMonsterZones'));
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1579,7 +1611,7 @@ export default function App() {
 
     const availableActions = getHandCardActionAvailability(card, playerActivationContext);
     if (!availableActions.summon && !availableActions.setMonster && !availableActions.activate && !availableActions.setSpellTrap) {
-      showNotice(`No legal actions available for ${card.name} right now.`, 'Unavailable');
+      showNotice(t('noLegalActionsForCard', { cardName: getLocalizedCardText(card, language).name }), t('unavailable'));
       return;
     }
 
@@ -1588,14 +1620,14 @@ export default function App() {
 
   const beginSpellActivation = (card: GameCard, fromZone?: number) => {
     if (!canActivateCard(card, playerActivationContext, fromZone)) {
-      showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
+      showNotice(t('cannotActivateNow', { cardName: getLocalizedCardText(card, language).name }), t('unavailable'));
       setUiState({ type: 'IDLE' });
       return;
     }
 
     if (card.id === 'tribute-to-the-doomed') {
       if (state.player.hand.length < (fromZone === undefined ? 2 : 1)) {
-        showNotice(fromZone === undefined ? 'You need another card to discard!' : 'You need a card to discard!', 'Action Required');
+        showNotice(fromZone === undefined ? t('youNeedAnotherCardToDiscard') : t('noCardToDiscard'), t('actionRequired'));
         setUiState({ type: 'IDLE' });
         return;
       }
@@ -1603,85 +1635,85 @@ export default function App() {
       const hasOpponentMonsters = state.opponent.monsterZone.some(m => m !== null);
       const hasPlayerMonsters = state.player.monsterZone.some(m => m !== null);
       if (!hasOpponentMonsters && !hasPlayerMonsters) {
-        showNotice('No monsters to destroy!', 'No Target');
+        showNotice(t('noMonstersToDestroy'), t('noTarget'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_DISCARD', spellCard: card, fromZone });
-      showNotice('Select a card to discard.', 'Action Required');
+      showNotice(t('selectCardToDiscard'), t('actionRequired'));
       return;
     }
 
     if (card.id === 'monster-reborn') {
       const hasMonstersInGy = state.player.graveyard.some(c => c.type === 'Monster') || state.opponent.graveyard.some(c => c.type === 'Monster');
       if (!hasMonstersInGy) {
-        showNotice('No monsters in Graveyard!', 'No Target');
+        showNotice(t('noMonstersInGraveyard'), t('noTarget'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasEmptyZone = state.player.monsterZone.some(z => z === null);
       if (!hasEmptyZone) {
-        showNotice('No empty monster zones!', 'No Open Zone');
+        showNotice(t('noOpenMonsterZones'), t('noOpenMonsterZones'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      showNotice('Select a monster from either Graveyard.', 'Action Required');
+      showNotice(t('selectMonsterFromEitherGraveyard'), t('actionRequired'));
       return;
     }
 
     if (card.id === 'brain-control') {
       if (state.player.lp < 800) {
-        showNotice('You need at least 800 LP to activate Brain Control!', 'Unavailable');
+        showNotice(t('need800LpForBrainControl'), t('unavailable'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasTargetableMonster = state.opponent.monsterZone.some(m => m !== null && m.position !== 'set-monster');
       if (!hasTargetableMonster) {
-        showNotice('No opponent face-up monsters to take control of!', 'No Target');
+        showNotice(t('noOpponentFaceUpMonsters'), t('noTarget'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       const hasEmptyZone = state.player.monsterZone.some(z => z === null);
       if (!hasEmptyZone) {
-        showNotice('No empty monster zones!', 'No Open Zone');
+        showNotice(t('noOpenMonsterZones'), t('noOpenMonsterZones'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      showNotice("Select an opponent's face-up monster to take control of.", 'Action Required');
+      showNotice(t('selectOpponentMonsterControl'), t('actionRequired'));
       return;
     }
 
     if (card.id === 'de-spell') {
       const hasSpellTrapTarget = state.opponent.spellTrapZone.some(c => c !== null);
       if (!hasSpellTrapTarget) {
-        showNotice("No opponent Spell/Trap cards to target!", 'No Target');
+        showNotice(t('noOpponentSpellTrap'), t('noTarget'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      showNotice("Select an opponent's Spell/Trap card.", 'Action Required');
+      showNotice(t('selectOpponentSpellTrap'), t('actionRequired'));
       return;
     }
 
     if (card.id === 'polymerization') {
       const possibleFusions = getPossibleFusionMonsters(state.player);
       if (possibleFusions.length === 0) {
-        showNotice('You do not have the materials for any Fusion Monster!', 'Unavailable');
+        showNotice(t('fusionUnavailable'), t('unavailable'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_FUSION_MONSTER', possibleFusions, spellInstanceId: card.instanceId, fromZone });
-      showNotice('Select a Fusion Monster to summon.', 'Action Required');
+      showNotice(t('selectFusionMonsterToSummon'), t('actionRequired'));
       return;
     }
 
@@ -1691,7 +1723,7 @@ export default function App() {
 
   const beginTrapActivation = (card: GameCard, fromZone: number) => {
     if (!canActivateSetCard(card, playerActivationContext)) {
-      showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
+      showNotice(t('cannotActivateNow', { cardName: getLocalizedCardText(card, language).name }), t('unavailable'));
       setUiState({ type: 'IDLE' });
       return;
     }
@@ -1699,17 +1731,17 @@ export default function App() {
     if (card.id === 'dust-tornado') {
       const hasOpponentST = state.opponent.spellTrapZone.some(c => c !== null);
       if (!hasOpponentST) {
-        showNotice('No opponent Spell/Trap cards to destroy!', 'No Target');
+        showNotice(t('dustTornadoNoTarget'), t('noTarget'));
         setUiState({ type: 'IDLE' });
         return;
       }
 
       setUiState({ type: 'SELECT_SPELL_TARGET', spellCard: card, fromZone });
-      showNotice("Select an opponent's Spell/Trap card to destroy.", 'Action Required');
+      showNotice(t('selectOpponentSpellTrapToDestroy'), t('actionRequired'));
       return;
     }
 
-    showNotice('This trap card cannot be activated manually!', 'Unavailable');
+    showNotice(t('trapCannotActivateManually'), t('unavailable'));
   };
 
   const executeHandAction = (action: 'summon' | 'set' | 'activate') => {
@@ -1719,12 +1751,17 @@ export default function App() {
     
     if (card.type === 'Monster') {
       if ((action === 'summon' && !availableActions.summon) || (action === 'set' && !availableActions.setMonster)) {
-        showNotice(`${card.name} cannot be ${action === 'summon' ? 'Summoned' : 'Set'} right now.`, 'Unavailable');
+        showNotice(
+          action === 'summon'
+            ? t('cannotSummonNow', { cardName: getLocalizedCardText(card, language).name })
+            : t('cannotSetNow', { cardName: getLocalizedCardText(card, language).name }),
+          t('unavailable'),
+        );
         setUiState({ type: 'IDLE' });
         return;
       }
       if (state.normalSummonUsed) {
-        showNotice('You already Normal Summoned or Set this turn!', 'Unavailable');
+        showNotice(t('youAlreadyNormalSummoned'), t('unavailable'));
         setUiState({ type: 'IDLE' });
         return;
       }
@@ -1735,7 +1772,7 @@ export default function App() {
       if (tributesNeeded > 0) {
         const availableTributes = state.player.monsterZone.filter(m => m !== null).length;
         if (availableTributes < tributesNeeded) {
-          showNotice('Not enough monsters to tribute!', 'Unavailable');
+          showNotice(t('noTributesAvailable'), t('unavailable'));
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1747,7 +1784,7 @@ export default function App() {
     } else if (card.type === 'Spell' || card.type === 'Trap') {
       if (action === 'set') {
         if (!availableActions.setSpellTrap) {
-          showNotice('No open Spell or Trap Zone to set this card.', 'No Open Zone');
+          showNotice(t('noOpenSpellTrapZone'), t('noOpenMonsterZones'));
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1755,7 +1792,7 @@ export default function App() {
         setUiState({ type: 'IDLE' });
       } else if (action === 'activate' && card.type === 'Spell') {
         if (!availableActions.activate) {
-          showNotice(`${card.name} cannot be activated right now.`, 'Unavailable');
+          showNotice(t('cannotActivateNow', { cardName: getLocalizedCardText(card, language).name }), t('unavailable'));
           setUiState({ type: 'IDLE' });
           return;
         }
@@ -1771,13 +1808,13 @@ export default function App() {
 
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id === 'monster-reborn') {
-        showNotice('Select a monster from a Graveyard!', 'Invalid Target');
+        showNotice(t('selectMonsterFromGraveyardInvalid'), t('invalidTarget'));
         return;
       }
       if (uiState.spellCard.id === 'dust-tornado' || uiState.spellCard.id === 'de-spell' || uiState.spellCard.id === 'brain-control') {
         showNotice(
-          uiState.spellCard.id === 'brain-control' ? "Select an opponent's face-up monster!" : "Select an opponent's Spell/Trap card!",
-          'Invalid Target',
+          uiState.spellCard.id === 'brain-control' ? t('selectOpponentFaceUpMonsterShort') : t('selectOpponentSpellTrapShort'),
+          t('invalidTarget'),
         );
         return;
       }
@@ -1842,7 +1879,7 @@ export default function App() {
         }
 
         if (!isValid) {
-          showNotice('Selected materials do not match the required Fusion Materials!', 'Invalid Selection');
+          showNotice(t('fusionMaterialsInvalid'), t('invalidSelection'));
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1850,7 +1887,7 @@ export default function App() {
         // Check if there will be an empty zone
         const willHaveEmptyZone = state.player.monsterZone.some((m, i) => m === null || newSelected.includes(m.instanceId));
         if (!willHaveEmptyZone) {
-          showNotice('No empty monster zones available for the Fusion Monster!', 'No Open Zone');
+          showNotice(t('fusionNoOpenZone'), t('noOpenMonsterZones'));
           setUiState({ ...uiState, selectedMaterials: [] });
           return;
         }
@@ -1895,7 +1932,7 @@ export default function App() {
       setUiState({ type: 'IDLE' });
     } else {
       setUiState({ type: 'SELECT_ATTACK_TARGET', attackerIndex: index });
-      showNotice("Select an opponent's monster to attack.", 'Action Required');
+      showNotice(t('selectOpponentMonsterToAttack'), t('actionRequired'));
     }
   };
 
@@ -1918,16 +1955,16 @@ export default function App() {
     
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id === 'monster-reborn') {
-        showNotice('Select a monster from a Graveyard!', 'Invalid Target');
+        showNotice(t('selectMonsterFromGraveyardInvalid'), t('invalidTarget'));
         return;
       }
       if (uiState.spellCard.id === 'dust-tornado' || uiState.spellCard.id === 'de-spell') {
-        showNotice("Select an opponent's Spell/Trap card!", 'Invalid Target');
+        showNotice(t('selectOpponentSpellTrapShort'), t('invalidTarget'));
         return;
       }
       const target = state.opponent.monsterZone[index];
       if (uiState.spellCard.id === 'brain-control' && target && (target.position === 'set-monster' || target.isFusion)) {
-        showNotice('Brain Control can only target a face-up monster that can be Normal Summoned or Set!', 'Invalid Target');
+        showNotice(t('brainControlTargetRestriction'), t('invalidTarget'));
         return;
       }
       if (target) {
@@ -1990,7 +2027,7 @@ export default function App() {
     if (state.turn !== 'player') return;
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id !== 'monster-reborn') {
-        showNotice('Invalid target!', 'Invalid Target');
+        showNotice(t('invalidTargetMessage'), t('invalidTarget'));
         return;
       }
       openMonsterRebornZoneSelection('player', uiState.spellCard, uiState.fromZone);
@@ -2001,7 +2038,7 @@ export default function App() {
     if (state.turn !== 'player') return;
     if (uiState.type === 'SELECT_SPELL_TARGET') {
       if (uiState.spellCard.id !== 'monster-reborn') {
-        showNotice('Invalid target!', 'Invalid Target');
+        showNotice(t('invalidTargetMessage'), t('invalidTarget'));
         return;
       }
       openMonsterRebornZoneSelection('opponent', uiState.spellCard, uiState.fromZone);
@@ -2250,7 +2287,7 @@ export default function App() {
                         }}
                         className="theme-button-subtle px-4 py-3 font-mono text-sm uppercase tracking-widest"
                       >
-                        Restart From Stage 1
+                        {t('restartFromStage1')}
                       </button>
                     )}
                     <button
@@ -2278,10 +2315,10 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="theme-chip flex items-center gap-2 rounded-full px-3 py-2 text-[10px] font-mono uppercase tracking-[0.22em]"
+                className="theme-chip flex max-w-[168px] items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[9px] font-mono tracking-[0.14em]"
               >
-                <UserCircle2 size={14} />
-                <span>{userProfile ? userProfile.displayName : t('guestMode')}</span>
+                <UserCircle2 size={13} />
+                <span className="truncate">{userProfile ? userProfile.displayName : t('guestMode')}</span>
               </button>
             )}
           />
@@ -2289,17 +2326,17 @@ export default function App() {
           <div className="min-h-0 flex-1 overflow-hidden">
             {mobileTab === 'play' && view === 'start' ? renderMobilePlayHome() : null}
             {mobileTab === 'decks' && view === 'deck-builder' ? (
-              <Suspense fallback={renderLazyScreenFallback('Deck Builder', true)}>
+              <Suspense fallback={renderLazyScreenFallback(t('deckBuilder'), true)}>
                 <DeckBuilder onBack={() => handleMobileTabChange('play')} announce={showAnnouncement} embeddedInShell />
               </Suspense>
             ) : null}
             {mobileTab === 'history' && view === 'history' ? (
-              <Suspense fallback={renderLazyScreenFallback('Game History', true)}>
+              <Suspense fallback={renderLazyScreenFallback(t('gameHistory'), true)}>
                 <GameHistoryPage onBack={() => handleMobileTabChange('play')} embeddedInShell />
               </Suspense>
             ) : null}
             {mobileTab === 'help' && view === 'how-to-play' ? (
-              <Suspense fallback={renderLazyScreenFallback('How To Play', true)}>
+              <Suspense fallback={renderLazyScreenFallback(t('howToPlay'), true)}>
                 <HowToPlay onBack={() => handleMobileTabChange('play')} embeddedInShell />
               </Suspense>
             ) : null}
@@ -2328,25 +2365,25 @@ export default function App() {
             expandable
             expanded={mobileSheetExpanded}
             onToggleExpanded={() => setMobileSheetExpanded((previous) => !previous)}
-            compactHeightClassName="max-h-[38vh]"
+            compactHeightClassName="max-h-[42vh]"
             maxHeightClassName="max-h-[72vh]"
           >
-            <div className="space-y-4">
-              <div className="theme-elevated rounded-2xl px-4 py-4">
-                <div className="theme-eyebrow text-[10px]">
+            <div className="space-y-3">
+              <div className="theme-elevated rounded-[18px] px-3.5 py-3.5">
+                <div className="theme-eyebrow text-[9px]">
                   {userProfile ? t('signedInAs') : t('guestMode')}
                 </div>
-                <div className="mt-3 text-base">
+                <div className="mt-2 text-sm">
                   {userProfile?.email ?? userProfile?.displayName ?? t('guestMode')}
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3">
                 <label className="block">
-                  <span className="theme-eyebrow text-[10px]">{t('language')}</span>
+                  <span className="theme-eyebrow text-[9px]">{t('language')}</span>
                   <select
                     value={language}
                     onChange={(event) => setLanguage(event.target.value as typeof language)}
-                    className="theme-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
+                  className="theme-input mt-2 w-full rounded-[16px] px-3 py-2.5 text-xs"
                   >
                     {languageOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -2356,11 +2393,11 @@ export default function App() {
                   </select>
                 </label>
                 <label className="block">
-                  <span className="theme-eyebrow text-[10px]">{t('theme')}</span>
+                  <span className="theme-eyebrow text-[9px]">{t('theme')}</span>
                   <select
                     value={theme}
                     onChange={(event) => setTheme(event.target.value as typeof theme)}
-                    className="theme-input mt-2 w-full rounded-2xl px-4 py-3 text-sm"
+                    className="theme-input mt-2 w-full rounded-[16px] px-3 py-2.5 text-xs"
                   >
                     {themeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -2378,14 +2415,14 @@ export default function App() {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
+                    className="theme-button-subtle w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
+                    className="theme-button w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
                   >
                     {t('signOut')}
                   </button>
@@ -2397,7 +2434,7 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
+                  className="theme-button w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
                 >
                   {t('signIn')}
                 </button>
@@ -2482,7 +2519,7 @@ export default function App() {
                       }}
                       className="w-full rounded-2xl border border-zinc-800 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-zinc-400"
                     >
-                      Restart Stage 1
+                      {t('restartFromStage1')}
                     </button>
                   ) : null}
                 </div>
@@ -2495,17 +2532,17 @@ export default function App() {
       )}
 
       {view === 'deck-builder' && !showMobileShell && (
-        <Suspense fallback={renderLazyScreenFallback('Deck Builder')}>
+        <Suspense fallback={renderLazyScreenFallback(t('deckBuilder'))}>
           <DeckBuilder onBack={() => setView('start')} announce={showAnnouncement} />
         </Suspense>
       )}
       {view === 'how-to-play' && !showMobileShell && (
-        <Suspense fallback={renderLazyScreenFallback('How To Play')}>
+        <Suspense fallback={renderLazyScreenFallback(t('howToPlay'))}>
           <HowToPlay onBack={() => setView('start')} />
         </Suspense>
       )}
       {view === 'sign-in' && (
-        <Suspense fallback={renderLazyScreenFallback('Sign In')}>
+        <Suspense fallback={renderLazyScreenFallback(t('signIn'))}>
           <SignInPage
             onBack={() => setView('start')}
             onSuccess={() => setView('start')}
@@ -2513,7 +2550,7 @@ export default function App() {
         </Suspense>
       )}
       {view === 'history' && !showMobileShell && (
-        <Suspense fallback={renderLazyScreenFallback('Game History')}>
+        <Suspense fallback={renderLazyScreenFallback(t('gameHistory'))}>
           <GameHistoryPage onBack={() => setView('start')} />
         </Suspense>
       )}
@@ -2561,7 +2598,10 @@ export default function App() {
                   </button>
                 </div>
                 <div className="justify-self-center text-[9px] md:text-[10px] font-mono uppercase tracking-[0.22em] md:tracking-[0.3em] text-zinc-700 whitespace-nowrap truncate max-w-full text-center px-1">
-                  Stage {currentCompetitionOpponent.stage} of {currentCompetitionOpponent.totalStages}: {currentCompetitionOpponent.name}
+                  {t('stageOfTotal', {
+                    stage: currentCompetitionOpponent.stage,
+                    total: currentCompetitionOpponent.totalStages,
+                  })}: {currentCompetitionOpponent.name}
                 </div>
                 {renderPhaseTracker('flex gap-2 md:gap-3 text-[10px] md:text-xs font-mono justify-self-end shrink-0')}
               </div>
@@ -3116,7 +3156,7 @@ export default function App() {
                 </div>
                   );
                 })()}
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white mt-2 uppercase tracking-widest">Cancel</button>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white mt-2 uppercase tracking-widest">{t('cancel')}</button>
               </motion.div>
             </motion.div>
           )}
@@ -3129,24 +3169,24 @@ export default function App() {
               transition={getSharedTransition(reduced, 'fast')}
             >
               <div className="bg-black/95 p-4 rounded border border-zinc-700 text-white font-mono text-sm tracking-widest flex flex-col items-center gap-3 pointer-events-auto shadow-2xl">
-                <span>SELECT {uiState.count} TRIBUTE(S)</span>
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">Cancel</button>
+                <span>{t('selectTributes', { count: uiState.count }).toUpperCase()}</span>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">{t('cancel')}</button>
               </div>
             </motion.div>
           )}
           {uiState.type === 'SELECT_DISCARD' && (
             <div className="absolute inset-x-0 top-16 md:top-20 z-50 flex justify-center p-4 pointer-events-none">
               <div className="bg-black/95 p-4 rounded border border-zinc-700 text-white font-mono text-sm tracking-widest flex flex-col items-center gap-3 pointer-events-auto shadow-2xl">
-                <span>SELECT A CARD TO DISCARD</span>
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">Cancel</button>
+                <span>{t('selectCardToDiscard').toUpperCase()}</span>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">{t('cancel')}</button>
               </div>
             </div>
           )}
           {uiState.type === 'SELECT_SPELL_TARGET' && (
             <div className="absolute inset-x-0 top-16 md:top-20 z-50 flex justify-center p-4 pointer-events-none">
               <div className="bg-black/95 p-4 rounded border border-zinc-700 text-white font-mono text-sm tracking-widest flex flex-col items-center gap-3 pointer-events-auto shadow-2xl max-w-[90vw] text-center">
-                <span>SELECT A TARGET FOR {uiState.spellCard.name.toUpperCase()}</span>
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">Cancel</button>
+                <span>{t('selectTargetFor', { name: getLocalizedCardText(uiState.spellCard, language).name }).toUpperCase()}</span>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">{t('cancel')}</button>
               </div>
             </div>
           )}
@@ -3187,7 +3227,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="mt-6 flex justify-center">
-                  <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">Cancel</button>
+                  <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">{t('cancel')}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -3248,7 +3288,7 @@ export default function App() {
                 exit={{ opacity: 0, y: reduced ? 0 : -8, scale: reduced ? 1 : 0.99 }}
                 transition={getSharedTransition(reduced, 'normal')}
               >
-                <span>SELECT A FUSION MONSTER</span>
+                <span>{t('selectFusionMonster').toUpperCase()}</span>
                 <div className="flex flex-wrap gap-4 justify-center mt-4">
                   {uiState.possibleFusions.map(fm => (
                     <div key={fm.instanceId} className="cursor-pointer hover:scale-105 transition-transform" onClick={() => {
@@ -3259,7 +3299,7 @@ export default function App() {
                         fromZone: uiState.fromZone,
                         selectedMaterials: []
                       });
-                      showNotice(`Select materials for ${fm.name}.`, 'Action Required');
+                      showNotice(t('selectMaterialsFor', { name: getLocalizedCardText(fm, language).name }), t('actionRequired'));
                     }}>
                       <CardView 
                         card={fm} 
@@ -3269,7 +3309,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest mt-4">Cancel</button>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest mt-4">{t('cancel')}</button>
               </motion.div>
             </motion.div>
           )}
@@ -3282,9 +3322,9 @@ export default function App() {
               transition={getSharedTransition(reduced, 'fast')}
             >
               <div className="bg-black/95 p-4 rounded border border-zinc-700 text-white font-mono text-sm tracking-widest flex flex-col items-center gap-3 pointer-events-auto shadow-2xl text-center">
-                <span>SELECT MATERIALS FOR {uiState.fusionMonster.name.toUpperCase()}</span>
-                <span className="text-sm text-zinc-400">Selected: {uiState.selectedMaterials.length} / {uiState.fusionMonster.fusionMaterials?.length || 0}</span>
-                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">Cancel</button>
+                <span>{t('selectMaterialsFor', { name: getLocalizedCardText(uiState.fusionMonster, language).name }).toUpperCase()}</span>
+                <span className="text-sm text-zinc-400">{t('selectedCount', { selected: uiState.selectedMaterials.length, total: uiState.fusionMonster.fusionMaterials?.length || 0 })}</span>
+                <button onClick={() => setUiState({ type: 'IDLE' })} className="text-xs font-mono text-zinc-500 hover:text-white uppercase tracking-widest">{t('cancel')}</button>
               </div>
             </motion.div>
           )}
@@ -3306,32 +3346,32 @@ export default function App() {
                   className="w-full max-w-md border border-zinc-700 bg-black p-6 flex flex-col items-center text-center"
                 >
                   <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500 mb-3">
-                    CPU Mode
+                    {t('cpuMode')}
                   </div>
                   <h2 className="text-xl font-sans font-bold uppercase tracking-wide text-white mb-2">
-                    Select Deck Type
+                    {t('selectDeckType')}
                   </h2>
                   <p className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-6">
-                    Choose how you want to duel the CPU.
+                    {t('playDeckChoicePrompt')}
                   </p>
                   <div className="w-full flex flex-col gap-3">
                     <button
                       onClick={startRandomGame}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                     >
-                      Random Deck
+                      {t('randomDeck')}
                     </button>
                     <button
                       onClick={startCustomGame}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-4 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                     >
-                      Custom Deck
+                      {t('customDeck')}
                     </button>
                     <button
                       onClick={returnToMenu}
                       className="text-xs font-mono uppercase tracking-widest text-zinc-500 hover:text-white mt-2"
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                   </div>
                 </motion.div>
@@ -3405,20 +3445,20 @@ export default function App() {
                   className="w-full max-w-lg border border-zinc-700 bg-black p-6 flex flex-col items-center text-center gap-5"
                 >
                   <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
-                    Stage {currentCompetitionOpponent.stage} of {currentCompetitionOpponent.totalStages}
+                    {t('stageHeading', { stage: currentCompetitionOpponent.stage, total: currentCompetitionOpponent.totalStages })}
                   </div>
                   <h2 className="text-3xl font-mono uppercase tracking-[0.16em] text-white">
-                    {currentCompetitionOpponent.name}
+                    {localizedCompetitionContent?.name ?? currentCompetitionOpponent.name}
                   </h2>
                   <p className="max-w-md text-base text-zinc-200 leading-7">
-                    {currentCompetitionOpponent.voice.intro}
+                    {localizedCompetitionContent?.introLine ?? currentCompetitionOpponent.voice.intro}
                   </p>
                   <div className="pt-1">
                     <button
                       onClick={() => setShowCompetitionIntro(false)}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-6 py-3 font-mono text-sm uppercase tracking-widest transition-colors"
                     >
-                      Begin Duel
+                      {t('beginDuel')}
                     </button>
                   </div>
                 </motion.div>
@@ -3440,15 +3480,15 @@ export default function App() {
                   <div className="w-full max-w-2xl border border-zinc-700 bg-black p-6 flex flex-col gap-6 text-center">
                     <div>
                       <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">
-                        Stage {currentCompetitionOpponent.stage} of {currentCompetitionOpponent.totalStages}
+                        {t('stageHeading', { stage: currentCompetitionOpponent.stage, total: currentCompetitionOpponent.totalStages })}
                       </div>
                       <h1 className="mt-3 text-5xl font-mono tracking-[0.18em] text-white uppercase">
-                        {state.winner === 'player' ? 'Victory' : 'Defeat'}
+                        {state.winner === 'player' ? t('winnerVictory') : t('winnerDefeat')}
                       </h1>
                       <div className="mt-3 text-sm font-mono uppercase tracking-[0.16em] text-zinc-500">
                         {state.winner === 'player'
-                          ? `Stage cleared: ${currentCompetitionOpponent.name}`
-                          : `Eliminated by ${currentCompetitionOpponent.name}`}
+                          ? t('stageCleared', { name: localizedCompetitionContent?.name ?? currentCompetitionOpponent.name })
+                          : t('forfeitEliminatedBy', { name: localizedCompetitionContent?.name ?? currentCompetitionOpponent.name })}
                       </div>
                     </div>
                     {(() => {
@@ -3458,22 +3498,22 @@ export default function App() {
                         <>
                           <div className="grid gap-3 md:grid-cols-3">
                             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Turns</div>
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('turns')}</div>
                               <div className="mt-2 text-lg font-mono text-white">{summary.turnsSurvived}</div>
                             </div>
                             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">LP Remaining</div>
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('lpRemaining')}</div>
                               <div className="mt-2 text-lg font-mono text-white">{summary.lpRemaining}</div>
                             </div>
                             <div className="border border-zinc-800 bg-zinc-950 px-4 py-4">
-                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Finish</div>
+                              <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('finish')}</div>
                               <div className="mt-2 text-sm font-mono uppercase tracking-[0.12em] text-white">
-                                {summary.finishingCard ?? 'Duel End'}
+                                {summary.finishingCard ?? t('duelEnd')}
                               </div>
                             </div>
                           </div>
                           <div className="border border-zinc-800 bg-zinc-950 px-4 py-4 text-left">
-                            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Summary</div>
+                            <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">{t('summary')}</div>
                             <div className="mt-3 text-sm text-zinc-300 leading-6">{summary.summaryLine}</div>
                             <div className="mt-3 text-xs font-mono text-zinc-500 leading-5">{summary.notablePlay}</div>
                           </div>
@@ -3491,20 +3531,20 @@ export default function App() {
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-8 py-3 font-mono text-sm transition-colors"
                     >
                       {state.winner === 'player'
-                        ? (competitionStageIndex !== null && competitionStageIndex < COMPETITION_LADDER.length - 1 ? 'Next Duel' : 'Claim Title')
-                        : 'Return To Menu'}
+                        ? (competitionStageIndex !== null && competitionStageIndex < COMPETITION_LADDER.length - 1 ? t('nextDuel') : t('claimTitle'))
+                        : t('returnToMenu')}
                     </button>
                   </div>
                 ) : (
                   <div className="text-center flex flex-col items-center gap-8">
                     <h1 className="text-6xl font-sans tracking-widest text-white uppercase">
-                      {state.winner === 'player' ? 'VICTORY' : 'DEFEAT'}
+                      {state.winner === 'player' ? t('winnerVictory') : t('winnerDefeat')}
                     </h1>
                     <button
                       onClick={returnToMenu}
                       className="border border-zinc-600 hover:bg-white hover:text-black text-white px-8 py-3 font-mono text-sm transition-colors"
                     >
-                      Play Again
+                      {t('playAgain')}
                     </button>
                   </div>
                 )}
@@ -3516,7 +3556,7 @@ export default function App() {
         {/* Desktop Sidebar */}
         <div className="hidden md:flex w-80 h-full bg-zinc-950 border-l border-zinc-800 flex-col shrink-0">
           <div className="flex-1 p-6 border-b border-zinc-800 flex flex-col items-center justify-center overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {renderCardDetailPanel('Hover card for details')}
+            {renderCardDetailPanel(t('clickCardForDetails'))}
           </div>
 
           <div className="h-1/2 p-4 flex flex-col shrink-0">
@@ -3526,31 +3566,31 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`theme-panel md:hidden rounded-t-[20px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[38vh] min-h-[240px]' : 'h-[48px]'}`}>
-          <div className="theme-divider flex items-center justify-center border-b py-2 shrink-0">
+        <div className={`theme-panel md:hidden rounded-t-[18px] flex flex-col shrink-0 overflow-hidden transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[34vh] min-h-[220px]' : 'h-[42px]'}`}>
+          <div className="theme-divider flex items-center justify-center border-b py-1.5 shrink-0">
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="h-1.5 w-10 rounded-full bg-[var(--app-border-strong)]"
-              aria-label={mobileInfoExpanded ? 'Collapse mobile info panel' : 'Expand mobile info panel'}
+              className="h-1 w-8 rounded-full bg-[var(--app-border-strong)]"
+              aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
             />
           </div>
           <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-3 py-2 text-[9px] font-mono uppercase tracking-[0.2em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-4 py-3 text-[10px] font-mono uppercase tracking-[0.3em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-3 py-2 text-[9px] font-mono uppercase tracking-[0.2em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('duelLog')}
             </button>
             <button
               onClick={() => setMobileInfoExpanded((prev) => !prev)}
               className="theme-subtle theme-divider flex items-center justify-center border-l px-3 transition-colors"
-              aria-label={mobileInfoExpanded ? 'Collapse mobile info panel' : 'Expand mobile info panel'}
+              aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
             >
               {mobileInfoExpanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </button>
@@ -3564,7 +3604,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: reduced ? 0 : 8 }}
                 transition={getSharedTransition(reduced, 'fast')}
-                className="flex-1 overflow-y-auto p-4"
+                className="flex-1 overflow-y-auto p-3"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {mobileInfoTab === 'details' ? (
@@ -3576,7 +3616,7 @@ export default function App() {
                       transition={getSharedTransition(reduced, 'fast')}
                       className="min-h-full"
                     >
-                      {renderMobileCardDetailPanel('Tap a face-up card, hand card, or graveyard pile to inspect it')}
+                      {renderMobileCardDetailPanel(t('tapFaceUpCardToInspect'))}
                     </motion.div>
                   ) : (
                     <motion.div

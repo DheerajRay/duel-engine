@@ -3,6 +3,8 @@ import { GameCard } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 import { Sword, Sparkles, Ban, ChevronUp, Wand2, Zap } from 'lucide-react';
 import { CARD_SPRING, getSharedTransition, useMotionPreference } from '../utils/motion';
+import { useAppPreferences } from '../preferences/AppPreferencesProvider';
+import { getLocalizedCardText } from '../services/cardLocalization';
 
 interface CardViewProps {
   card: GameCard | null;
@@ -30,6 +32,7 @@ export const CardView: React.FC<CardViewProps> = ({
   onMouseLeave,
 }) => {
   const { reduced } = useMotionPreference();
+  const { language } = useAppPreferences();
 
   const renderCenterIcon = (activeCard: GameCard) => {
     if (action === 'attack') {
@@ -63,6 +66,9 @@ export const CardView: React.FC<CardViewProps> = ({
   return (
     <AnimatePresence mode="wait" initial={false}>
       {card ? (
+        (() => {
+          const localizedCard = getLocalizedCardText(card, language);
+          return (
         <motion.div
           key={`${card.instanceId}-${card.position ?? 'unset'}-${isHidden ? 'hidden' : 'shown'}`}
           layout
@@ -98,7 +104,7 @@ export const CardView: React.FC<CardViewProps> = ({
           ) : (
             <div className="flex flex-col h-full justify-between">
               <div className="flex flex-col gap-1">
-                <div className="text-[9px] sm:text-[10px] font-bold leading-tight uppercase tracking-wider line-clamp-2 text-white">{card.name}</div>
+                <div className="text-[9px] sm:text-[10px] font-bold leading-tight uppercase tracking-wider line-clamp-2 text-white">{localizedCard.name}</div>
                 {card.type === 'Monster' && (
                   <div className="flex items-center gap-0.5 text-[8px] sm:text-[9px] text-yellow-500 font-mono">
                     <span>&#9733;</span>
@@ -120,6 +126,8 @@ export const CardView: React.FC<CardViewProps> = ({
             </div>
           )}
         </motion.div>
+          );
+        })()
       ) : (
         <motion.div
           key="empty-slot"

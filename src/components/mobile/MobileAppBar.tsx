@@ -8,8 +8,8 @@ export function MobileAppBar({
   rightSlot?: ReactNode;
 }) {
   return (
-    <div className="theme-screen theme-divider md:hidden z-20 flex h-14 shrink-0 items-center justify-between border-b px-4 backdrop-blur">
-      <div className="theme-eyebrow text-[11px]">
+    <div className="ui-app-bar theme-screen theme-divider md:hidden z-20 flex shrink-0 items-center justify-between border-b px-3 backdrop-blur">
+      <div className="ui-eyebrow">
         {title}
       </div>
       {rightSlot ? <div className="shrink-0">{rightSlot}</div> : null}

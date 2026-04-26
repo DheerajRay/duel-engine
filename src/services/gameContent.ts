@@ -7,13 +7,14 @@ import {
 import type {
   CloudCardRow,
   CloudCardEngineMetadataRow,
+  CloudCardLocalizationRow,
   CloudCharacterRow,
   CloudCompetitionStageRow,
   CloudPredefinedDeckRow,
   GameContentBundle,
 } from '../types/cloud';
 
-const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+const withTimeout = <T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T> => {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -29,7 +30,7 @@ const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
   }) as Promise<T>;
 };
 
-const mapCloudCards = (
+  const mapCloudCards = (
   rows: CloudCardRow[],
   engineRows: CloudCardEngineMetadataRow[],
 ) => {
@@ -82,6 +83,13 @@ const mapCloudCards = (
     };
   });
 };
+
+const mapCloudCardLocalizations = (rows: CloudCardLocalizationRow[]) => rows.map((row) => ({
+  card_id: row.card_id,
+  language: row.language,
+  name: row.name,
+  description: row.description,
+}));
 
 const mapCloudDecks = (rows: CloudPredefinedDeckRow[]) => rows.map((row) => ({
   id: row.id,
@@ -138,11 +146,17 @@ export const initializeGameContent = async (): Promise<{ source: 'supabase' | 'l
       throw cardsResult.error || engineResult.error || decksResult.error || charactersResult.error || stagesResult.error;
     }
 
+    const localizationResult = await withTimeout(
+      Promise.resolve(client.from('card_localizations').select('*')),
+      3000,
+    ).catch(() => ({ data: localBundle.cardLocalizations, error: null } as { data: typeof localBundle.cardLocalizations; error: null }));
+
     const bundle: GameContentBundle = {
       cards: mapCloudCards(
         (cardsResult.data as CloudCardRow[]) ?? [],
         (engineResult.data as CloudCardEngineMetadataRow[]) ?? [],
       ),
+      cardLocalizations: mapCloudCardLocalizations((localizationResult.data as CloudCardLocalizationRow[]) ?? localBundle.cardLocalizations),
       predefinedDecks: mapCloudDecks((decksResult.data as CloudPredefinedDeckRow[]) ?? []),
       characters: mapCloudCharacters((charactersResult.data as CloudCharacterRow[]) ?? []),
       competitionStages: mapCloudStages((stagesResult.data as CloudCompetitionStageRow[]) ?? []),
