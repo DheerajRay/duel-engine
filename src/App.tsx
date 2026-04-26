@@ -9,7 +9,7 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { AnnouncementInput, useAnnouncementQueue } from './hooks/useAnnouncementQueue';
 import { GameCard, LogEntry, Phase } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronUp, Layers3, Settings, Shield, Swords, Trophy, UserCircle2 } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Layers3, Settings, Shield, Swords, Trophy } from 'lucide-react';
 import { generateCuratedDeck, generateCuratedExtraDeck } from './utils/deckGenerator';
 import { COMPETITION_LADDER, formatCompetitionLogMessage, getCompetitionNotablePlay } from './utils/competitionMode';
 import {
@@ -26,7 +26,7 @@ import {
 import { getSharedTransition, useMotionPreference } from './utils/motion';
 import { ensureProfile, getCurrentUser, onAuthStateChange, signOut, toUserProfile } from './services/auth';
 import { initializeGameContent } from './services/gameContent';
-import { appendDuelHistoryEntry } from './services/history';
+import { appendDuelHistoryEntry, getDuelHistory } from './services/history';
 import {
   clearCompetitionProgress,
   ensureStarterCustomDeck,
@@ -126,6 +126,7 @@ export default function App() {
   const [showMobileAccountSheet, setShowMobileAccountSheet] = useState(false);
   const [mobileSheetExpanded, setMobileSheetExpanded] = useState(false);
   const [primaryDeckSummary, setPrimaryDeckSummary] = useState<{ name: string; mainCount: number; extraCount: number; valid: boolean } | null>(null);
+  const [duelRecordSummary, setDuelRecordSummary] = useState({ wins: 0, losses: 0, forfeits: 0 });
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [uiState, setUiState] = useState<UIState>({ type: 'IDLE' });
   const [showCardDetail, setShowCardDetail] = useState<GameCard | null>(null);
@@ -168,6 +169,21 @@ export default function App() {
 
   const showAnnouncement = (input: AnnouncementInput) => announce(input);
   const showNotice = (message: string, title = t('notice')) => announce({ title, message });
+
+  const refreshDuelRecordSummary = async () => {
+    const historyEntries = await withTimeout(getDuelHistory(), [] as DuelHistoryEntry[]);
+    const summary = historyEntries.reduce(
+      (acc, entry) => {
+        if (entry.result === 'win') acc.wins += 1;
+        if (entry.result === 'loss') acc.losses += 1;
+        if (entry.result === 'forfeit') acc.forfeits += 1;
+        return acc;
+      },
+      { wins: 0, losses: 0, forfeits: 0 },
+    );
+
+    setDuelRecordSummary(summary);
+  };
 
   const getPhaseAnnouncement = (phase: Phase) => {
     switch (phase) {
@@ -354,23 +370,24 @@ export default function App() {
             </button>
           </section>
 
-          <section className="theme-panel rounded-[20px] px-4 py-3.5">
-            <div className="theme-eyebrow text-[9px]">{t('playHomeShortcuts')}</div>
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => handleMobileTabChange('decks')}
-                className="theme-elevated rounded-[16px] px-3 py-2 text-[7px] font-mono uppercase tracking-[0.1em]"
-              >
-                {t('deckBuilder')}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMobileTabChange('help')}
-                className="theme-elevated rounded-[16px] px-3 py-2 text-[7px] font-mono uppercase tracking-[0.1em]"
-              >
-                {t('howToPlay')}
-              </button>
+          <section className="grid grid-cols-3 gap-2">
+            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
+              <div className="theme-eyebrow text-[8px]">{t('wins')}</div>
+              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
+                {duelRecordSummary.wins}
+              </div>
+            </div>
+            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
+              <div className="theme-eyebrow text-[8px]">{t('losses')}</div>
+              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
+                {duelRecordSummary.losses}
+              </div>
+            </div>
+            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
+              <div className="theme-eyebrow text-[8px]">{t('forfeits')}</div>
+              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
+                {duelRecordSummary.forfeits}
+              </div>
             </div>
           </section>
         </div>
@@ -452,6 +469,8 @@ export default function App() {
             valid: activeDeck.mainDeck.length >= 40 && activeDeck.mainDeck.length <= 60,
           });
         });
+
+        void refreshDuelRecordSummary();
 
         if (user) {
           void withTimeout(ensureProfile(user), null).then((profile) => {
@@ -549,6 +568,7 @@ export default function App() {
       };
 
       await appendDuelHistoryEntry(historyEntry);
+      await refreshDuelRecordSummary();
       duelHistorySavedRef.current = `${state.turnCount}-${state.winner}`;
     };
 
@@ -700,6 +720,7 @@ export default function App() {
         logs: state.log,
         createdAt: new Date().toISOString(),
       });
+      await refreshDuelRecordSummary();
     }
 
     returnToMenu();
@@ -2318,10 +2339,9 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="theme-chip flex max-w-[132px] items-center gap-1 rounded-full px-1.5 py-1 text-[7px] font-mono tracking-[0.06em]"
+                className="ui-eyebrow max-w-[132px] truncate text-right transition-colors hover:text-[var(--app-text-primary)]"
               >
-                <UserCircle2 size={10} />
-                <span className="truncate">{userProfile ? userProfile.displayName : t('guestMode')}</span>
+                {userProfile ? userProfile.displayName : t('guestMode')}
               </button>
             )}
           />
@@ -3569,24 +3589,17 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`theme-panel md:hidden fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),8px)] z-30 rounded-[18px] flex flex-col overflow-hidden shadow-xl transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[36vh] min-h-[220px] max-h-[320px]' : 'h-[48px]'}`}>
-          <div className="theme-divider flex items-center justify-center border-b py-1 shrink-0">
-            <button
-              onClick={() => setMobileInfoExpanded((prev) => !prev)}
-              className="h-1 w-7 rounded-full bg-[var(--app-border-strong)]"
-              aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
-            />
-          </div>
+        <div className={`theme-panel md:hidden fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),14px)] z-30 rounded-[18px] flex flex-col overflow-hidden shadow-xl transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[34vh] min-h-[210px] max-h-[300px]' : 'h-[40px]'}`}>
           <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[6px] font-mono uppercase tracking-[0.08em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[6px] font-mono uppercase tracking-[0.08em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('duelLog')}
             </button>
@@ -3595,7 +3608,7 @@ export default function App() {
               className="theme-subtle theme-divider flex items-center justify-center border-l px-2.5 transition-colors"
               aria-label={mobileInfoExpanded ? t('collapseMobileInfoPanel') : t('expandMobileInfoPanel')}
             >
-              {mobileInfoExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {mobileInfoExpanded ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
             </button>
           </div>
 
@@ -3607,7 +3620,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: reduced ? 0 : 8 }}
                 transition={getSharedTransition(reduced, 'fast')}
-                className="flex-1 overflow-y-auto p-2.5"
+                className="flex-1 overflow-y-auto p-2"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {mobileInfoTab === 'details' ? (

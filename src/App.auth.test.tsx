@@ -25,6 +25,7 @@ vi.mock('./services/gameContent', () => ({
 
 vi.mock('./services/history', () => ({
   appendDuelHistoryEntry: vi.fn().mockResolvedValue(undefined),
+  getDuelHistory: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('./services/userData', () => ({

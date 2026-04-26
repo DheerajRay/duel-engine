@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.3 - 2026-04-26
+
+Patch release focused on simplifying the mobile play header and reducing home-screen/footer chrome.
+
+Included in this release:
+
+- removed the mobile username bubble styling and switched the account label to the same understated heading style as the app title
+- replaced the mobile play-home shortcuts block with a compact win / loss / forfeit record summary
+- refreshed the duel record summary automatically from duel history so the play home reflects recent matches
+- tightened the duel mobile inspector again with a simpler single-row header, smaller labels, and a more compact floating drawer footprint
+
 ## v1.6.2 - 2026-04-26
 
 Patch release focused on tightening oversized mobile controls and making the duel info surface work as a compact overlay instead of a clipped footer.
