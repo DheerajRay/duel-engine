@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.3 - 2026-04-26
+
+Patch release focused on cleaning up the mobile deck-builder header controls and compact filter band.
+
+Included in this release:
+
+- removed the oversized `Current Deck` / `Card Library` mode buttons and moved mode switching back into compact header icon controls
+- kept the mobile deck builder opening in `Deck Mode`, while preserving quick icon access to `Card Library`
+- fixed the compact `Type` and `Sort` controls so their text no longer clips or collides with the dropdown arrow
+- shortened the visible mobile filter/sort labels to match the mockup-scale control widths more closely
+- kept the AI assistant action in the same compact search/filter row
+
 ## v1.7.2 - 2026-04-26
 
 Patch release focused on bringing the mobile deck-builder shell back in line with the approved mockup.

@@ -397,6 +397,32 @@ export default function DeckBuilder({
     }
   };
 
+  const mobileFilterLabel =
+    filterType === 'All'
+      ? t('type')
+      : filterType === 'Monster'
+        ? t('cardTypeMonster')
+        : filterType === 'Spell'
+          ? t('cardTypeSpell')
+          : filterType === 'Trap'
+            ? t('cardTypeTrap')
+            : t('fusionType');
+
+  const mobileSortLabel =
+    sortBy === 'name-asc'
+      ? t('sortBy')
+      : sortBy === 'name-desc'
+        ? t('sortNameDescCompact')
+        : sortBy === 'level-desc'
+          ? t('sortLevelDescCompact')
+          : sortBy === 'level-asc'
+            ? t('sortLevelAscCompact')
+            : sortBy === 'atk-desc'
+              ? t('sortAtkDescCompact')
+              : sortBy === 'def-desc'
+                ? t('sortDefDescCompact')
+                : t('sortTypeCompact');
+
   const renderDeckList = (variant: 'desktop' | 'mobile-sheet' | 'mobile-inline' = 'desktop') => (
     <div className={`${
       variant === 'desktop'
@@ -586,51 +612,51 @@ export default function DeckBuilder({
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {mobileBuilderMode === 'library' ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileBuilderMode('deck');
-                      setMobileDeckLibraryExpanded(true);
-                    }}
-                    className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                    aria-label={t('decks')}
-                  >
-                    <Layers size={13} />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMobileBuilderMode('deck')}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('currentDeck')}
+                    >
+                      <Layers size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileBuilderMode('deck');
+                        setMobileDeckLibraryExpanded((previous) => !previous);
+                      }}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('deckLibrary')}
+                    >
+                      {mobileDeckLibraryExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={isCurrentPredefined}
-                    className={`flex h-8 w-8 items-center justify-center rounded-[6px] border p-0 ${
-                      isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
-                    }`}
-                    aria-label={t('save')}
-                  >
-                    <Save size={13} />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setMobileBuilderMode('library')}
+                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                      aria-label={t('cardLibrary')}
+                    >
+                      <ArrowLeft size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={isCurrentPredefined}
+                      className={`flex h-8 w-8 items-center justify-center rounded-[6px] border p-0 ${
+                        isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
+                      }`}
+                      aria-label={t('save')}
+                    >
+                      <Save size={13} />
+                    </button>
+                  </>
                 )}
               </div>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMobileBuilderMode('deck')}
-                className={`px-3 py-2 text-[8px] font-mono uppercase tracking-[0.12em] transition-colors ${
-                  mobileBuilderMode === 'deck' ? 'theme-button' : 'theme-button-subtle'
-                }`}
-              >
-                {t('currentDeck')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileBuilderMode('library')}
-                className={`px-3 py-2 text-[8px] font-mono uppercase tracking-[0.12em] transition-colors ${
-                  mobileBuilderMode === 'library' ? 'theme-button' : 'theme-button-subtle'
-                }`}
-              >
-                {t('cardLibrary')}
-              </button>
             </div>
           </div>
 
@@ -671,7 +697,7 @@ export default function DeckBuilder({
           ) : null}
 
           <div className="theme-screen theme-divider border-b px-3 py-2.5">
-            <div className="grid grid-cols-[minmax(0,1.4fr)_84px_84px_32px] gap-2">
+            <div className="grid grid-cols-[minmax(0,1.55fr)_76px_88px_32px] gap-2">
               <div className="relative">
                 <Search className="theme-subtle absolute left-2.5 top-1/2 -translate-y-1/2" size={12} />
                 <input
@@ -682,44 +708,51 @@ export default function DeckBuilder({
                   className="theme-input w-full rounded-[6px] pl-7 pr-2.5 py-1.5 text-[9px] font-mono transition-colors"
                 />
               </div>
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value as any);
-                  setSortBy('name-asc');
-                }}
-                className="theme-input rounded-[6px] px-2 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
-              >
-                <option value="All">{t('allTypes')}</option>
-                <option value="Monster">{t('cardTypeMonster')}</option>
-                <option value="Spell">{t('cardTypeSpell')}</option>
-                <option value="Trap">{t('cardTypeTrap')}</option>
-                <option value="Fusion">{t('fusionType')}</option>
-              </select>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="theme-input rounded-[6px] px-2 py-1.5 text-[8px] font-mono uppercase tracking-[0.08em]"
-              >
-                <option value="name-asc">{t('nameSortAsc')}</option>
-                <option value="name-desc">{t('nameSortDesc')}</option>
-                {(filterType === 'Monster' || filterType === 'All' || filterType === 'Fusion') && (
-                  <>
-                    <option value="level-desc">{t('sortLevelDesc')}</option>
-                    <option value="level-asc">{t('sortLevelAsc')}</option>
-                    <option value="atk-desc">{t('sortAtkDesc')}</option>
-                    <option value="def-desc">{t('sortDefDesc')}</option>
-                  </>
-                )}
-                {(filterType === 'Spell' || filterType === 'Trap') && (
-                  <option value="type">{t('sortCardType')}</option>
-                )}
-              </select>
+              <div className="relative">
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value as any);
+                    setSortBy('name-asc');
+                  }}
+                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[7px] font-mono uppercase tracking-[0.06em]"
+                >
+                  <option value="All">{t('type')}</option>
+                  <option value="Monster">{t('cardTypeMonster')}</option>
+                  <option value="Spell">{t('cardTypeSpell')}</option>
+                  <option value="Trap">{t('cardTypeTrap')}</option>
+                  <option value="Fusion">{t('fusionType')}</option>
+                </select>
+                <ChevronDown className="theme-subtle pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2" size={10} />
+              </div>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[7px] font-mono uppercase tracking-[0.06em]"
+                >
+                  <option value="name-asc">{t('sortBy')}</option>
+                  <option value="name-desc">{t('sortNameDescCompact')}</option>
+                  {(filterType === 'Monster' || filterType === 'All' || filterType === 'Fusion') && (
+                    <>
+                      <option value="level-desc">{t('sortLevelDescCompact')}</option>
+                      <option value="level-asc">{t('sortLevelAscCompact')}</option>
+                      <option value="atk-desc">{t('sortAtkDescCompact')}</option>
+                      <option value="def-desc">{t('sortDefDescCompact')}</option>
+                    </>
+                  )}
+                  {(filterType === 'Spell' || filterType === 'Trap') && (
+                    <option value="type">{t('sortTypeCompact')}</option>
+                  )}
+                </select>
+                <ChevronDown className="theme-subtle pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2" size={10} />
+              </div>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
                 className="theme-button-subtle flex h-full items-center justify-center rounded-[6px] p-0"
                 aria-label={t('aiAssist')}
+                title={t('aiAssist')}
               >
                 <Sparkles size={12} />
               </button>
