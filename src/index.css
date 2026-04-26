@@ -65,10 +65,10 @@
   --ui-helper-line: 1.45;
 
   /* Radius / stroke */
-  --ui-radius-xs: 10px;
-  --ui-radius-sm: 14px;
-  --ui-radius-md: 18px;
-  --ui-radius-lg: 22px;
+  --ui-radius-xs: 8px;
+  --ui-radius-sm: 10px;
+  --ui-radius-md: 12px;
+  --ui-radius-lg: 14px;
   --ui-border-width: 1px;
 
   /* Density / spacing */
@@ -331,9 +331,9 @@ textarea {
 .theme-button {
   min-height: var(--ui-button-height);
   border: var(--ui-border-width) solid var(--app-border-strong);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-xs);
   color: var(--app-text-primary);
-  background: transparent;
+  background: var(--app-panel);
   transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
 }
 
@@ -347,7 +347,7 @@ textarea {
 .theme-button-subtle {
   min-height: var(--ui-button-height);
   border: var(--ui-border-width) solid var(--app-border);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-xs);
   color: var(--app-text-secondary);
   background: transparent;
   transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
@@ -363,8 +363,8 @@ textarea {
 .theme-chip {
   min-height: var(--ui-chip-height);
   border: var(--ui-border-width) solid var(--app-border);
-  border-radius: 999px;
-  background: var(--app-muted-fill);
+  border-radius: var(--ui-radius-xs);
+  background: transparent;
   color: var(--app-text-secondary);
 }
 
@@ -372,7 +372,7 @@ textarea {
 .theme-chip-active {
   min-height: var(--ui-chip-height);
   border: var(--ui-border-width) solid var(--app-border-strong);
-  border-radius: 999px;
+  border-radius: var(--ui-radius-xs);
   background: var(--app-panel-strong);
   color: var(--app-text-primary);
 }
@@ -382,7 +382,7 @@ textarea {
   min-height: var(--ui-input-height);
   background: var(--app-elevated);
   border: var(--ui-border-width) solid var(--app-border);
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-xs);
   color: var(--app-text-primary);
 }
 
@@ -400,7 +400,7 @@ textarea {
 .ui-sheet {
   background: var(--app-panel);
   border: var(--ui-border-width) solid var(--app-border);
-  border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+  border-radius: var(--ui-radius-md) var(--ui-radius-md) 0 0;
   box-shadow: var(--app-shadow);
 }
 
@@ -545,11 +545,15 @@ textarea {
     --ui-body-md-size: 0.8125rem;
     --ui-body-sm-size: 0.71875rem;
     --ui-mono-label-size: 0.625rem;
-    --ui-app-bar-height: 2.75rem;
-    --ui-tab-height: 2.5rem;
-    --ui-chip-height: 2rem;
-    --ui-button-height: 2.5rem;
-    --ui-input-height: 2.5rem;
-    --ui-sheet-header-height: 2.625rem;
+    --ui-radius-xs: 6px;
+    --ui-radius-sm: 8px;
+    --ui-radius-md: 10px;
+    --ui-radius-lg: 12px;
+    --ui-app-bar-height: 2.5rem;
+    --ui-tab-height: 2.25rem;
+    --ui-chip-height: 1.625rem;
+    --ui-button-height: 2rem;
+    --ui-input-height: 2rem;
+    --ui-sheet-header-height: 2.375rem;
   }
 }

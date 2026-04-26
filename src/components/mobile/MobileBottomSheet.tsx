@@ -60,9 +60,9 @@ export function MobileBottomSheet({
             transition={getSharedTransition(reduced, 'normal')}
             className={`ui-sheet theme-panel relative z-10 w-full border-t ${activeHeightClassName} ${maxHeightClassName} overflow-hidden ${className}`}
           >
-            <div className="theme-divider flex min-h-[var(--ui-sheet-header-height)] items-center justify-between border-b px-3 py-2">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="h-1 w-8 rounded-full bg-[var(--app-border-strong)]" />
+            <div className="theme-divider flex min-h-[var(--ui-sheet-header-height)] items-center justify-between border-b px-3 py-1.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="h-[2px] w-4 rounded-sm bg-[var(--app-border-strong)]" />
                 {title ? (
                   <div className="ui-eyebrow truncate">
                     {title}
@@ -74,7 +74,7 @@ export function MobileBottomSheet({
                   <button
                     type="button"
                     onClick={onToggleExpanded}
-                    className="theme-button-subtle rounded-full p-1"
+                    className="theme-button-subtle flex h-7 w-7 items-center justify-center p-0 text-[var(--app-text-muted)]"
                   >
                     {expanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                   </button>
@@ -82,13 +82,13 @@ export function MobileBottomSheet({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="ui-mono-label theme-subtle"
+                  className="ui-mono-label theme-subtle px-1 text-[8px]"
                 >
                   {t('close')}
                 </button>
               </div>
             </div>
-            <div className="overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3">
+            <div className="overflow-y-auto px-3 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-2.5">
               {children}
             </div>
           </motion.div>

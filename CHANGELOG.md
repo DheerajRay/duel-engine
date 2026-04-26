@@ -11,6 +11,18 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.6.4 - 2026-04-26
+
+Patch release focused on bringing the mobile shell controls closer to the duel screen's smaller rectangular style.
+
+Included in this release:
+
+- reduced the shared mobile chip, button, input, tab-bar, and sheet radii so shell controls no longer read as oversized pill buttons
+- tightened the mobile play-home cards, record counters, and action icons to match the duel screen's denser control language
+- refreshed the mobile account sheet with smaller text, rectangular selects, and duel-style switch-account / sign-out buttons
+- reduced the remaining oversized rounded controls in mobile deck builder, history, help, sign-in, and sheet launchers
+- refined the duel mobile info drawer with a taller collapsed state, smaller tabs, and denser card-detail / duel-log typography so the footer no longer feels clipped
+
 ## v1.6.3 - 2026-04-26
 
 Patch release focused on simplifying the mobile play header and reducing home-screen/footer chrome.

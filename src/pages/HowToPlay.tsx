@@ -55,7 +55,7 @@ export default function HowToPlay({ onBack, embeddedInShell = false }: HowToPlay
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 whileTap={{ scale: reduced ? 1 : 0.985 }}
-                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-2 text-[8px] sm:text-xs font-mono uppercase tracking-[0.08em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.05]' : 'whitespace-nowrap'} ${
+                className={`flex min-w-0 items-center justify-center sm:justify-start gap-1 sm:gap-2 px-1.5 py-1.5 text-[7px] sm:text-xs font-mono uppercase tracking-[0.06em] sm:tracking-[0.16em] transition-colors border border-transparent ${mobileLayout ? 'text-center leading-[1.05]' : 'whitespace-nowrap'} ${
                   activeTab === tab.id 
                     ? 'theme-chip-active' 
                     : 'theme-chip'

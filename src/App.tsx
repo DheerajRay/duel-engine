@@ -288,109 +288,109 @@ export default function App() {
 
   const renderMobilePlayHome = () => (
     <div className="flex-1 overflow-y-auto px-3 py-3">
-        <div className="mx-auto flex max-w-md flex-col gap-3">
+      <div className="mx-auto flex max-w-md flex-col gap-3">
+        <button
+          type="button"
+          onClick={openCpuModeSelection}
+          className="theme-panel rounded-[12px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="theme-eyebrow text-[8px]">{t('playHomeQuickDuel')}</div>
+              <div className="theme-title mt-1.5 text-[13px] uppercase tracking-[0.05em]">{t('cpuMode')}</div>
+              <div className="theme-muted mt-1.5 text-[11px] leading-5">
+                {t('playHomeCpuDescription')}
+              </div>
+            </div>
+            <div className="theme-elevated flex h-8 w-8 items-center justify-center rounded-[8px]">
+              <Swords size={11} />
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={startCompetitionMode}
+          className="theme-panel rounded-[12px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="theme-eyebrow text-[8px]">{t('playHomeLadder')}</div>
+              <div className="theme-title mt-1.5 text-[13px] uppercase tracking-[0.05em]">{t('competition')}</div>
+              <div className="theme-muted mt-1.5 text-[11px] leading-5">
+                {competitionResumeOpponent
+                  ? t('playHomeCompetitionDescription', {
+                      stage: competitionResumeStageIndex + 1,
+                      name: competitionResumeOpponent.name,
+                    })
+                  : t('playHomeCompetitionFallback')}
+              </div>
+            </div>
+            <div className="theme-elevated flex h-8 w-8 items-center justify-center rounded-[8px]">
+              <Trophy size={11} />
+            </div>
+          </div>
+        </button>
+
+        <section className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={openCpuModeSelection}
-            className="theme-panel rounded-[20px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
+            onClick={() => handleMobileTabChange('decks')}
+            className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="theme-eyebrow text-[9px]">{t('playHomeQuickDuel')}</div>
-                <div className="theme-title mt-1.5 text-[14px] uppercase tracking-[0.06em]">{t('cpuMode')}</div>
-                <div className="theme-muted mt-2 text-[12px] leading-5">
-                  {t('playHomeCpuDescription')}
-                </div>
-              </div>
-              <div className="theme-chip rounded-xl p-1.5">
-                <Swords size={12} />
-              </div>
+            <div className="theme-eyebrow text-[8px]">{t('playHomePrimaryDeck')}</div>
+            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">
+              {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
+            </div>
+            <div className="theme-muted mt-1 text-[9px] leading-4.5">
+              {primaryDeckSummary
+                ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
+                : t('loadingDeckStatus')}
+            </div>
+            <div className={`mt-1.5 text-[7px] font-mono uppercase tracking-[0.1em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
+              {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
             </div>
           </button>
 
           <button
             type="button"
-            onClick={startCompetitionMode}
-            className="theme-panel rounded-[20px] px-4 py-4 text-left transition-colors hover:border-[var(--app-border-strong)]"
+            onClick={() => handleMobileTabChange('history')}
+            className="theme-panel rounded-[12px] px-3 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="theme-eyebrow text-[9px]">{t('playHomeLadder')}</div>
-                <div className="theme-title mt-1.5 text-[14px] uppercase tracking-[0.06em]">{t('competition')}</div>
-                <div className="theme-muted mt-2 text-[12px] leading-5">
-                  {competitionResumeOpponent
-                    ? t('playHomeCompetitionDescription', {
-                        stage: competitionResumeStageIndex + 1,
-                        name: competitionResumeOpponent.name,
-                      })
-                    : t('playHomeCompetitionFallback')}
-                </div>
-              </div>
-              <div className="theme-chip rounded-xl p-1.5">
-                <Trophy size={12} />
-              </div>
+            <div className="theme-eyebrow text-[8px]">{t('playHomeProgress')}</div>
+            <div className="theme-title mt-1.5 text-[11px] uppercase tracking-[0.06em]">
+              {t('currentStage')} {competitionResumeStageIndex + 1}
+            </div>
+            <div className="theme-muted mt-1 text-[9px] leading-4.5">
+              {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
+            </div>
+            <div className="theme-subtle mt-1.5 text-[7px] font-mono uppercase tracking-[0.1em]">
+              {t('viewDuelHistory')}
             </div>
           </button>
+        </section>
 
-          <section className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleMobileTabChange('decks')}
-              className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
-            >
-              <div className="theme-eyebrow text-[9px]">{t('playHomePrimaryDeck')}</div>
-              <div className="theme-title mt-2 text-[12px] uppercase tracking-[0.08em]">
-                {primaryDeckSummary?.name ?? t('primaryDeckDefault')}
-              </div>
-                <div className="theme-muted mt-1.5 text-[10px] leading-5">
-                  {primaryDeckSummary
-                    ? `${primaryDeckSummary.mainCount}/60 ${t('mainLabel')} | ${primaryDeckSummary.extraCount}/15 ${t('extraLabel')}`
-                    : t('loadingDeckStatus')}
-                </div>
-              <div className={`mt-2 text-[8px] font-mono uppercase tracking-[0.12em] ${primaryDeckSummary?.valid ?? true ? 'theme-subtle' : 'theme-danger'}`}>
-                {primaryDeckSummary?.valid ?? true ? t('readyToDuel') : t('needs40Cards')}
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleMobileTabChange('history')}
-              className="theme-panel rounded-[18px] px-3.5 py-3.5 text-left transition-colors hover:border-[var(--app-border-strong)]"
-            >
-              <div className="theme-eyebrow text-[9px]">{t('playHomeProgress')}</div>
-              <div className="theme-title mt-2 text-[12px] uppercase tracking-[0.08em]">
-                {t('currentStage')} {competitionResumeStageIndex + 1}
-              </div>
-              <div className="theme-muted mt-1.5 text-[10px] leading-5">
-                {competitionResumeOpponent ? competitionResumeOpponent.name : t('noLadderData')}
-              </div>
-              <div className="theme-subtle mt-2 text-[8px] font-mono uppercase tracking-[0.12em]">
-                {t('viewDuelHistory')}
-              </div>
-            </button>
-          </section>
-
-          <section className="grid grid-cols-3 gap-2">
-            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
-              <div className="theme-eyebrow text-[8px]">{t('wins')}</div>
-              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
-                {duelRecordSummary.wins}
-              </div>
+        <section className="grid grid-cols-3 gap-2">
+          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
+            <div className="theme-eyebrow text-[8px]">{t('wins')}</div>
+            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
+              {duelRecordSummary.wins}
             </div>
-            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
-              <div className="theme-eyebrow text-[8px]">{t('losses')}</div>
-              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
-                {duelRecordSummary.losses}
-              </div>
+          </div>
+          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
+            <div className="theme-eyebrow text-[8px]">{t('losses')}</div>
+            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
+              {duelRecordSummary.losses}
             </div>
-            <div className="theme-panel rounded-[16px] px-3 py-2.5 text-center">
-              <div className="theme-eyebrow text-[8px]">{t('forfeits')}</div>
-              <div className="mt-1 text-[13px] font-mono tracking-tight text-[var(--app-text-primary)]">
-                {duelRecordSummary.forfeits}
-              </div>
+          </div>
+          <div className="theme-panel rounded-[10px] px-2.5 py-2 text-center">
+            <div className="theme-eyebrow text-[8px]">{t('forfeits')}</div>
+            <div className="mt-1 text-[12px] font-mono tracking-tight text-[var(--app-text-primary)]">
+              {duelRecordSummary.forfeits}
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 
@@ -956,7 +956,7 @@ export default function App() {
           initial={{ opacity: 0, y: reduced ? 0 : 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={getSharedTransition(reduced, 'fast')}
-          className="text-zinc-600 text-[9px] font-mono uppercase tracking-[0.14em] leading-5 text-center px-3"
+          className="text-zinc-600 text-[8px] font-mono uppercase tracking-[0.12em] leading-4 text-center px-3"
         >
           {emptyMessage}
         </motion.div>
@@ -971,55 +971,55 @@ export default function App() {
         initial={{ opacity: 0, y: reduced ? 0 : 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={getSharedTransition(reduced, 'fast')}
-        className="w-full rounded border border-zinc-800 bg-black"
+        className="w-full rounded-[8px] border border-zinc-800 bg-black"
       >
-        <div className="border-b border-zinc-800 px-3 py-2.5">
-          <div className="text-[13px] font-sans font-bold leading-tight text-white uppercase tracking-[0.03em]">
+        <div className="border-b border-zinc-800 px-3 py-2">
+          <div className="text-[11px] font-sans font-bold leading-tight text-white uppercase tracking-[0.02em]">
             {localizedCard.name}
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-400">
-            <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1 text-[6px] font-mono uppercase tracking-[0.08em] text-zinc-400">
+            <span className="border border-zinc-800 bg-zinc-950 px-1.5 py-1">
               {localizedCard.typeLabel}
               {localizedCard.subtypeLabel ? ` / ${localizedCard.subtypeLabel}` : ''}
             </span>
             {showCardDetail.type === 'Monster' && (
-              <span className="border border-zinc-800 bg-zinc-950 px-2 py-1">
+              <span className="border border-zinc-800 bg-zinc-950 px-1.5 py-1">
                 Lvl {showCardDetail.level}
               </span>
             )}
             {showCardDetail.type === 'Monster' && (
-              <span className="border border-zinc-800 bg-zinc-950 px-2 py-1 text-zinc-500">
+              <span className="border border-zinc-800 bg-zinc-950 px-1.5 py-1 text-zinc-500">
                 {showCardDetail.level! >= 7 ? t('helpTwoTributes') : showCardDetail.level! >= 5 ? t('helpOneTribute') : t('helpNoTributes')}
               </span>
             )}
           </div>
         </div>
 
-        <div className="px-3 py-2.5 space-y-2.5">
+        <div className="px-3 py-2 space-y-2">
           {showCardDetail.type === 'Monster' && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
-                <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500">ATK</div>
-                <div className="mt-1 text-[11px] font-mono text-white">{showCardDetail.atk}</div>
+              <div className="rounded-[6px] border border-zinc-800 bg-zinc-950 px-2 py-1.5">
+                <div className="text-[6px] font-mono uppercase tracking-[0.08em] text-zinc-500">ATK</div>
+                <div className="mt-1 text-[10px] font-mono text-white">{showCardDetail.atk}</div>
               </div>
-              <div className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-2">
-                <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500">DEF</div>
-                <div className="mt-1 text-[11px] font-mono text-white">{showCardDetail.def}</div>
+              <div className="rounded-[6px] border border-zinc-800 bg-zinc-950 px-2 py-1.5">
+                <div className="text-[6px] font-mono uppercase tracking-[0.08em] text-zinc-500">DEF</div>
+                <div className="mt-1 text-[10px] font-mono text-white">{showCardDetail.def}</div>
               </div>
             </div>
           )}
 
-          <div className="text-[11px] leading-5 text-zinc-300">
+          <div className="text-[10px] leading-4.5 text-zinc-300">
             {localizedCard.description}
           </div>
 
           {(showCardDetail.type !== 'Monster' || supportMeta.status !== 'implemented') && (
-            <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500 mb-1.5">
+            <div className="rounded-[6px] border border-zinc-800 bg-zinc-950 px-2.5 py-2">
+              <div className="text-[6px] font-mono uppercase tracking-[0.08em] text-zinc-500 mb-1">
                 {t(getLocalizedSupportStatusKey(supportMeta.status))}
               </div>
               {supportMeta.note && (
-                <div className="text-[9px] text-zinc-300 leading-5">
+                <div className="text-[8px] text-zinc-300 leading-4">
                   {supportMeta.note}
                 </div>
               )}
@@ -1027,11 +1027,11 @@ export default function App() {
           )}
 
           {showCardDetail.isFusion && showCardDetail.fusionMaterials && (
-            <div className="rounded border border-zinc-800 bg-zinc-950 px-3 py-2.5">
-              <div className="text-[7px] font-mono uppercase tracking-[0.1em] text-zinc-500 mb-1.5">
+            <div className="rounded-[6px] border border-zinc-800 bg-zinc-950 px-2.5 py-2">
+              <div className="text-[6px] font-mono uppercase tracking-[0.08em] text-zinc-500 mb-1">
                 {t('fusionMaterials')}
               </div>
-              <div className="text-[9px] text-zinc-300 leading-5">
+              <div className="text-[8px] text-zinc-300 leading-4">
                 {showCardDetail.fusionMaterials.join(' + ')}
               </div>
             </div>
@@ -1042,7 +1042,7 @@ export default function App() {
   };
 
   const renderDuelLogPanel = (compact = false) => (
-    <div className={`flex-grow overflow-y-auto flex flex-col ${compact ? 'gap-1.5 text-[10px]' : 'gap-2 text-[11px]'} font-mono text-zinc-400`}>
+    <div className={`flex-grow overflow-y-auto flex flex-col ${compact ? 'gap-1 text-[9px]' : 'gap-2 text-[11px]'} font-mono text-zinc-400`}>
       {[...state.log].reverse().map((entry, i) => {
         const isPlayer = entry.data?.player === 'player' || entry.data?.nextTurn === 'player';
         const isOpponent = entry.data?.player === 'opponent' || entry.data?.nextTurn === 'opponent';
@@ -1070,7 +1070,7 @@ export default function App() {
         }
 
         return (
-          <div key={entry.id || i} className={`border-b border-zinc-900 ${compact ? 'pb-1.5 leading-5' : 'pb-2'} ${textColor}`}>
+          <div key={entry.id || i} className={`border-b border-zinc-900 ${compact ? 'pb-1 leading-4.5' : 'pb-2'} ${textColor}`}>
             {prefix && <span className="opacity-50 mr-1">{prefix}</span>}
             {displayMessage}
           </div>
@@ -2339,7 +2339,7 @@ export default function App() {
                   setShowMobileAccountSheet(true);
                   setMobileSheetExpanded(false);
                 }}
-                className="ui-eyebrow max-w-[132px] truncate text-right transition-colors hover:text-[var(--app-text-primary)]"
+                className="ui-eyebrow max-w-[128px] truncate text-right text-[9px] transition-colors hover:text-[var(--app-text-primary)]"
               >
                 {userProfile ? userProfile.displayName : t('guestMode')}
               </button>
@@ -2391,22 +2391,22 @@ export default function App() {
             compactHeightClassName="max-h-[42vh]"
             maxHeightClassName="max-h-[72vh]"
           >
-            <div className="space-y-3">
-              <div className="theme-elevated rounded-[18px] px-3.5 py-3.5">
+            <div className="space-y-2.5">
+              <div className="theme-elevated rounded-[10px] px-3 py-3">
                 <div className="theme-eyebrow text-[9px]">
                   {userProfile ? t('signedInAs') : t('guestMode')}
                 </div>
-                <div className="mt-2 text-sm">
+                <div className="mt-1.5 text-[12px] leading-5">
                   {userProfile?.email ?? userProfile?.displayName ?? t('guestMode')}
                 </div>
               </div>
-              <div className="grid gap-3">
+              <div className="grid gap-2.5">
                 <label className="block">
                   <span className="theme-eyebrow text-[9px]">{t('language')}</span>
                   <select
                     value={language}
                     onChange={(event) => setLanguage(event.target.value as typeof language)}
-                  className="theme-input mt-2 w-full rounded-[16px] px-3 py-2.5 text-xs"
+                    className="theme-input mt-1.5 w-full rounded-[8px] px-3 py-2 text-[11px]"
                   >
                     {languageOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -2420,7 +2420,7 @@ export default function App() {
                   <select
                     value={theme}
                     onChange={(event) => setTheme(event.target.value as typeof theme)}
-                    className="theme-input mt-2 w-full rounded-[16px] px-3 py-2.5 text-xs"
+                    className="theme-input mt-1.5 w-full rounded-[8px] px-3 py-2 text-[11px]"
                   >
                     {themeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -2431,21 +2431,21 @@ export default function App() {
                 </label>
               </div>
               {userProfile ? (
-                <div className="grid gap-3">
+                <div className="grid gap-2.5">
                   <button
                     type="button"
                     onClick={() => {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
+                    className="theme-button-subtle w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
+                    className="theme-button w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
                   >
                     {t('signOut')}
                   </button>
@@ -2457,7 +2457,7 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="theme-button w-full rounded-[16px] px-4 py-2.5 text-xs font-mono uppercase tracking-[0.16em]"
+                  className="theme-button w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
                 >
                   {t('signIn')}
                 </button>
@@ -2476,18 +2476,18 @@ export default function App() {
               <button
                 type="button"
                 onClick={startRandomGame}
-                className="theme-elevated rounded-2xl px-4 py-4 text-left"
+                className="theme-elevated rounded-[10px] px-3.5 py-3 text-left"
               >
                 <div className="theme-eyebrow text-[10px]">{t('playHomeQuickDuel')}</div>
-                <div className="theme-title mt-2 text-base uppercase tracking-[0.12em]">{t('randomDeck')}</div>
+                <div className="theme-title mt-1.5 text-[13px] uppercase tracking-[0.08em]">{t('randomDeck')}</div>
               </button>
               <button
                 type="button"
                 onClick={() => void startCustomGame()}
-                className="theme-elevated rounded-2xl px-4 py-4 text-left"
+                className="theme-elevated rounded-[10px] px-3.5 py-3 text-left"
               >
                 <div className="theme-eyebrow text-[10px]">{t('playHomePrimaryDeck')}</div>
-                <div className="theme-title mt-2 text-base uppercase tracking-[0.12em]">{t('customDeck')}</div>
+                <div className="theme-title mt-1.5 text-[13px] uppercase tracking-[0.08em]">{t('customDeck')}</div>
               </button>
             </div>
           </MobileBottomSheet>
@@ -2504,20 +2504,20 @@ export default function App() {
           >
             {competitionResumeOpponent ? (
               <div className="space-y-4 pb-2">
-                <div className="theme-elevated rounded-2xl px-4 py-4">
+                <div className="theme-elevated rounded-[10px] px-3.5 py-3.5">
                   <div className="theme-eyebrow text-[10px]">{t('currentStage')}</div>
-                  <div className="theme-title mt-3 text-lg uppercase tracking-[0.14em]">
+                  <div className="theme-title mt-2 text-[15px] uppercase tracking-[0.1em]">
                     {competitionResumeOpponent.stage} / {competitionResumeOpponent.totalStages}
                   </div>
-                  <div className="theme-muted mt-2 text-sm leading-6">
+                  <div className="theme-muted mt-1.5 text-[12px] leading-5">
                     {t('nextOpponent')}: {competitionResumeOpponent.name}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {competitionResumeOpponent.signatureCardIds.map((cardId) => (
-                    <div key={cardId} className="theme-elevated rounded-2xl px-3 py-3 text-center">
+                    <div key={cardId} className="theme-elevated rounded-[10px] px-2.5 py-2.5 text-center">
                       <div className="theme-eyebrow text-[9px]">{t('signature')}</div>
-                      <div className="theme-title mt-2 text-[11px] uppercase tracking-[0.12em]">
+                      <div className="theme-title mt-1.5 text-[10px] uppercase tracking-[0.08em]">
                         {buildCompetitionPreviewCard(cardId).name}
                       </div>
                     </div>
@@ -2527,7 +2527,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => void startCompetitionDuel(competitionResumeStageIndex)}
-                    className="theme-button w-full rounded-2xl px-4 py-3 text-sm font-mono uppercase tracking-[0.2em]"
+                    className="theme-button w-full rounded-[8px] px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em]"
                   >
                     {competitionResumeStageIndex > 0 ? t('resumeLadder') : t('beginLadder')}
                   </button>
@@ -2540,7 +2540,7 @@ export default function App() {
                           void startCompetitionDuel(0);
                         });
                       }}
-                      className="w-full rounded-2xl border border-zinc-800 px-4 py-3 text-sm font-mono uppercase tracking-[0.2em] text-zinc-400"
+                      className="w-full rounded-[8px] border border-zinc-800 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-400"
                     >
                       {t('restartFromStage1')}
                     </button>
@@ -3589,17 +3589,17 @@ export default function App() {
         </div>
 
         {/* Mobile Info Panel */}
-        <div className={`theme-panel md:hidden fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),14px)] z-30 rounded-[18px] flex flex-col overflow-hidden shadow-xl transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[34vh] min-h-[210px] max-h-[300px]' : 'h-[40px]'}`}>
+        <div className={`theme-panel md:hidden fixed inset-x-2 bottom-[max(env(safe-area-inset-bottom),10px)] z-30 rounded-[12px] flex flex-col overflow-hidden shadow-xl transition-[height] duration-200 ${mobileInfoExpanded ? 'h-[31vh] min-h-[220px] max-h-[320px]' : 'h-[52px]'}`}>
           <div className="theme-divider grid grid-cols-[1fr_1fr_auto] border-b shrink-0">
             <button
               onClick={() => handleMobileInfoTabChange('details')}
-              className={`px-2 py-2 text-[6px] font-mono uppercase tracking-[0.08em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'details' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('cardInfo')}
             </button>
             <button
               onClick={() => handleMobileInfoTabChange('log')}
-              className={`px-2 py-2 text-[6px] font-mono uppercase tracking-[0.08em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`px-2 py-2 text-[7px] font-mono uppercase tracking-[0.1em] transition-colors ${mobileInfoTab === 'log' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('duelLog')}
             </button>

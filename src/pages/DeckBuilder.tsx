@@ -572,14 +572,14 @@ export default function DeckBuilder({
               <button
                 type="button"
                 onClick={() => setMobileDeckSheetOpen(true)}
-                className="theme-elevated rounded-[12px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
+                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em]"
               >
                 {t('decks')}
               </button>
               <button
                 type="button"
                 onClick={() => setMobileAssistantSheetOpen(true)}
-                className="theme-elevated rounded-[12px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
+                className="theme-button-subtle rounded-[8px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em]"
               >
                 AI
               </button>
@@ -587,7 +587,7 @@ export default function DeckBuilder({
                 type="button"
                 onClick={handleSave}
                 disabled={isCurrentPredefined}
-                className={`rounded-[12px] border px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em] ${
+                className={`rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${
                   isCurrentPredefined ? 'border-[var(--app-border)] text-[var(--app-text-dim)]' : 'theme-button'
                 }`}
               >
@@ -597,23 +597,23 @@ export default function DeckBuilder({
           </div>
 
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-            <div className="theme-elevated grid grid-cols-2 rounded-[16px] p-0.5">
+            <div className="theme-elevated grid grid-cols-2 rounded-[10px] p-0.5">
               <button
                 type="button"
                 onClick={() => setIsDeckView(false)}
-                className={`rounded-[12px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.08em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[6px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${!isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('library')}
               </button>
               <button
                 type="button"
                 onClick={() => setIsDeckView(true)}
-                className={`rounded-[12px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.08em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
+                className={`rounded-[6px] px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${isDeckView ? 'theme-chip-active' : 'theme-chip'}`}
               >
                 {t('currentDeck')}
               </button>
             </div>
-            <div className={`rounded-[14px] border px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
+            <div className={`rounded-[8px] border px-2 py-1 text-[7px] font-mono uppercase tracking-[0.08em] ${deck.length < 40 || deck.length > 60 ? 'border-red-500 text-red-400' : 'border-[var(--app-border)] text-[var(--app-text-muted)]'}`}>
               {deck.length}/60
             </div>
           </div>

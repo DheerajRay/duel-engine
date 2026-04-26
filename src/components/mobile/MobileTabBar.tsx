@@ -31,12 +31,12 @@ export function MobileTabBar({
             key={tab}
             type="button"
             onClick={() => onTabChange(tab)}
-            className={`flex flex-col items-center justify-center gap-0 rounded-xl px-1 py-1.5 transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0 rounded-[8px] px-1 py-1 transition-colors ${
               isActive ? 'theme-chip-active' : 'theme-subtle'
             }`}
           >
-            <Icon size={13} />
-            <span className="ui-mono-label text-[9px] tracking-[0.12em]">
+            <Icon size={12} />
+            <span className="ui-mono-label text-[8px] tracking-[0.1em]">
               {t(labelKey)}
             </span>
           </button>

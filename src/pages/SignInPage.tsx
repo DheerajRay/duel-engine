@@ -178,7 +178,7 @@ export default function SignInPage({
                 setAuthMode('sign-in');
                 resetFeedback();
               }}
-              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'sign-in' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${authMode === 'sign-in' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('signIn')}
             </button>
@@ -187,7 +187,7 @@ export default function SignInPage({
                 setAuthMode('create-account');
                 resetFeedback();
               }}
-              className={`border px-4 py-3 font-mono text-xs uppercase tracking-widest transition-colors ${authMode === 'create-account' ? 'theme-chip-active' : 'theme-chip'}`}
+              className={`border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${authMode === 'create-account' ? 'theme-chip-active' : 'theme-chip'}`}
             >
               {t('createAccount')}
             </button>
