@@ -11,6 +11,17 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.5 - 2026-04-27
+
+Patch release focused on tightening a few remaining mobile shell and deck-builder details.
+
+Included in this release:
+
+- reduced the mobile account-sheet `Switch Account`, `Sign Out`, and guest `Sign In` action typography so it matches the surrounding popup text scale
+- added a shared themed vertical scrollbar utility for mobile shell surfaces and applied it to the mobile `Play` page so long content no longer appears clipped without visible scroll affordance
+- removed the extra accordion button from the mobile `Card Library` header
+- tightened the mobile deck-builder `Type` and `Sort` controls so their labels fit cleanly inside the compact mockup-scale filter row
+
 ## v1.7.4 - 2026-04-27
 
 Patch release focused on tightening the mobile account sheet action row.

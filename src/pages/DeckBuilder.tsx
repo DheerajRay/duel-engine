@@ -612,27 +612,14 @@ export default function DeckBuilder({
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {mobileBuilderMode === 'library' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setMobileBuilderMode('deck')}
-                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                      aria-label={t('currentDeck')}
-                    >
-                      <Layers size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileBuilderMode('deck');
-                        setMobileDeckLibraryExpanded((previous) => !previous);
-                      }}
-                      className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
-                      aria-label={t('deckLibrary')}
-                    >
-                      {mobileDeckLibraryExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={() => setMobileBuilderMode('deck')}
+                    className="theme-button-subtle flex h-8 w-8 items-center justify-center rounded-[6px] p-0"
+                    aria-label={t('currentDeck')}
+                  >
+                    <Layers size={13} />
+                  </button>
                 ) : (
                   <>
                     <button
@@ -697,7 +684,7 @@ export default function DeckBuilder({
           ) : null}
 
           <div className="theme-screen theme-divider border-b px-3 py-2.5">
-            <div className="grid grid-cols-[minmax(0,1.55fr)_76px_88px_32px] gap-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_80px_88px_32px] gap-2">
               <div className="relative">
                 <Search className="theme-subtle absolute left-2.5 top-1/2 -translate-y-1/2" size={12} />
                 <input
@@ -715,7 +702,7 @@ export default function DeckBuilder({
                     setFilterType(e.target.value as any);
                     setSortBy('name-asc');
                   }}
-                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[7px] font-mono uppercase tracking-[0.06em]"
+                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[6px] font-mono uppercase tracking-[0.04em]"
                 >
                   <option value="All">{t('type')}</option>
                   <option value="Monster">{t('cardTypeMonster')}</option>
@@ -729,7 +716,7 @@ export default function DeckBuilder({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[7px] font-mono uppercase tracking-[0.06em]"
+                  className="theme-input w-full appearance-none rounded-[6px] px-2 py-1.5 pr-5 text-[6px] font-mono uppercase tracking-[0.04em]"
                 >
                   <option value="name-asc">{t('sortBy')}</option>
                   <option value="name-desc">{t('sortNameDescCompact')}</option>

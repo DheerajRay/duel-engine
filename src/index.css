@@ -327,6 +327,26 @@ textarea {
   background: color-mix(in srgb, var(--app-bg) 82%, transparent);
 }
 
+.ui-scroll-y {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-border-strong) transparent;
+}
+
+.ui-scroll-y::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ui-scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-scroll-y::-webkit-scrollbar-thumb {
+  background: var(--app-border-strong);
+  border-radius: 999px;
+}
+
 .ui-button,
 .theme-button {
   min-height: var(--ui-button-height);

@@ -2472,14 +2472,14 @@ export default function App() {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-[6px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
+                    className="theme-button-subtle h-8 w-full rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-[6px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
+                    className="theme-button h-8 w-full rounded-[6px] px-2 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
                   >
                     {t('signOut')}
                   </button>
@@ -2491,7 +2491,7 @@ export default function App() {
                     setShowMobileAccountSheet(false);
                     setView('sign-in');
                   }}
-                  className="theme-button w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
+                  className="theme-button h-8 w-full rounded-[6px] px-3 py-1 text-[6px] font-mono uppercase tracking-[0.08em]"
                 >
                   {t('signIn')}
                 </button>
