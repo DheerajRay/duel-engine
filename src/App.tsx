@@ -308,7 +308,7 @@ export default function App() {
   );
 
   const renderMobilePlayHome = () => (
-    <div className="flex-1 overflow-y-auto px-3 py-3">
+    <div className="ui-scroll-y flex-1 px-3 py-3 pb-5">
       <div className="mx-auto flex max-w-md flex-col gap-3">
         <button
           type="button"
@@ -2465,21 +2465,21 @@ export default function App() {
                 </div>
               </div>
               {userProfile ? (
-                <div className="grid gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setShowMobileAccountSheet(false);
                       setView('sign-in');
                     }}
-                    className="theme-button-subtle w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
+                    className="theme-button-subtle w-full rounded-[6px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
                   >
                     {t('switchAccount')}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleHomeAuthAction()}
-                    className="theme-button w-full rounded-[6px] px-3 py-1.5 text-[8px] font-mono uppercase tracking-[0.12em]"
+                    className="theme-button w-full rounded-[6px] px-2 py-1.5 text-[7px] font-mono uppercase tracking-[0.1em]"
                   >
                     {t('signOut')}
                   </button>

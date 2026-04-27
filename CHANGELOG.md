@@ -11,6 +11,15 @@ The format is based on a simple release log with:
 
 - No unreleased entries yet.
 
+## v1.7.4 - 2026-04-27
+
+Patch release focused on tightening the mobile account sheet action row.
+
+Included in this release:
+
+- replaced the oversized stacked `Switch Account` and `Sign Out` buttons with a compact two-column action row
+- reduced the action label size and tracking so the account sheet matches the rest of the mobile shell more closely
+
 ## v1.7.3 - 2026-04-26
 
 Patch release focused on cleaning up the mobile deck-builder header controls and compact filter band.
